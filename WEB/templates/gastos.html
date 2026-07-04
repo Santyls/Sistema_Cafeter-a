@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Gastos{% endblock %}
+{% block page_title %}Gastos{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <div class="filter-group">
+    <button>Semanal</button>
+    <button class="active">Mensual</button>
+    <button>Anual</button>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn btn-outline">📄 Exportar PDF</button>
+    <button class="btn btn-outline">📊 Exportar XLSX</button>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:20px;">
+  <div class="card stat-card">
+    <div class="stat-icon bg-red">💸</div>
+    <h3>Total del periodo</h3>
+    <div class="stat-value">$18,420</div>
+    <span class="stat-trend trend-down">▲ 6.2% vs periodo anterior</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-brown">🥩</div>
+    <h3>Mayor gasto</h3>
+    <div class="stat-value" style="font-size:18px;">Insumos / carnes</div>
+    <span class="stat-trend">$5,200</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-orange">📆</div>
+    <h3>Promedio diario</h3>
+    <div class="stat-value">$614</div>
+    <span class="stat-trend trend-up">▲ 2.1%</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-green">🧾</div>
+    <h3>Movimientos registrados</h3>
+    <div class="stat-value">86</div>
+    <span class="stat-trend">este mes</span>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h3>Gastos por categoría</h3>
+  <div class="chart-placeholder"><canvas id="chartGastos"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>Detalle de gastos</h3>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método</th><th>Monto</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2026-07-01</td><td>Insumos</td><td>Compra de café en grano</td><td>Transferencia</td><td>$3,200</td></tr>
+        <tr><td>2026-06-28</td><td>Servicios</td><td>Pago de luz</td><td>Efectivo</td><td>$1,450</td></tr>
+        <tr><td>2026-06-24</td><td>Insumos</td><td>Compra de lácteos</td><td>Tarjeta</td><td>$980</td></tr>
+        <tr><td>2026-06-20</td><td>Mantenimiento</td><td>Reparación de máquina espresso</td><td>Efectivo</td><td>$2,100</td></tr>
+        <tr><td>2026-06-15</td><td>Insumos</td><td>Compra de carnes</td><td>Transferencia</td><td>$5,200</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  new Chart(document.getElementById('chartGastos'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Insumos', 'Servicios', 'Mantenimiento', 'Personal', 'Otros'],
+      datasets: [{ data: [9380, 2450, 2100, 3200, 1290], backgroundColor: ['#6f4e37', '#c8893a', '#a9745b', '#3b2519', '#d3912b'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+services:
+  api:
+    build: ./API
+    container_name: cafeteria-api
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./API/instance:/app/instance
+    environment:
+      SECRET_KEY: dev-secret-key
+      JWT_SECRET_KEY: dev-jwt-secret-key
+    restart: unless-stopped
+
+  web:
+    build: ./WEB
+    container_name: cafeteria-web
+    ports:
+      - "5000:5000"
+    depends_on:
+      - api
+    restart: unless-stopped

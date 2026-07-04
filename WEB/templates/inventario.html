@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+{% block page_title %}Inventario{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <div class="filter-group">
+    <button class="active">Todos</button>
+    <button>Lácteos</button>
+    <button>Granos</button>
+    <button>Empaques</button>
+    <button>Stock bajo</button>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="Buscar por ID o nombre" />
+    </div>
+    <button class="btn btn-primary" onclick="openModal('modalStock')">+ Agregar stock</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Nombre</th><th>Categoría</th><th>Cantidad</th>
+          <th>Precio/unidad</th><th>Precio total</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>INV-001</td><td>Café en grano</td><td>Granos</td>
+          <td>25 kg</td><td>$180</td><td>$4,500</td>
+          <td class="row-actions">
+            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
+            <button class="icon-btn danger">🗑️</button>
+          </td>
+        </tr>
+        <tr>
+          <td>INV-002</td><td>Leche entera</td><td>Lácteos</td>
+          <td class="low-stock">3 L</td><td>$22</td><td>$66</td>
+          <td class="row-actions">
+            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
+            <button class="icon-btn danger">🗑️</button>
+          </td>
+        </tr>
+        <tr>
+          <td>INV-003</td><td>Vasos desechables 16oz</td><td>Empaques</td>
+          <td>800 pzas</td><td>$1.5</td><td>$1,200</td>
+          <td class="row-actions">
+            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
+            <button class="icon-btn danger">🗑️</button>
+          </td>
+        </tr>
+        <tr>
+          <td>INV-004</td><td>Jarabe de vainilla</td><td>Saborizantes</td>
+          <td class="low-stock">1.2 L</td><td>$95</td><td>$114</td>
+          <td class="row-actions">
+            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
+            <button class="icon-btn danger">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination">
+    <button class="active">1</button>
+    <button>2</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalStock">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Agregar / editar stock</h3>
+      <button class="modal-close" onclick="closeModal('modalStock')">✕</button>
+    </div>
+    <form>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" class="form-control" placeholder="Ej. Café en grano" />
+      </div>
+      <div class="grid-form-2">
+        <div class="form-group">
+          <label>Categoría</label>
+          <select class="form-control">
+            <option>Granos</option>
+            <option>Lácteos</option>
+            <option>Empaques</option>
+            <option>Saborizantes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Unidad</label>
+          <select class="form-control">
+            <option>kg</option>
+            <option>g</option>
+            <option>L</option>
+            <option>ml</option>
+            <option>piezas</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-form-2">
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input type="number" class="form-control" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Precio por unidad</label>
+          <input type="number" class="form-control" placeholder="$0.00" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Precio total</label>
+        <input type="number" class="form-control" placeholder="$0.00" />
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalStock')">Cancelar</button>
+      <button class="btn btn-primary" style="width:auto;">Guardar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

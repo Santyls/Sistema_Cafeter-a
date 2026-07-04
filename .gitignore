@@ -1,0 +1,22 @@
+# Python / Flask (WEB)
+venv/
+__pycache__/
+*.pyc
+*.pyo
+instance/
+*.db
+
+# Node / Expo (MOVIL)
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+
+# macOS
+.DS_Store
+
+# Env files
+.env
+.env*.local

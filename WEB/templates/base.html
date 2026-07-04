@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Panel Administrativo{% endblock %} · Cafetería</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-badge">☕</div>
+        <span>Cafetería Admin</span>
+      </div>
+      <nav>
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if active == 'dashboard' else '' }}">
+          <span class="icon">🏠</span> Inicio
+        </a>
+        <a href="{{ url_for('gastos') }}" class="{{ 'active' if active == 'gastos' else '' }}">
+          <span class="icon">📉</span> Gastos
+        </a>
+        <a href="{{ url_for('ganancias') }}" class="{{ 'active' if active == 'ganancias' else '' }}">
+          <span class="icon">📈</span> Ganancias
+        </a>
+        <a href="{{ url_for('productos') }}" class="{{ 'active' if active == 'productos' else '' }}">
+          <span class="icon">🧾</span> Productos
+        </a>
+        <a href="{{ url_for('pedidos') }}" class="{{ 'active' if active == 'pedidos' else '' }}">
+          <span class="icon">🧺</span> Pedidos
+        </a>
+        <a href="{{ url_for('inventario') }}" class="{{ 'active' if active == 'inventario' else '' }}">
+          <span class="icon">📦</span> Inventario
+        </a>
+        <a href="{{ url_for('usuarios') }}" class="{{ 'active' if active == 'usuarios' else '' }}">
+          <span class="icon">👥</span> Usuarios
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="{{ url_for('login') }}">🚪 Cerrar sesión</a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <h2>{% block page_title %}{% endblock %}</h2>
+        <div class="user-chip">
+          <div class="avatar">AD</div>
+          <span>Administrador</span>
+        </div>
+      </header>
+      <div class="page">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

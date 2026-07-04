@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Ganancias{% endblock %}
+{% block page_title %}Ganancias{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <div class="filter-group">
+    <button>Semanal</button>
+    <button class="active">Mensual</button>
+    <button>Anual</button>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn btn-outline">📄 Exportar PDF</button>
+    <button class="btn btn-outline">📊 Exportar XLSX</button>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:20px;">
+  <div class="card stat-card">
+    <div class="stat-icon bg-green">💰</div>
+    <h3>Total del periodo</h3>
+    <div class="stat-value">$42,180</div>
+    <span class="stat-trend trend-up">▲ 11.4% vs periodo anterior</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-brown">☕</div>
+    <h3>Categoría top</h3>
+    <div class="stat-value" style="font-size:18px;">Bebidas calientes</div>
+    <span class="stat-trend">$19,800</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-orange">📆</div>
+    <h3>Promedio diario</h3>
+    <div class="stat-value">$1,406</div>
+    <span class="stat-trend trend-up">▲ 5.8%</span>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon bg-red">🧺</div>
+    <h3>Pedidos cobrados</h3>
+    <div class="stat-value">642</div>
+    <span class="stat-trend">este mes</span>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h3>Ganancias por categoría</h3>
+  <div class="chart-placeholder"><canvas id="chartGanancias"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>Detalle de ganancias</h3>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Fecha</th><th>Categoría</th><th>Pedidos</th><th>Método de pago</th><th>Monto</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2026-07-04</td><td>Bebidas calientes</td><td>48</td><td>Mixto</td><td>$4,120</td></tr>
+        <tr><td>2026-07-03</td><td>Repostería</td><td>32</td><td>Tarjeta</td><td>$2,860</td></tr>
+        <tr><td>2026-07-02</td><td>Bebidas frías</td><td>27</td><td>Efectivo</td><td>$2,340</td></tr>
+        <tr><td>2026-07-01</td><td>Bebidas calientes</td><td>51</td><td>Mixto</td><td>$4,410</td></tr>
+        <tr><td>2026-06-30</td><td>Snacks</td><td>19</td><td>Efectivo</td><td>$1,580</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  new Chart(document.getElementById('chartGanancias'), {
+    type: 'bar',
+    data: {
+      labels: ['Bebidas calientes', 'Bebidas frías', 'Repostería', 'Snacks', 'Otros'],
+      datasets: [{ label: 'Ganancia', data: [19800, 10650, 6420, 3890, 1420], backgroundColor: '#4e7c4a' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+</script>
+{% endblock %}
