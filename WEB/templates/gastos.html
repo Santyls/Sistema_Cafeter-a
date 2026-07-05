@@ -10,8 +10,8 @@
     <button>Anual</button>
   </div>
   <div style="display:flex; gap:10px;">
-    <button class="btn btn-outline">📄 Exportar PDF</button>
-    <button class="btn btn-outline">📊 Exportar XLSX</button>
+    <button class="btn btn-outline" onclick="exportGastosPDF()">📄 Exportar PDF</button>
+    <button class="btn btn-outline" onclick="exportGastosXLSX()">📊 Exportar XLSX</button>
   </div>
 </div>
 
@@ -19,26 +19,26 @@
   <div class="card stat-card">
     <div class="stat-icon bg-red">💸</div>
     <h3>Total del periodo</h3>
-    <div class="stat-value">$18,420</div>
-    <span class="stat-trend trend-down">▲ 6.2% vs periodo anterior</span>
+    <div class="stat-value" id="statGastosTotal">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-brown">🥩</div>
     <h3>Mayor gasto</h3>
-    <div class="stat-value" style="font-size:18px;">Insumos / carnes</div>
-    <span class="stat-trend">$5,200</span>
+    <div class="stat-value" id="statGastosMayor" style="font-size:18px;">--</div>
+    <span class="stat-trend" id="statGastosMayorSub">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-orange">📆</div>
     <h3>Promedio diario</h3>
-    <div class="stat-value">$614</div>
-    <span class="stat-trend trend-up">▲ 2.1%</span>
+    <div class="stat-value" id="statGastosPromedio">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-green">🧾</div>
     <h3>Movimientos registrados</h3>
-    <div class="stat-value">86</div>
-    <span class="stat-trend">este mes</span>
+    <div class="stat-value" id="statGastosCount">--</div>
+    <span class="stat-trend">este periodo</span>
   </div>
 </div>
 
@@ -52,29 +52,12 @@
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método</th><th>Monto</th></tr>
+        <tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Comprobante</th><th>Monto</th></tr>
       </thead>
-      <tbody>
-        <tr><td>2026-07-01</td><td>Insumos</td><td>Compra de café en grano</td><td>Transferencia</td><td>$3,200</td></tr>
-        <tr><td>2026-06-28</td><td>Servicios</td><td>Pago de luz</td><td>Efectivo</td><td>$1,450</td></tr>
-        <tr><td>2026-06-24</td><td>Insumos</td><td>Compra de lácteos</td><td>Tarjeta</td><td>$980</td></tr>
-        <tr><td>2026-06-20</td><td>Mantenimiento</td><td>Reparación de máquina espresso</td><td>Efectivo</td><td>$2,100</td></tr>
-        <tr><td>2026-06-15</td><td>Insumos</td><td>Compra de carnes</td><td>Transferencia</td><td>$5,200</td></tr>
+      <tbody id="tbodyGastos">
+        <tr><td colspan="5" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  new Chart(document.getElementById('chartGastos'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Insumos', 'Servicios', 'Mantenimiento', 'Personal', 'Otros'],
-      datasets: [{ data: [9380, 2450, 2100, 3200, 1290], backgroundColor: ['#6f4e37', '#c8893a', '#a9745b', '#3b2519', '#d3912b'] }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-</script>
 {% endblock %}

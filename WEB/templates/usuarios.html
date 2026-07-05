@@ -13,9 +13,9 @@
   <div style="display:flex; gap:10px;">
     <div class="search-box">
       <span>🔍</span>
-      <input type="text" placeholder="Buscar usuario" />
+      <input type="text" id="searchUsuarios" placeholder="Buscar usuario" />
     </div>
-    <button class="btn btn-primary" onclick="openModal('modalUsuario')">+ Agregar usuario</button>
+    <button class="btn btn-primary" onclick="abrirModalUsuario()">+ Agregar usuario</button>
   </div>
 </div>
 
@@ -27,92 +27,73 @@
           <th>Nombre</th><th>Correo</th><th>Contacto</th><th>Rol</th><th>Estado</th><th>Acciones</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td>Juan Pérez</td><td>juan.perez@cafeteria.com</td><td>442 123 4567</td>
-          <td><span class="badge badge-muted">Mesero</span></td>
-          <td><span class="badge badge-success">Activo</span></td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalUsuario')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
-        <tr>
-          <td>Ana López</td><td>ana.lopez@cafeteria.com</td><td>442 234 5678</td>
-          <td><span class="badge badge-muted">Cajero</span></td>
-          <td><span class="badge badge-success">Activo</span></td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalUsuario')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
-        <tr>
-          <td>Carla Ruiz</td><td>carla.ruiz@cafeteria.com</td><td>442 345 6789</td>
-          <td><span class="badge badge-muted">Cocinero</span></td>
-          <td><span class="badge badge-danger">Inactivo</span></td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalUsuario')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
+      <tbody id="tbodyUsuarios">
+        <tr><td colspan="6" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
-  </div>
-  <div class="pagination">
-    <button class="active">1</button>
-    <button>2</button>
   </div>
 </div>
 
 <div class="modal-overlay" id="modalUsuario">
   <div class="modal">
     <div class="modal-header">
-      <h3>Agregar / editar usuario</h3>
+      <h3 id="modalUsuarioTitle">Agregar usuario</h3>
       <button class="modal-close" onclick="closeModal('modalUsuario')">✕</button>
     </div>
-    <form>
+    <form onsubmit="event.preventDefault(); saveUsuario();">
       <div class="grid-form-2">
         <div class="form-group">
           <label>Nombre</label>
-          <input type="text" class="form-control" placeholder="Nombre" />
+          <input type="text" id="usrNombre" class="form-control" placeholder="Nombre" />
         </div>
         <div class="form-group">
-          <label>Apellidos</label>
-          <input type="text" class="form-control" placeholder="Apellidos" />
+          <label>Apellido paterno</label>
+          <input type="text" id="usrApPaterno" class="form-control" placeholder="Apellido paterno" />
+        </div>
+      </div>
+      <div class="grid-form-2">
+        <div class="form-group">
+          <label>Apellido materno</label>
+          <input type="text" id="usrApMaterno" class="form-control" placeholder="Apellido materno" />
+        </div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="usrUsuario" class="form-control" placeholder="nombre.usuario" />
         </div>
       </div>
       <div class="form-group">
         <label>Correo electrónico</label>
-        <input type="email" class="form-control" placeholder="usuario@cafeteria.com" />
+        <input type="email" id="usrCorreo" class="form-control" placeholder="usuario@cafeteria.com" />
       </div>
       <div class="grid-form-2">
         <div class="form-group">
-          <label>Número de contacto</label>
-          <input type="text" class="form-control" placeholder="442 000 0000" />
+          <label>Teléfono</label>
+          <input type="text" id="usrTelefono" class="form-control" placeholder="442 000 0000" />
         </div>
         <div class="form-group">
           <label>Rol</label>
-          <select class="form-control">
-            <option>Mesero</option>
-            <option>Cocinero</option>
-            <option>Cajero</option>
+          <select id="usrRol" class="form-control">
+            <option value="mesero">Mesero</option>
+            <option value="cocinero">Cocinero</option>
+            <option value="cajero">Cajero</option>
+            <option value="admin">Administrador</option>
           </select>
         </div>
       </div>
       <div class="grid-form-2">
         <div class="form-group">
           <label>Contraseña</label>
-          <input type="password" class="form-control" placeholder="••••••••" />
+          <input type="password" id="usrPassword" class="form-control" placeholder="••••••••" />
         </div>
         <div class="form-group">
           <label>Confirmar contraseña</label>
-          <input type="password" class="form-control" placeholder="••••••••" />
+          <input type="password" id="usrPassword2" class="form-control" placeholder="••••••••" />
         </div>
       </div>
     </form>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalUsuario')">Cancelar</button>
-      <button class="btn btn-primary" style="width:auto;">Guardar</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="saveUsuario()">Guardar</button>
     </div>
   </div>
 </div>

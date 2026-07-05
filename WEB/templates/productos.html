@@ -1,67 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Productos{% endblock %}
-{% block page_title %}Productos más y menos vendidos{% endblock %}
+{% block page_title %}Productos{% endblock %}
 
 {% block content %}
 <div class="toolbar">
   <div class="filter-group">
-    <button>Semanal</button>
-    <button class="active">Mensual</button>
-    <button>Anual</button>
+    <button class="active">Todos</button>
   </div>
   <div style="display:flex; gap:10px;">
-    <button class="btn btn-outline">📄 Exportar PDF</button>
-    <button class="btn btn-outline">📊 Exportar XLSX</button>
+    <button class="btn btn-outline" onclick="exportProductosPDF()">📄 Exportar PDF</button>
+    <button class="btn btn-outline" onclick="exportProductosXLSX()">📊 Exportar XLSX</button>
   </div>
 </div>
 
 <div class="grid grid-2" style="margin-bottom:20px;">
   <div class="card">
-    <h3>Top 5 más vendidos</h3>
+    <h3>Top 5 más caros</h3>
     <div class="chart-placeholder"><canvas id="chartTop"></canvas></div>
   </div>
   <div class="card">
-    <h3>Top 5 menos vendidos</h3>
+    <h3>Top 5 más económicos</h3>
     <div class="chart-placeholder"><canvas id="chartLow"></canvas></div>
   </div>
 </div>
 
 <div class="card">
-  <h3>Detalle de productos</h3>
+  <h3>Catálogo de productos</h3>
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Producto</th><th>Categoría</th><th>Unidades vendidas</th><th>Ingreso generado</th><th>Tendencia</th></tr>
+        <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Disponible</th></tr>
       </thead>
-      <tbody>
-        <tr><td>Capuchino Grande</td><td>Bebidas calientes</td><td>312</td><td>$9,360</td><td><span class="badge badge-success">↑ Alta demanda</span></td></tr>
-        <tr><td>Latte Vainilla</td><td>Bebidas calientes</td><td>275</td><td>$8,250</td><td><span class="badge badge-success">↑ Alta demanda</span></td></tr>
-        <tr><td>Croissant de jamón</td><td>Repostería</td><td>240</td><td>$4,800</td><td><span class="badge badge-success">↑ Alta demanda</span></td></tr>
-        <tr><td>Té verde</td><td>Bebidas frías</td><td>12</td><td>$180</td><td><span class="badge badge-danger">↓ Baja demanda</span></td></tr>
-        <tr><td>Panqué de nuez</td><td>Repostería</td><td>18</td><td>$360</td><td><span class="badge badge-danger">↓ Baja demanda</span></td></tr>
+      <tbody id="tbodyProductos">
+        <tr><td colspan="4" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  new Chart(document.getElementById('chartTop'), {
-    type: 'bar',
-    data: {
-      labels: ['Capuchino', 'Latte', 'Croissant', 'Espresso', 'Frappé'],
-      datasets: [{ label: 'Unidades', data: [312, 275, 240, 198, 165], backgroundColor: '#6f4e37' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-  new Chart(document.getElementById('chartLow'), {
-    type: 'bar',
-    data: {
-      labels: ['Té verde', 'Panqué', 'Chai', 'Bagel', 'Macchiato'],
-      datasets: [{ label: 'Unidades', data: [12, 18, 21, 25, 30], backgroundColor: '#c0392b' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-</script>
 {% endblock %}

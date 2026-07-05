@@ -7,26 +7,26 @@
   <div class="card stat-card">
     <div class="stat-icon bg-red">📉</div>
     <h3>Gastos del mes</h3>
-    <div class="stat-value">$18,420</div>
-    <span class="stat-trend trend-down">▲ 6.2% vs mes anterior</span>
+    <div class="stat-value" id="statGastos">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-green">📈</div>
     <h3>Ganancias del mes</h3>
-    <div class="stat-value">$42,180</div>
-    <span class="stat-trend trend-up">▲ 11.4% vs mes anterior</span>
+    <div class="stat-value" id="statGanancias">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-orange">🥇</div>
-    <h3>Producto más vendido</h3>
-    <div class="stat-value" style="font-size:18px;">Capuchino Grande</div>
-    <span class="stat-trend trend-up">312 unidades</span>
+    <h3>Producto destacado</h3>
+    <div class="stat-value" id="statTopProducto" style="font-size:18px;">--</div>
+    <span class="stat-trend" id="statTopProductoSub">cargando...</span>
   </div>
   <div class="card stat-card">
     <div class="stat-icon bg-brown">🧺</div>
     <h3>Pedidos hoy</h3>
-    <div class="stat-value">57</div>
-    <span class="stat-trend trend-up">▲ 4 respecto a ayer</span>
+    <div class="stat-value" id="statPedidosHoy">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
 </div>
 
@@ -40,7 +40,7 @@
     <div style="display:flex; flex-direction:column; gap:10px; margin-top: 6px;">
       <a class="btn btn-outline" href="{{ url_for('gastos') }}">Ver detalle de gastos</a>
       <a class="btn btn-outline" href="{{ url_for('ganancias') }}">Ver detalle de ganancias</a>
-      <a class="btn btn-outline" href="{{ url_for('productos') }}">Ver productos más/menos vendidos</a>
+      <a class="btn btn-outline" href="{{ url_for('productos') }}">Ver productos</a>
       <a class="btn btn-outline" href="{{ url_for('pedidos') }}">Ver pedidos recientes</a>
       <a class="btn btn-outline" href="{{ url_for('inventario') }}">Ver inventario</a>
     </div>
@@ -49,49 +49,12 @@
 
 <div class="grid grid-2" style="margin-top:20px;">
   <div class="card">
-    <h3>Productos más vendidos</h3>
+    <h3>Productos más caros</h3>
     <div class="chart-placeholder"><canvas id="chartTopProductos"></canvas></div>
   </div>
   <div class="card">
-    <h3>Productos menos vendidos</h3>
+    <h3>Productos más económicos</h3>
     <div class="chart-placeholder"><canvas id="chartLowProductos"></canvas></div>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  const ctxResumen = document.getElementById('chartResumen');
-  new Chart(ctxResumen, {
-    type: 'line',
-    data: {
-      labels: ['Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
-      datasets: [
-        { label: 'Gastos', data: [12000, 14500, 13800, 16200, 17300, 18420], borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.1)', tension: 0.35, fill: true },
-        { label: 'Ganancias', data: [28000, 30500, 33200, 36800, 39900, 42180], borderColor: '#4e7c4a', backgroundColor: 'rgba(78,124,74,0.1)', tension: 0.35, fill: true }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-
-  const ctxTop = document.getElementById('chartTopProductos');
-  new Chart(ctxTop, {
-    type: 'bar',
-    data: {
-      labels: ['Capuchino', 'Latte', 'Croissant', 'Espresso', 'Frappé'],
-      datasets: [{ label: 'Unidades vendidas', data: [312, 275, 240, 198, 165], backgroundColor: '#6f4e37' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-
-  const ctxLow = document.getElementById('chartLowProductos');
-  new Chart(ctxLow, {
-    type: 'bar',
-    data: {
-      labels: ['Té verde', 'Panqué', 'Chai', 'Bagel', 'Macchiato'],
-      datasets: [{ label: 'Unidades vendidas', data: [12, 18, 21, 25, 30], backgroundColor: '#c8893a' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-</script>
 {% endblock %}

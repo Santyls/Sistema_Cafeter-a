@@ -6,6 +6,9 @@
   <title>{% block title %}Panel Administrativo{% endblock %} · Cafetería</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -39,7 +42,7 @@
         </a>
       </nav>
       <div class="sidebar-footer">
-        <a href="{{ url_for('login') }}">🚪 Cerrar sesión</a>
+        <a href="#" onclick="handleLogout(event)">🚪 Cerrar sesión</a>
       </div>
     </aside>
 
