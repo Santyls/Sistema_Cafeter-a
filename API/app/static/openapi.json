@@ -1,0 +1,280 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CoffeeFlow API Docs - Módulo Cliente / Mesero",
+    "description": "Documentación interactiva de la API de CoffeeFlow para el Módulo de Cliente / Mesero.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001",
+      "description": "Servidor Local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticación",
+      "description": "Inicio de sesión y obtención de datos del usuario autenticado."
+    },
+    {
+      "name": "Cliente / Mesero - Mesas",
+      "description": "Consulta de disponibilidad de mesas y registro de las mismas."
+    },
+    {
+      "name": "Cliente / Mesero - Menú",
+      "description": "Visualización y consulta de la carta de la cafetería."
+    },
+    {
+      "name": "Cliente / Mesero - Pedidos",
+      "description": "Gestión completa del ciclo de vida de los pedidos (levantar orden, actualizar, cancelar, cambiar estados y ver historial)."
+    }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Iniciar Sesión",
+        "description": "Autentica al mesero y devuelve el token JWT de acceso.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usuario": { "type": "string", "example": "mesero1" },
+                  "contrasena": { "type": "string", "example": "mesero123" }
+                },
+                "required": ["usuario", "contrasena"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Sesión iniciada con éxito" },
+          "401": { "description": "Credenciales inválidas" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Autenticación"],
+        "summary": "Obtener Perfil de Usuario Actual",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Datos del perfil del usuario autenticado" }
+        }
+      }
+    },
+    "/api/mesas": {
+      "get": {
+        "tags": ["Cliente / Mesero - Mesas"],
+        "summary": "Listar Mesas",
+        "description": "Obtiene la lista de todas las mesas del restaurante con su estado actual (disponible/ocupada).",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Listado de mesas obtenido con éxito" }
+        }
+      },
+      "post": {
+        "tags": ["Cliente / Mesero - Mesas"],
+        "summary": "Crear Mesa",
+        "description": "Agrega una nueva mesa al plano físico de la cafetería.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "numero_mesa": { "type": "integer", "example": 9 },
+                  "capacidad": { "type": "integer", "example": 4 },
+                  "ubicacion": { "type": "string", "example": "Terraza" }
+                },
+                "required": ["numero_mesa"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Mesa creada exitosamente" }
+        }
+      }
+    },
+    "/api/productos": {
+      "get": {
+        "tags": ["Cliente / Mesero - Menú"],
+        "summary": "Listar Productos (Ver Menú)",
+        "description": "Obtiene la lista de productos disponibles en el menú de la cafetería.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Carta de productos obtenida exitosamente" }
+        }
+      }
+    },
+    "/api/pedidos": {
+      "get": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Listar Pedidos",
+        "description": "Consulta los pedidos activos de la cafetería. Permite filtrar opcionalmente por estado o por número de mesa.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "estado", "in": "query", "schema": { "type": "string" }, "description": "Filtrar por estado (pendiente, en_preparacion, listo, entregado, cancelado)" },
+          { "name": "id_mesa", "in": "query", "schema": { "type": "integer" }, "description": "Filtrar por ID de la mesa" }
+        ],
+        "responses": {
+          "200": { "description": "Listado de pedidos" }
+        }
+      },
+      "post": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Crear Pedido (Levantar Orden)",
+        "description": "Registra una nueva comanda (pedido) para una mesa específica y asocia los productos seleccionados.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id_mesa": { "type": "integer", "example": 1 },
+                  "observaciones": { "type": "string", "example": "Sin azúcar y calientes" },
+                  "detalles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id_producto": { "type": "integer", "example": 1 },
+                        "cantidad": { "type": "integer", "example": 2 }
+                      }
+                    }
+                  }
+                },
+                "required": ["id_mesa", "detalles"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Pedido registrado exitosamente" }
+        }
+      }
+    },
+    "/api/pedidos/{id_pedido}": {
+      "get": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Obtener Detalle del Pedido",
+        "description": "Obtiene la información completa de un pedido específico, incluyendo la lista de productos y el historial de cambios.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Detalle del pedido obtenido" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Actualizar Pedido (Modificar Orden)",
+        "description": "Edita las observaciones, el método de pago o reestructura la lista de productos de un pedido siempre y cuando no esté listo/entregado/cancelado.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "observaciones": { "type": "string", "example": "Se agrega endulzante extra" },
+                  "detalles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id_producto": { "type": "integer", "example": 1 },
+                        "amount": { "type": "integer", "example": 3 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Pedido actualizado con éxito" }
+        }
+      },
+      "delete": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Cancelar Pedido",
+        "description": "Cancela la orden, liberando la mesa asociada si el pedido se encontraba en estado pendiente.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Pedido cancelado con éxito" }
+        }
+      }
+    },
+    "/api/pedidos/{id_pedido}/estado": {
+      "patch": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Cambiar Estado del Pedido",
+        "description": "Actualiza el estado de un pedido (pendiente -> en_preparacion -> listo -> entregado -> cancelado).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estado": { "type": "string", "example": "listo" },
+                  "comentario": { "type": "string", "example": "Terminado a tiempo" }
+                },
+                "required": ["estado"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Estado actualizado con éxito" }
+        }
+      }
+    },
+    "/api/pedidos/{id_pedido}/historial": {
+      "get": {
+        "tags": ["Cliente / Mesero - Pedidos"],
+        "summary": "Ver Historial del Pedido",
+        "description": "Obtiene la bitácora completa de cambios de estado del pedido con timestamps y usuarios responsables.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Historial de estados" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

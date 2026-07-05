@@ -43,4 +43,31 @@ def create_app(config_class=Config):
     def health():
         return jsonify({"status": "ok"})
 
+    @app.route("/docs")
+    def swagger_ui():
+        return """
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>CoffeeFlow API Docs</title>
+            <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+        </head>
+        <body>
+            <div id="swagger-ui"></div>
+            <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+            <script>
+                SwaggerUIBundle({
+                    url: '/static/openapi.json',
+                    dom_id: '#swagger-ui',
+                    presets: [
+                        SwaggerUIBundle.presets.apis
+                    ],
+                    layout: "BaseLayout"
+                });
+            </script>
+        </body>
+        </html>
+        """, 200
+
     return app

@@ -23,7 +23,7 @@ class Usuario(db.Model):
     activo = db.Column(db.Boolean, default=True)
 
     def set_password(self, password):
-        self.contrasena_hash = generate_password_hash(password)
+        self.contrasena_hash = generate_password_hash(password, method='pbkdf2')
 
     def check_password(self, password):
         return check_password_hash(self.contrasena_hash, password)
