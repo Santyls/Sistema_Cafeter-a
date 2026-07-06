@@ -6,13 +6,17 @@
 <div class="toolbar">
   <div class="filter-group">
     <button class="active">Todos</button>
+    <button>Stock bajo</button>
   </div>
   <div style="display:flex; gap:10px;">
     <div class="search-box">
-      <span>🔍</span>
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input type="text" id="searchInventario" placeholder="Buscar por ID o nombre" />
     </div>
-    <button class="btn btn-primary" onclick="openIngredienteModal(null)">+ Agregar ingrediente</button>
+    <button class="btn btn-primary" onclick="openIngredienteModal(null)" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar
+    </button>
   </div>
 </div>
 
@@ -22,7 +26,7 @@
       <thead>
         <tr>
           <th>ID</th><th>Nombre</th><th>Unidad</th><th>Stock actual</th>
-          <th>Stock mínimo</th><th>Estado</th><th>Acciones</th>
+          <th>Stock minimo</th><th>Estado</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody id="tbodyInventario">
@@ -36,12 +40,14 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="modalStockTitle">Agregar ingrediente</h3>
-      <button class="modal-close" onclick="closeModal('modalStock')">✕</button>
+      <button class="modal-close" onclick="closeModal('modalStock')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <form onsubmit="event.preventDefault(); saveIngrediente();">
       <div class="form-group">
         <label>Nombre</label>
-        <input type="text" id="ingNombre" class="form-control" placeholder="Ej. Café en grano" />
+        <input type="text" id="ingNombre" class="form-control" placeholder="Ej. Cafe en grano" />
       </div>
       <div class="grid-form-2">
         <div class="form-group">
@@ -60,7 +66,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Stock mínimo</label>
+        <label>Stock minimo</label>
         <input type="number" id="ingMinimo" class="form-control" placeholder="0" step="any" />
       </div>
     </form>

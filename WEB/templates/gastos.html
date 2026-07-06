@@ -10,32 +10,34 @@
     <button>Anual</button>
   </div>
   <div style="display:flex; gap:10px;">
-    <button class="btn btn-outline" onclick="exportGastosPDF()">📄 Exportar PDF</button>
-    <button class="btn btn-outline" onclick="exportGastosXLSX()">📊 Exportar XLSX</button>
+    <button class="btn btn-outline" onclick="exportGastos()" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar
+    </button>
   </div>
 </div>
 
 <div class="grid grid-4" style="margin-bottom:20px;">
   <div class="card stat-card">
-    <div class="stat-icon bg-red">💸</div>
+    <div class="stat-icon bg-red"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
     <h3>Total del periodo</h3>
     <div class="stat-value" id="statGastosTotal">--</div>
     <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-brown">🥩</div>
+    <div class="stat-icon bg-brown"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <h3>Mayor gasto</h3>
     <div class="stat-value" id="statGastosMayor" style="font-size:18px;">--</div>
     <span class="stat-trend" id="statGastosMayorSub">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-orange">📆</div>
+    <div class="stat-icon bg-orange"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
     <h3>Promedio diario</h3>
     <div class="stat-value" id="statGastosPromedio">--</div>
     <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-green">🧾</div>
+    <div class="stat-icon bg-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
     <h3>Movimientos registrados</h3>
     <div class="stat-value" id="statGastosCount">--</div>
     <span class="stat-trend">este periodo</span>
@@ -43,7 +45,7 @@
 </div>
 
 <div class="card" style="margin-bottom:20px;">
-  <h3>Gastos por categoría</h3>
+  <h3>Gastos por categoria</h3>
   <div class="chart-placeholder"><canvas id="chartGastos"></canvas></div>
 </div>
 
@@ -52,7 +54,7 @@
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Comprobante</th><th>Monto</th></tr>
+        <tr><th>Fecha</th><th>Categoria</th><th>Concepto</th><th>Comprobante</th><th>Monto</th></tr>
       </thead>
       <tbody id="tbodyGastos">
         <tr><td colspan="5" style="text-align:center;color:#888;">Cargando...</td></tr>

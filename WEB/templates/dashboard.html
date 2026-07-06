@@ -5,25 +5,25 @@
 {% block content %}
 <div class="grid grid-4" style="margin-bottom: 20px;">
   <div class="card stat-card">
-    <div class="stat-icon bg-red">📉</div>
+    <div class="stat-icon bg-red"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
     <h3>Gastos del mes</h3>
     <div class="stat-value" id="statGastos">--</div>
     <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-green">📈</div>
+    <div class="stat-icon bg-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
     <h3>Ganancias del mes</h3>
     <div class="stat-value" id="statGanancias">--</div>
     <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-orange">🥇</div>
+    <div class="stat-icon bg-orange"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div>
     <h3>Producto destacado</h3>
     <div class="stat-value" id="statTopProducto" style="font-size:18px;">--</div>
     <span class="stat-trend" id="statTopProductoSub">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-brown">🧺</div>
+    <div class="stat-icon bg-brown"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
     <h3>Pedidos hoy</h3>
     <div class="stat-value" id="statPedidosHoy">--</div>
     <span class="stat-trend">cargando...</span>
@@ -32,11 +32,11 @@
 
 <div class="grid grid-2">
   <div class="card">
-    <h3>Gastos vs Ganancias (últimos 6 meses)</h3>
+    <h3>Gastos vs Ganancias (ultimos 6 meses)</h3>
     <div class="chart-placeholder"><canvas id="chartResumen"></canvas></div>
   </div>
   <div class="card">
-    <h3>Accesos rápidos</h3>
+    <h3>Accesos rapidos</h3>
     <div style="display:flex; flex-direction:column; gap:10px; margin-top: 6px;">
       <a class="btn btn-outline" href="{{ url_for('gastos') }}">Ver detalle de gastos</a>
       <a class="btn btn-outline" href="{{ url_for('ganancias') }}">Ver detalle de ganancias</a>
@@ -49,11 +49,11 @@
 
 <div class="grid grid-2" style="margin-top:20px;">
   <div class="card">
-    <h3>Productos más caros</h3>
+    <h3>Productos mas caros</h3>
     <div class="chart-placeholder"><canvas id="chartTopProductos"></canvas></div>
   </div>
   <div class="card">
-    <h3>Productos más económicos</h3>
+    <h3>Productos mas economicos</h3>
     <div class="chart-placeholder"><canvas id="chartLowProductos"></canvas></div>
   </div>
 </div>

@@ -1,33 +1,135 @@
-import React from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import React, { useState } from "react";
+import { StatusBar } from "expo-status-bar";
 
-// Módulo Caja - pendiente de desarrollo por el equipo.
+import { MESAS } from "./CAJA/data/mesas";
+import { PRODUCTOS } from "./CAJA/data/productos";
+
+import Login from "./CAJA/login";
+import Inicio from "./CAJA/inicio";
+import Pedido from "./CAJA/pedido";
+import Confirmar from "./CAJA/confirmar";
+import Pago from "./CAJA/pago";
+import Exitoso from "./CAJA/exitoso";
+import Perfil from "./CAJA/perfil";
+
 export default function Caja({ onBack }) {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
-      <View style={styles.container}>
-        <Text style={styles.emoji}>💵</Text>
-        <Text style={styles.title}>Módulo Caja</Text>
-        <Text style={styles.subtitle}>En construcción</Text>
+  const [pantalla, setPantalla] = useState("login");
+  const [mesas] = useState(MESAS);
+  const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
+  const [pedido, setPedido] = useState([]);
+  const [metodoPago, setMetodoPago] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState("");
 
-        {onBack && (
-          <TouchableOpacity style={styles.btn} onPress={onBack}>
-            <Text style={styles.btnText}>← Volver al menú</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </SafeAreaView>
+  const cambiarPantalla = (p) => setPantalla(p);
+
+  const seleccionarMesa = (mesa) => setMesaSeleccionada(mesa);
+
+  const agregarProducto = (producto) => {
+    setPedido((prev) => {
+      const existe = prev.find((p) => p.id === producto.id);
+      if (existe) {
+        return prev.map((p) =>
+          p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+        );
+      }
+      return [...prev, { ...producto, cantidad: 1 }];
+    });
+  };
+
+  const quitarProducto = (id) => {
+    setPedido((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (!item) return prev;
+      if (item.cantidad <= 1) return prev.filter((p) => p.id !== id);
+      return prev.map((p) =>
+        p.id === id ? { ...p, cantidad: p.cantidad - 1 } : p
+      );
+    });
+  };
+
+  const limpiarPedido = () => {
+    setPedido([]);
+    setMesaSeleccionada(null);
+    setMetodoPago("");
+    setMontoRecibido("");
+  };
+
+  const subtotal = pedido.reduce((s, p) => s + p.precio * p.cantidad, 0);
+  const iva = subtotal * 0.16;
+  const total = subtotal + iva;
+  const cambio = Math.max(0, parseFloat(montoRecibido || 0) - total);
+
+  const renderPantalla = () => {
+    switch (pantalla) {
+      case "login":
+        return <Login cambiarPantalla={cambiarPantalla} />;
+      case "inicio":
+        return (
+          <Inicio
+            mesas={mesas}
+            cambiarPantalla={cambiarPantalla}
+            seleccionarMesa={seleccionarMesa}
+          />
+        );
+      case "pedido":
+        return (
+          <Pedido
+            mesa={mesaSeleccionada}
+            productos={PRODUCTOS}
+            pedido={pedido}
+            subtotal={subtotal}
+            iva={iva}
+            total={total}
+            agregarProducto={agregarProducto}
+            quitarProducto={quitarProducto}
+            cambiarPantalla={cambiarPantalla}
+          />
+        );
+      case "confirmar":
+        return (
+          <Confirmar
+            mesa={mesaSeleccionada}
+            pedido={pedido}
+            subtotal={subtotal}
+            iva={iva}
+            total={total}
+            cambiarPantalla={cambiarPantalla}
+          />
+        );
+      case "pago":
+        return (
+          <Pago
+            total={total}
+            metodoPago={metodoPago}
+            setMetodoPago={setMetodoPago}
+            montoRecibido={montoRecibido}
+            setMontoRecibido={setMontoRecibido}
+            cambio={cambio}
+            cambiarPantalla={cambiarPantalla}
+          />
+        );
+      case "exitoso":
+        return (
+          <Exitoso
+            mesa={mesaSeleccionada}
+            total={total}
+            metodoPago={metodoPago}
+            cambio={cambio}
+            limpiarPedido={limpiarPedido}
+            cambiarPantalla={cambiarPantalla}
+          />
+        );
+      case "perfil":
+        return <Perfil cambiarPantalla={cambiarPantalla} />;
+      default:
+        return <Login cambiarPantalla={cambiarPantalla} />;
+    }
+  };
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      {renderPantalla()}
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#6f4e37' },
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f3ef', padding: 24 },
-  emoji: { fontSize: 64, marginBottom: 16 },
-  title: { fontSize: 24, fontWeight: '700', color: '#3e2b22' },
-  subtitle: { fontSize: 15, color: '#9b8579', marginTop: 6 },
-  btn: { marginTop: 32, backgroundColor: '#6f4e37', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12 },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-});

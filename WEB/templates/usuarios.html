@@ -12,10 +12,13 @@
   </div>
   <div style="display:flex; gap:10px;">
     <div class="search-box">
-      <span>🔍</span>
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input type="text" id="searchUsuarios" placeholder="Buscar usuario" />
     </div>
-    <button class="btn btn-primary" onclick="abrirModalUsuario()">+ Agregar usuario</button>
+    <button class="btn btn-primary" onclick="abrirModalUsuario()" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar
+    </button>
   </div>
 </div>
 
@@ -38,7 +41,9 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="modalUsuarioTitle">Agregar usuario</h3>
-      <button class="modal-close" onclick="closeModal('modalUsuario')">✕</button>
+      <button class="modal-close" onclick="closeModal('modalUsuario')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <form onsubmit="event.preventDefault(); saveUsuario();">
       <div class="grid-form-2">
@@ -62,12 +67,12 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Correo electrónico</label>
+        <label>Correo electronico</label>
         <input type="email" id="usrCorreo" class="form-control" placeholder="usuario@cafeteria.com" />
       </div>
       <div class="grid-form-2">
         <div class="form-group">
-          <label>Teléfono</label>
+          <label>Telefono</label>
           <input type="text" id="usrTelefono" class="form-control" placeholder="442 000 0000" />
         </div>
         <div class="form-group">
@@ -82,12 +87,12 @@
       </div>
       <div class="grid-form-2">
         <div class="form-group">
-          <label>Contraseña</label>
-          <input type="password" id="usrPassword" class="form-control" placeholder="••••••••" />
+          <label>Contrasena</label>
+          <input type="password" id="usrPassword" class="form-control" placeholder="********" />
         </div>
         <div class="form-group">
-          <label>Confirmar contraseña</label>
-          <input type="password" id="usrPassword2" class="form-control" placeholder="••••••••" />
+          <label>Confirmar contrasena</label>
+          <input type="password" id="usrPassword2" class="form-control" placeholder="********" />
         </div>
       </div>
     </form>

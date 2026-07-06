@@ -8,31 +8,33 @@
     <button class="active">Todos</button>
   </div>
   <div style="display:flex; gap:10px;">
-    <button class="btn btn-outline" onclick="exportProductosPDF()">📄 Exportar PDF</button>
-    <button class="btn btn-outline" onclick="exportProductosXLSX()">📊 Exportar XLSX</button>
+    <button class="btn btn-outline" onclick="exportProductos()" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar
+    </button>
   </div>
 </div>
 
 <div class="grid grid-2" style="margin-bottom:20px;">
   <div class="card">
-    <h3>Top 5 más caros</h3>
+    <h3>Top 5 mas vendidos</h3>
     <div class="chart-placeholder"><canvas id="chartTop"></canvas></div>
   </div>
   <div class="card">
-    <h3>Top 5 más económicos</h3>
+    <h3>Top 5 menos vendidos</h3>
     <div class="chart-placeholder"><canvas id="chartLow"></canvas></div>
   </div>
 </div>
 
 <div class="card">
-  <h3>Catálogo de productos</h3>
+  <h3>Catalogo de productos</h3>
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Disponible</th></tr>
+        <tr><th>Producto</th><th>Categoria</th><th>Precio</th><th>Ventas semana</th><th>Ingreso</th><th>Tendencia</th></tr>
       </thead>
       <tbody id="tbodyProductos">
-        <tr><td colspan="4" style="text-align:center;color:#888;">Cargando...</td></tr>
+        <tr><td colspan="6" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
