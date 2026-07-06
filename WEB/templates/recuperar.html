@@ -13,10 +13,10 @@
       <h1>Recuperar contraseña</h1>
       <p class="subtitle">Te enviaremos un enlace a tu correo para restablecer tu contraseña</p>
 
-      <form>
+      <form id="recoverForm">
         <div class="form-group">
-          <label for="email">Correo electrónico</label>
-          <input type="email" id="email" class="form-control" placeholder="admin@cafeteria.com" />
+          <label for="recoverEmail">Correo electrónico</label>
+          <input type="email" id="recoverEmail" class="form-control" placeholder="admin@cafeteria.com" />
         </div>
         <button type="submit" class="btn btn-primary">Enviar enlace</button>
       </form>
@@ -26,5 +26,6 @@
       </div>
     </div>
   </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

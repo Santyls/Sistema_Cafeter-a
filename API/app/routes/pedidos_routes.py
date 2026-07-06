@@ -7,6 +7,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from ..extensions import db
 from ..models.inventario import AlertaStock, InventarioMovimiento
 from ..models.mesa import Mesa
+from ..models.notificacion import Notificacion
 from ..models.pedido import ESTADOS_PEDIDO, DetallePedido, Pedido, PedidoEstadoHistorial
 from ..models.producto import Producto
 
@@ -56,11 +57,14 @@ def _descontar_inventario(pedido, id_usuario):
 def listar_pedidos():
     estado = request.args.get("estado")
     id_mesa = request.args.get("id_mesa", type=int)
+    id_usuario = request.args.get("id_usuario", type=int)
     query = Pedido.query
     if estado:
         query = query.filter_by(estado=estado)
     if id_mesa:
         query = query.filter_by(id_mesa=id_mesa)
+    if id_usuario:
+        query = query.filter_by(id_usuario=id_usuario)
     pedidos = query.order_by(Pedido.fecha_creacion.desc()).all()
     return jsonify([p.to_dict() for p in pedidos]), 200
 
@@ -102,6 +106,8 @@ def crear_pedido():
         producto = db.session.get(Producto, item.get("id_producto"))
         if not producto:
             return jsonify({"error": f"Producto {item.get('id_producto')} no encontrado"}), 404
+        if not producto.disponible:
+            return jsonify({"error": f"El producto '{producto.nombre}' no esta disponible"}), 409
 
         cantidad = int(item.get("cantidad", 1))
         subtotal = float(producto.precio) * cantidad
@@ -155,6 +161,8 @@ def actualizar_pedido(id_pedido):
             producto = db.session.get(Producto, item.get("id_producto"))
             if not producto:
                 return jsonify({"error": f"Producto {item.get('id_producto')} no encontrado"}), 404
+            if not producto.disponible:
+                return jsonify({"error": f"El producto '{producto.nombre}' no esta disponible"}), 409
             cantidad = int(item.get("cantidad", 1))
             subtotal = float(producto.precio) * cantidad
             total += subtotal
@@ -206,6 +214,15 @@ def cambiar_estado_pedido(id_pedido):
 
     if nuevo_estado == "listo" and estado_anterior != "listo":
         _descontar_inventario(pedido, id_usuario)
+        # Notifica al mesero que levanto el pedido que ya esta listo para entregar.
+        db.session.add(
+            Notificacion(
+                id_pedido=pedido.id_pedido,
+                tipo="pedido_listo",
+                mensaje=f"El pedido {pedido.numero_pedido} esta listo para entregar.",
+                id_receptor=pedido.id_usuario,
+            )
+        )
 
     if nuevo_estado in ("entregado", "cancelado"):
         mesa = db.session.get(Mesa, pedido.id_mesa)

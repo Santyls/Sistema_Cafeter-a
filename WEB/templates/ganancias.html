@@ -10,71 +10,56 @@
     <button>Anual</button>
   </div>
   <div style="display:flex; gap:10px;">
-    <button class="btn btn-outline">📄 Exportar PDF</button>
-    <button class="btn btn-outline">📊 Exportar XLSX</button>
+    <button class="btn btn-outline" onclick="exportGanancias()" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar
+    </button>
   </div>
 </div>
 
 <div class="grid grid-4" style="margin-bottom:20px;">
   <div class="card stat-card">
-    <div class="stat-icon bg-green">💰</div>
+    <div class="stat-icon bg-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
     <h3>Total del periodo</h3>
-    <div class="stat-value">$42,180</div>
-    <span class="stat-trend trend-up">▲ 11.4% vs periodo anterior</span>
+    <div class="stat-value" id="statGananciasTotal">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-brown">☕</div>
-    <h3>Categoría top</h3>
-    <div class="stat-value" style="font-size:18px;">Bebidas calientes</div>
-    <span class="stat-trend">$19,800</span>
+    <div class="stat-icon bg-brown"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8h1a4 4 0 010 8h-1"/><path d="M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg></div>
+    <h3>Categoria top</h3>
+    <div class="stat-value" id="statGananciasCat" style="font-size:18px;">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-orange">📆</div>
+    <div class="stat-icon bg-orange"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
     <h3>Promedio diario</h3>
-    <div class="stat-value">$1,406</div>
-    <span class="stat-trend trend-up">▲ 5.8%</span>
+    <div class="stat-value" id="statGananciasPromedio">--</div>
+    <span class="stat-trend">cargando...</span>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon bg-red">🧺</div>
-    <h3>Pedidos cobrados</h3>
-    <div class="stat-value">642</div>
-    <span class="stat-trend">este mes</span>
+    <div class="stat-icon bg-red"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+    <h3>Tickets cobrados</h3>
+    <div class="stat-value" id="statGananciasPedidos">--</div>
+    <span class="stat-trend">este periodo</span>
   </div>
 </div>
 
 <div class="card" style="margin-bottom:20px;">
-  <h3>Ganancias por categoría</h3>
+  <h3>Ganancias por estado</h3>
   <div class="chart-placeholder"><canvas id="chartGanancias"></canvas></div>
 </div>
 
 <div class="card">
-  <h3>Detalle de ganancias</h3>
+  <h3>Detalle de tickets</h3>
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Fecha</th><th>Categoría</th><th>Pedidos</th><th>Método de pago</th><th>Monto</th></tr>
+        <tr><th>Folio</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Impuesto</th></tr>
       </thead>
-      <tbody>
-        <tr><td>2026-07-04</td><td>Bebidas calientes</td><td>48</td><td>Mixto</td><td>$4,120</td></tr>
-        <tr><td>2026-07-03</td><td>Repostería</td><td>32</td><td>Tarjeta</td><td>$2,860</td></tr>
-        <tr><td>2026-07-02</td><td>Bebidas frías</td><td>27</td><td>Efectivo</td><td>$2,340</td></tr>
-        <tr><td>2026-07-01</td><td>Bebidas calientes</td><td>51</td><td>Mixto</td><td>$4,410</td></tr>
-        <tr><td>2026-06-30</td><td>Snacks</td><td>19</td><td>Efectivo</td><td>$1,580</td></tr>
+      <tbody id="tbodyGanancias">
+        <tr><td colspan="5" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  new Chart(document.getElementById('chartGanancias'), {
-    type: 'bar',
-    data: {
-      labels: ['Bebidas calientes', 'Bebidas frías', 'Repostería', 'Snacks', 'Otros'],
-      datasets: [{ label: 'Ganancia', data: [19800, 10650, 6420, 3890, 1420], backgroundColor: '#4e7c4a' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-</script>
 {% endblock %}

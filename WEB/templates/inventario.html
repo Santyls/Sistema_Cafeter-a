@@ -6,17 +6,17 @@
 <div class="toolbar">
   <div class="filter-group">
     <button class="active">Todos</button>
-    <button>Lácteos</button>
-    <button>Granos</button>
-    <button>Empaques</button>
     <button>Stock bajo</button>
   </div>
   <div style="display:flex; gap:10px;">
     <div class="search-box">
-      <span>🔍</span>
-      <input type="text" placeholder="Buscar por ID o nombre" />
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" id="searchInventario" placeholder="Buscar por ID o nombre" />
     </div>
-    <button class="btn btn-primary" onclick="openModal('modalStock')">+ Agregar stock</button>
+    <button class="btn btn-primary" onclick="openIngredienteModal(null)" style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar
+    </button>
   </div>
 </div>
 
@@ -25,102 +25,54 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>ID</th><th>Nombre</th><th>Categoría</th><th>Cantidad</th>
-          <th>Precio/unidad</th><th>Precio total</th><th>Acciones</th>
+          <th>ID</th><th>Nombre</th><th>Unidad</th><th>Stock actual</th>
+          <th>Stock minimo</th><th>Estado</th><th>Acciones</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td>INV-001</td><td>Café en grano</td><td>Granos</td>
-          <td>25 kg</td><td>$180</td><td>$4,500</td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
-        <tr>
-          <td>INV-002</td><td>Leche entera</td><td>Lácteos</td>
-          <td class="low-stock">3 L</td><td>$22</td><td>$66</td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
-        <tr>
-          <td>INV-003</td><td>Vasos desechables 16oz</td><td>Empaques</td>
-          <td>800 pzas</td><td>$1.5</td><td>$1,200</td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
-        <tr>
-          <td>INV-004</td><td>Jarabe de vainilla</td><td>Saborizantes</td>
-          <td class="low-stock">1.2 L</td><td>$95</td><td>$114</td>
-          <td class="row-actions">
-            <button class="icon-btn" onclick="openModal('modalStock')">✏️</button>
-            <button class="icon-btn danger">🗑️</button>
-          </td>
-        </tr>
+      <tbody id="tbodyInventario">
+        <tr><td colspan="7" style="text-align:center;color:#888;">Cargando...</td></tr>
       </tbody>
     </table>
-  </div>
-  <div class="pagination">
-    <button class="active">1</button>
-    <button>2</button>
   </div>
 </div>
 
 <div class="modal-overlay" id="modalStock">
   <div class="modal">
     <div class="modal-header">
-      <h3>Agregar / editar stock</h3>
-      <button class="modal-close" onclick="closeModal('modalStock')">✕</button>
+      <h3 id="modalStockTitle">Agregar ingrediente</h3>
+      <button class="modal-close" onclick="closeModal('modalStock')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
-    <form>
+    <form onsubmit="event.preventDefault(); saveIngrediente();">
       <div class="form-group">
         <label>Nombre</label>
-        <input type="text" class="form-control" placeholder="Ej. Café en grano" />
+        <input type="text" id="ingNombre" class="form-control" placeholder="Ej. Cafe en grano" />
       </div>
       <div class="grid-form-2">
         <div class="form-group">
-          <label>Categoría</label>
-          <select class="form-control">
-            <option>Granos</option>
-            <option>Lácteos</option>
-            <option>Empaques</option>
-            <option>Saborizantes</option>
+          <label>Unidad de medida</label>
+          <select id="ingUnidad" class="form-control">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="L">L</option>
+            <option value="ml">ml</option>
+            <option value="piezas">piezas</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Unidad</label>
-          <select class="form-control">
-            <option>kg</option>
-            <option>g</option>
-            <option>L</option>
-            <option>ml</option>
-            <option>piezas</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid-form-2">
-        <div class="form-group">
-          <label>Cantidad</label>
-          <input type="number" class="form-control" placeholder="0" />
-        </div>
-        <div class="form-group">
-          <label>Precio por unidad</label>
-          <input type="number" class="form-control" placeholder="$0.00" />
+          <label>Stock actual</label>
+          <input type="number" id="ingStock" class="form-control" placeholder="0" step="any" />
         </div>
       </div>
       <div class="form-group">
-        <label>Precio total</label>
-        <input type="number" class="form-control" placeholder="$0.00" />
+        <label>Stock minimo</label>
+        <input type="number" id="ingMinimo" class="form-control" placeholder="0" step="any" />
       </div>
     </form>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalStock')">Cancelar</button>
-      <button class="btn btn-primary" style="width:auto;">Guardar</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="saveIngrediente()">Guardar</button>
     </div>
   </div>
 </div>
