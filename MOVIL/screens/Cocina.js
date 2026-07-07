@@ -92,11 +92,11 @@ const INITIAL_ORDERS = [
 ];
 
 const INITIAL_INVENTORY = [
-  { name: 'Cafe en grano', category: 'Café', actual: 2, minimum: 5, unit: 'kg' },
-  { name: 'Leche entera', category: 'Lácteos', actual: 8, minimum: 10, unit: 'L' },
-  { name: 'Leche deslactosada', category: 'Lácteos', actual: 3, minimum: 5, unit: 'L' },
-  { name: 'Pan para panini', category: 'Panadería', actual: 20, minimum: 15, unit: 'pzas' },
-  { name: 'Croissants', category: 'Panadería', actual: 4, minimum: 10, unit: 'pzas' },
+  { name: 'Cafe en grano', category: 'Cafe', actual: 2, minimum: 5, unit: 'kg' },
+  { name: 'Leche entera', category: 'Lacteos', actual: 8, minimum: 10, unit: 'L' },
+  { name: 'Leche deslactosada', category: 'Lacteos', actual: 3, minimum: 5, unit: 'L' },
+  { name: 'Pan para panini', category: 'Panaderia', actual: 20, minimum: 15, unit: 'pzas' },
+  { name: 'Croissants', category: 'Panaderia', actual: 4, minimum: 10, unit: 'pzas' },
   { name: 'Azucar', category: 'Otros', actual: 3, minimum: 2, unit: 'kg' },
   { name: 'Chocolate en polvo', category: 'Otros', actual: 1.5, minimum: 2, unit: 'kg' },
   { name: 'Jarabe de vainilla', category: 'Otros', actual: 0.8, minimum: 1, unit: 'L' },
@@ -117,6 +117,7 @@ export default function Cocina({ onBack }) {
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [inventory, setInventory] = useState(INITIAL_INVENTORY);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [darkMode, setDarkMode] = useState(false);
 
   const navigate = (target, params) => {
     setSidebarOpen(false);
@@ -185,9 +186,19 @@ export default function Cocina({ onBack }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  const handleClearNotifications = () => {
+    setNotifications([]);
+  };
+
   const handleMarkAlertsAsAddressed = () => {};
 
-  const commonProps = { navigate, toggleSidebar, orders, inventory, notifications, currentUser };
+  const handleRestockItem = (itemName, amount) => {
+    setInventory((prev) =>
+      prev.map((i) => (i.name === itemName ? { ...i, actual: i.actual + amount } : i))
+    );
+  };
+
+  const commonProps = { navigate, toggleSidebar, orders, inventory, notifications, currentUser, darkMode };
 
   const renderScreen = () => {
     switch (screen) {
@@ -207,6 +218,7 @@ export default function Cocina({ onBack }) {
             orders={orders}
             onStartPreparation={handleStartPreparation}
             onCancelOrder={handleCancelOrder}
+            darkMode={darkMode}
           />
         );
       case 'actualizar_estado':
@@ -216,6 +228,7 @@ export default function Cocina({ onBack }) {
             activeOrderId={activeOrderId}
             orders={orders}
             onUpdateStatus={handleUpdateStatus}
+            darkMode={darkMode}
           />
         );
       case 'preparacion':
@@ -225,13 +238,29 @@ export default function Cocina({ onBack }) {
       case 'historial':
         return <Historial {...commonProps} />;
       case 'inventario':
-        return <Inventario {...commonProps} />;
+        return <Inventario {...commonProps} onRestockItem={handleRestockItem} />;
       case 'stock_bajo':
-        return <StockBajo navigate={navigate} inventory={inventory} onMarkAlertsAsAddressed={handleMarkAlertsAsAddressed} />;
+        return (
+          <StockBajo
+            navigate={navigate}
+            inventory={inventory}
+            onMarkAlertsAsAddressed={handleMarkAlertsAsAddressed}
+            onRestockItem={handleRestockItem}
+            darkMode={darkMode}
+          />
+        );
       case 'notificaciones':
-        return <Notificaciones navigate={navigate} notifications={notifications} onMarkAllNotificationsRead={handleMarkAllNotificationsRead} />;
+        return (
+          <Notificaciones
+            navigate={navigate}
+            notifications={notifications}
+            onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+            onClearNotifications={handleClearNotifications}
+            darkMode={darkMode}
+          />
+        );
       case 'configuracion':
-        return <Configuracion {...commonProps} onLogout={handleLogout} />;
+        return <Configuracion {...commonProps} onLogout={handleLogout} darkMode={darkMode} setDarkMode={setDarkMode} />;
       default:
         return <DashboardCocina {...commonProps} />;
     }

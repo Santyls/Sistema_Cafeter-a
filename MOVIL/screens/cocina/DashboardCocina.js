@@ -10,6 +10,7 @@ import {
   StatusBar as RNStatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
+import getTheme from '../shared/theme';
 
 export default function DashboardCocina({
   navigate,
@@ -18,7 +19,9 @@ export default function DashboardCocina({
   inventory,
   notifications,
   currentUser,
+  darkMode,
 }) {
+  const theme = getTheme(darkMode);
   const pendingCount = orders.filter((o) => o.status === 'pendiente').length;
   const progressCount = orders.filter((o) => o.status === 'en_preparacion').length;
   const readyCount = orders.filter((o) => o.status === 'listo').length;
@@ -27,7 +30,7 @@ export default function DashboardCocina({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.appContainer}>
+      <View style={[styles.appContainer, { backgroundColor: theme.bg }]}>
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitleGroup}>
@@ -50,78 +53,78 @@ export default function DashboardCocina({
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.card} onPress={() => navigate('pedidos', { filter: 'pendiente' })}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('pedidos', { filter: 'pendiente' })}>
               <View style={[styles.iconWrapper, { backgroundColor: '#FFF9DB' }]}>
                 <Icon name="clipboard" size={20} color="#F0AD4E" />
               </View>
-              <Text style={styles.cardTitle}>Pedidos{"\n"}Pendientes</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>Pedidos{"\n"}Pendientes</Text>
               <Text style={[styles.cardNumber, { color: '#F0AD4E' }]}>{pendingCount}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => navigate('preparacion')}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('preparacion')}>
               <View style={[styles.iconWrapper, { backgroundColor: '#E3F2FD' }]}>
                 <Icon name="flame" size={20} color="#007AFF" />
               </View>
-              <Text style={styles.cardTitle}>En{"\n"}Preparacion</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>En{"\n"}Preparacion</Text>
               <Text style={[styles.cardNumber, { color: '#007AFF' }]}>{progressCount}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => navigate('listos')}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('listos')}>
               <View style={[styles.iconWrapper, { backgroundColor: '#E8F5E9' }]}>
                 <Icon name="check-circle" size={20} color="#34C759" />
               </View>
-              <Text style={styles.cardTitle}>Listos{"\n"}para Servir</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>Listos{"\n"}para Servir</Text>
               <Text style={[styles.cardNumber, { color: '#34C759' }]}>{readyCount}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => navigate('inventario')}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('inventario')}>
               <View style={[styles.iconWrapper, { backgroundColor: '#EFEBE9' }]}>
                 <Icon name="cube" size={20} color="#8D6E63" />
               </View>
-              <Text style={styles.cardTitle}>Inventario{"\n"}Insumos</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>Inventario{"\n"}Insumos</Text>
               <Text style={[styles.cardTextButton, { color: '#8D6E63' }]}>Ver</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => navigate('stock_bajo')}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('stock_bajo')}>
               <View style={[styles.iconWrapper, { backgroundColor: '#FFEBEE' }]}>
                 <Icon name="warning" size={20} color="#FF3B30" />
               </View>
-              <Text style={styles.cardTitle}>Alertas{"\n"}de Stock</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>Alertas{"\n"}de Stock</Text>
               <Text style={[styles.cardNumber, { color: '#FF3B30' }]}>{lowStockCount}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => navigate('historial')}>
+            <TouchableOpacity style={[styles.card, { backgroundColor: theme.cardBg }]} onPress={() => navigate('historial')}>
               <View style={[styles.iconWrapper, { backgroundColor: '#F3E5F5' }]}>
                 <Icon name="receipt" size={20} color="#9b59b6" />
               </View>
-              <Text style={styles.cardTitle}>Historial{"\n"}de Pedidos</Text>
+              <Text style={[styles.cardTitle, { color: theme.textMuted }]}>Historial{"\n"}de Pedidos</Text>
               <Text style={[styles.cardTextButton, { color: '#9b59b6' }]}>Ver</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.activitySection}>
-            <Text style={styles.sectionTitle}>Actividad Reciente</Text>
-            <View style={styles.activityList}>
-              <View style={styles.activityItem}>
+            <Text style={[styles.sectionTitle, { color: theme.textMain }]}>Actividad Reciente</Text>
+            <View style={[styles.activityList, { backgroundColor: theme.cardBg }]}>
+              <View style={[styles.activityItem, { borderBottomColor: theme.border }]}>
                 <Icon name="cube" size={20} color="#007AFF" style={{ marginRight: 16 }} />
                 <View style={styles.activityDetails}>
-                  <Text style={styles.activityText}>Pedido #1254 recibido</Text>
-                  <Text style={styles.activityTime}>Hace 2 min</Text>
+                  <Text style={[styles.activityText, { color: theme.textMain }]}>Pedido #1254 recibido</Text>
+                  <Text style={[styles.activityTime, { color: theme.textMuted }]}>Hace 2 min</Text>
                 </View>
               </View>
-              <View style={styles.activityItem}>
+              <View style={[styles.activityItem, { borderBottomColor: theme.border }]}>
                 <Icon name="check-circle" size={20} color="#34C759" style={{ marginRight: 16 }} />
                 <View style={styles.activityDetails}>
-                  <Text style={styles.activityText}>Pedido #1251 marcado como listo</Text>
-                  <Text style={styles.activityTime}>Hace 5 min</Text>
+                  <Text style={[styles.activityText, { color: theme.textMain }]}>Pedido #1251 marcado como listo</Text>
+                  <Text style={[styles.activityTime, { color: theme.textMuted }]}>Hace 5 min</Text>
                 </View>
               </View>
               {lowStockCount > 0 && (
-                <View style={styles.activityItem}>
+                <View style={[styles.activityItem, { borderBottomColor: theme.border }]}>
                   <Icon name="warning" size={20} color="#FF3B30" style={{ marginRight: 16 }} />
                   <View style={styles.activityDetails}>
-                    <Text style={styles.activityText}>Stock critico: Insumos por reabastecer</Text>
-                    <Text style={styles.activityTime}>Hace 10 min</Text>
+                    <Text style={[styles.activityText, { color: theme.textMain }]}>Stock critico: Insumos por reabastecer</Text>
+                    <Text style={[styles.activityTime, { color: theme.textMuted }]}>Hace 10 min</Text>
                   </View>
                 </View>
               )}

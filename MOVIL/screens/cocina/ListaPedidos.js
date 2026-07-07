@@ -9,6 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import Icon from '../shared/Icon';
+import getTheme from '../shared/theme';
 
 export default function ListaPedidos({
   navigate,
@@ -16,7 +17,9 @@ export default function ListaPedidos({
   orders,
   onSelectOrder,
   defaultFilter = 'Todos',
+  darkMode,
 }) {
+  const theme = getTheme(darkMode);
   const [activeTab, setActiveTab] = useState(defaultFilter);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,7 +32,7 @@ export default function ListaPedidos({
     else if (activeTab === 'En Preparacion') tabMatch = order.status === 'en_preparacion';
     else if (activeTab === 'Listos') tabMatch = order.status === 'listo';
 
-    const searchString = `${order.id} ${order.table} ${order.status}`.toLowerCase();
+    const searchString = `${order.id} ${order.table}`.toLowerCase();
     const queryMatch = searchString.includes(searchQuery.toLowerCase());
 
     return tabMatch && queryMatch;
@@ -45,7 +48,7 @@ export default function ListaPedidos({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -56,8 +59,9 @@ export default function ListaPedidos({
 
       <View style={styles.searchSection}>
         <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar pedido, mesa o cliente..."
+          style={[styles.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]}
+          placeholder="Buscar pedido o mesa..."
+          placeholderTextColor={theme.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -68,10 +72,10 @@ export default function ListaPedidos({
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+              style={[styles.tabBtn, { backgroundColor: theme.cardBg, borderColor: theme.borderStrong }, activeTab === tab && styles.tabBtnActive]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              <Text style={[styles.tabText, { color: theme.textMuted }, activeTab === tab && styles.tabTextActive]}>
                 {tab}
               </Text>
             </TouchableOpacity>
@@ -81,21 +85,21 @@ export default function ListaPedidos({
 
       <ScrollView contentContainerStyle={styles.listContent}>
         {filteredOrders.length === 0 ? (
-          <Text style={styles.emptyText}>No hay pedidos para mostrar</Text>
+          <Text style={[styles.emptyText, { color: theme.textMuted }]}>No hay pedidos para mostrar</Text>
         ) : (
           filteredOrders.map((order) => {
             const statusConfig = getStatusStyle(order.status);
             return (
               <TouchableOpacity
                 key={order.id}
-                style={styles.orderCard}
+                style={[styles.orderCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                 onPress={() => {
                   onSelectOrder(order.id);
                   navigate('detalle_pedido');
                 }}
               >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.orderId}>Pedido {order.id}</Text>
+                <View style={[styles.cardHeader, { borderBottomColor: theme.border }]}>
+                  <Text style={[styles.orderId, { color: theme.textMain }]}>Pedido {order.id}</Text>
                   <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
                     <Text style={[styles.statusText, { color: statusConfig.text }]}>
                       {statusConfig.label}
@@ -106,17 +110,17 @@ export default function ListaPedidos({
                   <View style={styles.infoRow}>
                     <Icon name="location" size={14} color="#8D6E63" />
                     <Text style={styles.infoLabel}> Mesa:</Text>
-                    <Text style={styles.infoValue}>{order.table}</Text>
+                    <Text style={[styles.infoValue, { color: theme.textMain }]}>{order.table}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Icon name="time" size={14} color="#8D6E63" />
                     <Text style={styles.infoLabel}> Hora:</Text>
-                    <Text style={styles.infoValue}>{order.time}</Text>
+                    <Text style={[styles.infoValue, { color: theme.textMain }]}>{order.time}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Icon name="restaurant" size={14} color="#8D6E63" />
                     <Text style={styles.infoLabel}> Items:</Text>
-                    <Text style={styles.infoValue}>
+                    <Text style={[styles.infoValue, { color: theme.textMain }]}>
                       {order.products.map((p) => `${p.name} (x${p.qty})`).join(', ')}
                     </Text>
                   </View>
@@ -135,29 +139,29 @@ export default function ListaPedidos({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7f9' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   searchSection: { paddingHorizontal: 16, paddingTop: 16 },
-  searchInput: { backgroundColor: '#ffffff', borderRadius: 12, height: 48, paddingHorizontal: 16, fontSize: 15, borderWidth: 1, borderColor: '#e5e5ea' },
+  searchInput: { borderRadius: 12, height: 48, paddingHorizontal: 16, fontSize: 15, borderWidth: 1 },
   tabsWrapper: { paddingVertical: 14 },
   tabsScroll: { paddingHorizontal: 16 },
-  tabBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#e5e5ea', backgroundColor: '#ffffff', marginRight: 10 },
+  tabBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, marginRight: 10 },
   tabBtnActive: { backgroundColor: '#2D1E16', borderColor: '#2D1E16' },
-  tabText: { fontSize: 14, color: '#8E8E93', fontWeight: '600' },
+  tabText: { fontSize: 14, fontWeight: '600' },
   tabTextActive: { color: '#ffffff' },
   listContent: { paddingHorizontal: 16, paddingBottom: 30 },
-  orderCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f2f2f7', paddingBottom: 12 },
-  orderId: { fontSize: 18, fontWeight: 'bold', color: '#2D1E16' },
+  orderCard: { borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2, borderWidth: 1 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, paddingBottom: 12 },
+  orderId: { fontSize: 18, fontWeight: 'bold' },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   statusText: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
   cardBody: { paddingVertical: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   infoLabel: { fontSize: 14, fontWeight: '600', color: '#8D6E63' },
-  infoValue: { flex: 1, fontSize: 14, color: '#2D1E16', marginLeft: 4 },
+  infoValue: { flex: 1, fontSize: 14, marginLeft: 4 },
   cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   cardArrow: { color: '#8D6E63', fontSize: 13, fontWeight: '700', marginRight: 4 },
-  emptyText: { textAlign: 'center', color: '#8E8E93', marginTop: 40, fontSize: 16 },
+  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 16 },
 });

@@ -210,8 +210,8 @@ export default function ClienteMesero({ onBack }) {
   // --- NOTIFICATION LOG STATE ---
   const [notificationHistory, setNotificationHistory] = useState([
     { id: '1', type: 'system', message: 'Turno de mesero iniciado con éxito.', time: '10:00 AM', read: true },
-    { id: '2', type: 'kitchen', message: 'Comanda #17 (Mesa 2) está LISTA en barra.', time: '10:15 AM', read: false },
-    { id: '3', type: 'kitchen', message: 'Comanda #16 (Mesa 4) cambió a Preparación.', time: '10:40 AM', read: false }
+    { id: '2', type: 'kitchen', message: 'Pedido #17 (Mesa 2) está LISTO en barra.', time: '10:15 AM', read: false },
+    { id: '3', type: 'kitchen', message: 'Pedido #16 (Mesa 4) cambió a Preparación.', time: '10:40 AM', read: false }
   ]);
 
   // --- ACTIONS SLIDE BANNER ---
@@ -417,7 +417,7 @@ export default function ClienteMesero({ onBack }) {
   const handleConfirmOrder = () => {
     const cart = tableCarts[activeTableId] || [];
     if (cart.length === 0) {
-      Alert.alert('Comanda Vacía', 'No hay productos para enviar a cocina.');
+      Alert.alert('Pedido Vacío', 'No hay productos para enviar a cocina.');
       return;
     }
 
@@ -601,6 +601,7 @@ export default function ClienteMesero({ onBack }) {
   // HSL Liquid Glass Palette
   const colors = {
     primary: '#2D1E16',
+    primaryText: darkMode ? '#ffffff' : '#2D1E16',
     secondary: '#8D6E63',
     accent: '#D7CCC8',
     bg: darkMode ? '#121212' : '#F9F8F6',
@@ -636,11 +637,11 @@ export default function ClienteMesero({ onBack }) {
                 else if (currentScreen === 'statistics' || currentScreen === 'notifications_history') setCurrentScreen('config');
                 else setCurrentScreen('mesas');
               }}>
-                <Ionicons name="arrow-back" size={20} color={colors.textMain} />
+                <Ionicons name="arrow-back" size={20} color="#ffffff" />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={styles.menuButton} onPress={() => toggleSidebar(true)}>
-                <Ionicons name="menu" size={22} color={colors.textMain} />
+                <Ionicons name="menu" size={22} color="#ffffff" />
               </TouchableOpacity>
             )}
             <Text style={[styles.headerTitle, { color: '#ffffff' }]}>{title}</Text>
@@ -656,20 +657,20 @@ export default function ClienteMesero({ onBack }) {
     return (
       <View style={[styles.footerContainer, { backgroundColor: colors.cardBg, borderTopColor: colors.border }]}>
         <TouchableOpacity style={styles.footerTab} onPress={() => setCurrentScreen('mesas')}>
-          <Ionicons name="home" size={20} color={activeTab === 'mesas' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.footerLabel, { color: activeTab === 'mesas' ? colors.primary : colors.textMuted }]}>Inicio</Text>
+          <Ionicons name="home" size={20} color={activeTab === 'mesas' ? colors.primaryText : colors.textMuted} />
+          <Text style={[styles.footerLabel, { color: activeTab === 'mesas' ? colors.primaryText : colors.textMuted }]}>Inicio</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerTab} onPress={() => setCurrentScreen('menu')}>
-          <Ionicons name="restaurant" size={20} color={activeTab === 'menu' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.footerLabel, { color: activeTab === 'menu' ? colors.primary : colors.textMuted }]}>Menú</Text>
+          <Ionicons name="restaurant" size={20} color={activeTab === 'menu' ? colors.primaryText : colors.textMuted} />
+          <Text style={[styles.footerLabel, { color: activeTab === 'menu' ? colors.primaryText : colors.textMuted }]}>Menú</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerTab} onPress={() => setCurrentScreen('tracking')}>
-          <Ionicons name="cube" size={20} color={activeTab === 'tracking' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.footerLabel, { color: activeTab === 'tracking' ? colors.primary : colors.textMuted }]}>Pedidos</Text>
+          <Ionicons name="cube" size={20} color={activeTab === 'tracking' ? colors.primaryText : colors.textMuted} />
+          <Text style={[styles.footerLabel, { color: activeTab === 'tracking' ? colors.primaryText : colors.textMuted }]}>Pedidos</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerTab} onPress={() => setCurrentScreen('config')}>
-          <Ionicons name="settings" size={20} color={activeTab === 'config' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.footerLabel, { color: activeTab === 'config' ? colors.primary : colors.textMuted }]}>Ajustes</Text>
+          <Ionicons name="settings" size={20} color={activeTab === 'config' ? colors.primaryText : colors.textMuted} />
+          <Text style={[styles.footerLabel, { color: activeTab === 'config' ? colors.primaryText : colors.textMuted }]}>Ajustes</Text>
         </TouchableOpacity>
       </View>
     );
@@ -693,10 +694,10 @@ export default function ClienteMesero({ onBack }) {
           <FadeInView style={{ flex: 1 }}>
             <ScrollView contentContainerStyle={styles.authScroll}>
               <View style={[styles.logoContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                <Ionicons name="cafe" size={40} color={colors.primary} />
+                <Ionicons name="cafe" size={40} color={colors.primaryText} />
               </View>
-              <Text style={[styles.appTitleText, { color: colors.primary }]}>CoffeeFlow Pro</Text>
-              <Text style={[styles.appSubtitleText, { color: colors.textMuted }]}>Modulo de Comandas & Surtido</Text>
+              <Text style={[styles.appTitleText, { color: colors.primaryText }]}>CoffeeFlow Pro</Text>
+              <Text style={[styles.appSubtitleText, { color: colors.textMuted }]}>Modulo de Pedidos & Surtido</Text>
 
               <View style={styles.formCard}>
                 <View style={styles.formGroup}>
@@ -1081,10 +1082,10 @@ export default function ClienteMesero({ onBack }) {
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={[styles.productName, { color: colors.textMain }]}>{product.name}</Text>
                           <View style={[styles.tagBadge, { backgroundColor: colors.accent + '33' }]}>
-                            <Text style={[styles.tagBadgeText, { color: colors.primary }]}>{product.tag}</Text>
+                            <Text style={[styles.tagBadgeText, { color: colors.primaryText }]}>{product.tag}</Text>
                           </View>
                         </View>
-                        <Text style={[styles.productPrice, { color: colors.primary }]}>${product.price} MXN</Text>
+                        <Text style={[styles.productPrice, { color: colors.primaryText }]}>${product.price} MXN</Text>
                         <Text style={[styles.productDescription, { color: colors.textMuted }]} numberOfLines={2}>
                           {product.ingredients}
                         </Text>
@@ -1098,7 +1099,7 @@ export default function ClienteMesero({ onBack }) {
                         style={[styles.btn, { flex: 1.3, backgroundColor: colors.cardBg, borderColor: colors.border, borderWidth: 1, marginTop: 0 }]}
                         onPress={() => handleCustomizeProduct(product)}
                       >
-                        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13, textAlign: 'center' }}>Personalizar</Text>
+                        <Text style={{ color: colors.primaryText, fontWeight: '600', fontSize: 13, textAlign: 'center' }}>Personalizar</Text>
                       </ScaleInButton>
 
                       {getProductQtyInCart(product.id) > 0 ? (
@@ -1107,14 +1108,14 @@ export default function ClienteMesero({ onBack }) {
                             style={{ padding: 10, flex: 1, alignItems: 'center' }}
                             onPress={() => handleQuickRemove(product)}
                           >
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>-</Text>
+                            <Text style={{ color: colors.primaryText, fontWeight: 'bold', fontSize: 16 }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ color: colors.textMain, fontWeight: 'bold', fontSize: 14 }}>{getProductQtyInCart(product.id)}</Text>
                           <TouchableOpacity
                             style={{ padding: 10, flex: 1, alignItems: 'center' }}
                             onPress={() => handleQuickAdd(product)}
                           >
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>+</Text>
+                            <Text style={{ color: colors.primaryText, fontWeight: 'bold', fontSize: 16 }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       ) : (
@@ -1138,7 +1139,7 @@ export default function ClienteMesero({ onBack }) {
                     <Text style={{ color: colors.textMain, fontWeight: 'bold', fontSize: 14 }}>
                       Carrito ({currentCartList.reduce((acc, item) => acc + item.qty, 0)} items)
                     </Text>
-                    <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>
+                    <Text style={{ color: colors.primaryText, fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>
                       Total: ${cartSubtotal} MXN
                     </Text>
                   </View>
@@ -1175,7 +1176,7 @@ export default function ClienteMesero({ onBack }) {
               <View style={[styles.customizationDetails, { backgroundColor: colors.bg }]}>
                 <View style={styles.customizationHeader}>
                   <Text style={[styles.customizationTitle, { color: colors.textMain }]}>{customizingProduct.name}</Text>
-                  <Text style={[styles.customizationPriceText, { color: colors.primary }]}>+${customizingProduct.price}</Text>
+                  <Text style={[styles.customizationPriceText, { color: colors.primaryText }]}>+${customizingProduct.price}</Text>
                 </View>
                 <Text style={[styles.customizationDesc, { color: colors.textMuted }]}>{customizingProduct.ingredients}</Text>
 
@@ -1195,7 +1196,7 @@ export default function ClienteMesero({ onBack }) {
                         {milk}
                       </Text>
                       {milk === 'Avena' && (
-                        <Text style={{ fontSize: 10, color: selectedMilk === milk ? '#ffffff' : colors.primary }}>
+                        <Text style={{ fontSize: 10, color: selectedMilk === milk ? '#ffffff' : colors.primaryText }}>
                           +$15 MXN
                         </Text>
                       )}
@@ -1210,7 +1211,7 @@ export default function ClienteMesero({ onBack }) {
                     onPress={() => setExtraShot(!extraShot)}
                   >
                     <Text style={[styles.optionLabel, { color: colors.textMain }]}>
-                      Extra Shot <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>+$12</Text>
+                      Extra Shot <Text style={{ color: colors.primaryText, fontSize: 12, fontWeight: 'bold' }}>+$12</Text>
                     </Text>
                     <View style={[styles.checkboxOutline, { borderColor: colors.border }, extraShot && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
                       {extraShot && <Ionicons name="checkmark" size={14} color="#ffffff" />}
@@ -1222,7 +1223,7 @@ export default function ClienteMesero({ onBack }) {
                     onPress={() => setSyrupVanilla(!syrupVanilla)}
                   >
                     <Text style={[styles.optionLabel, { color: colors.textMain }]}>
-                      Sirope Vainilla <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>+$10</Text>
+                      Sirope Vainilla <Text style={{ color: colors.primaryText, fontSize: 12, fontWeight: 'bold' }}>+$10</Text>
                     </Text>
                     <View style={[styles.checkboxOutline, { borderColor: colors.border }, syrupVanilla && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
                       {syrupVanilla && <Ionicons name="checkmark" size={14} color="#ffffff" />}
@@ -1249,14 +1250,14 @@ export default function ClienteMesero({ onBack }) {
                   style={[styles.stepperBtn, { backgroundColor: colors.bg }]}
                   onPress={() => setCustomQty(Math.max(1, customQty - 1))}
                 >
-                  <Text style={[styles.stepperBtnText, { color: colors.primary }]}>-</Text>
+                  <Text style={[styles.stepperBtnText, { color: colors.primaryText }]}>-</Text>
                 </TouchableOpacity>
                 <Text style={[styles.stepperValue, { color: colors.textMain }]}>{customQty}</Text>
                 <TouchableOpacity
                   style={[styles.stepperBtn, { backgroundColor: colors.bg }]}
                   onPress={() => setCustomQty(customQty + 1)}
                 >
-                  <Text style={[styles.stepperBtnText, { color: colors.primary }]}>+</Text>
+                  <Text style={[styles.stepperBtnText, { color: colors.primaryText }]}>+</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1270,7 +1271,7 @@ export default function ClienteMesero({ onBack }) {
         {/* --- SCREEN: ORDER SUMMARY --- */}
         {currentScreen === 'summary' && (
           <FadeInView style={{ flex: 1 }}>
-            {renderHeader('Comanda / Mesa ' + activeTableId, `${partyCount} personas`, true)}
+            {renderHeader('Pedido / Mesa ' + activeTableId, `${partyCount} personas`, true)}
 
             <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
               {/* STEP 4 GUIDED BANNER */}
@@ -1282,12 +1283,12 @@ export default function ClienteMesero({ onBack }) {
 
               <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <Text style={[styles.cardHeaderTitle, { color: colors.textMain, borderBottomColor: colors.border }]}>
-                  Productos Comanda ({currentCartList.reduce((acc, item) => acc + item.qty, 0)})
+                  Productos del Pedido ({currentCartList.reduce((acc, item) => acc + item.qty, 0)})
                 </Text>
 
                 {currentCartList.length === 0 ? (
                   <View style={{ paddingVertical: 32 }}>
-                    <Text style={[styles.emptyCartText, { color: colors.textMuted }]}>La comanda está vacía.</Text>
+                    <Text style={[styles.emptyCartText, { color: colors.textMuted }]}>El pedido está vacío.</Text>
                     <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary, alignSelf: 'center', width: '60%' }]} onPress={() => setCurrentScreen('menu')}>
                       <Text style={styles.btnText}>Ir al Menú</Text>
                     </TouchableOpacity>
@@ -1304,7 +1305,7 @@ export default function ClienteMesero({ onBack }) {
                         </Text>
 
                         <View style={styles.cartPriceStepper}>
-                          <Text style={[styles.cartPriceText, { color: colors.primary }]}>${item.calculatedPrice.toFixed(2)}</Text>
+                          <Text style={[styles.cartPriceText, { color: colors.primaryText }]}>${item.calculatedPrice.toFixed(2)}</Text>
                           <View style={styles.stepperActions}>
                             <TouchableOpacity
                               style={[styles.stepperBtnSmall, { backgroundColor: colors.bg }]}
@@ -1323,7 +1324,7 @@ export default function ClienteMesero({ onBack }) {
                                 });
                               }}
                             >
-                              <Text style={{ fontSize: 14, fontWeight: 'bold' }}>-</Text>
+                              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.primaryText }}>-</Text>
                             </TouchableOpacity>
                             <Text style={[styles.stepperValText, { color: colors.textMain }]}>{item.qty}</Text>
                             <TouchableOpacity
@@ -1339,7 +1340,7 @@ export default function ClienteMesero({ onBack }) {
                                 });
                               }}
                             >
-                              <Text style={{ fontSize: 14, fontWeight: 'bold' }}>+</Text>
+                              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.primaryText }}>+</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -1404,8 +1405,8 @@ export default function ClienteMesero({ onBack }) {
                       <Text style={{ color: colors.textMain }}>${cartTax.toFixed(2)}</Text>
                     </View>
                     <View style={[styles.receiptRowTotal, { borderTopColor: colors.border }]}>
-                      <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Total Comanda</Text>
-                      <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 18 }}>${cartTotal.toFixed(2)} MXN</Text>
+                      <Text style={{ color: colors.primaryText, fontWeight: 'bold', fontSize: 16 }}>Total Pedido</Text>
+                      <Text style={{ color: colors.primaryText, fontWeight: 'bold', fontSize: 18 }}>${cartTotal.toFixed(2)} MXN</Text>
                     </View>
                   </View>
 
@@ -1429,7 +1430,7 @@ export default function ClienteMesero({ onBack }) {
         {/* --- SCREEN: ORDERS LIST / TRACKING --- */}
         {currentScreen === 'tracking' && (
           <FadeInView style={{ flex: 1 }}>
-            {renderHeader('Mis Comandas', 'Seguimiento de pedidos activos', true)}
+            {renderHeader('Mis Pedidos', 'Seguimiento de pedidos activos', true)}
 
             <View style={styles.contentContainer}>
               <View style={{ height: 42, marginBottom: 12 }}>
@@ -1461,7 +1462,7 @@ export default function ClienteMesero({ onBack }) {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {filteredOrders.length === 0 ? (
                   <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border, padding: 24, alignItems: 'center' }]}>
-                    <Text style={{ color: colors.textMuted, textAlign: 'center' }}>No hay comandas activas en este estado.</Text>
+                    <Text style={{ color: colors.textMuted, textAlign: 'center' }}>No hay pedidos activos en este estado.</Text>
                   </View>
                 ) : (
                   filteredOrders.map(order => {
@@ -1497,7 +1498,7 @@ export default function ClienteMesero({ onBack }) {
                           {order.tableName} • {order.itemsCount} artículo(s)
                         </Text>
                         <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 4 }}>
-                          Comanda registrada a las {order.timeStamp}
+                          Pedido registrado a las {order.timeStamp}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -1569,7 +1570,7 @@ export default function ClienteMesero({ onBack }) {
                           <View style={[styles.timelineDot, { backgroundColor: colors.success, borderColor: colors.success }]} />
                           <View style={styles.timelineContent}>
                             <Text style={[styles.timelineTitle, { color: colors.textMain }]}>Pedido recibido en Cocina</Text>
-                            <Text style={[styles.timelineSubtitle, { color: colors.textMuted }]}>Comanda capturada y en fila.</Text>
+                            <Text style={[styles.timelineSubtitle, { color: colors.textMuted }]}>Pedido capturado y en fila.</Text>
                           </View>
                         </View>
 
@@ -1593,7 +1594,7 @@ export default function ClienteMesero({ onBack }) {
                           ]} />
                           <View style={styles.timelineContent}>
                             <Text style={[styles.timelineTitle, { color: (trackingOrder.status === 'ready' || trackingOrder.status === 'delivered') ? colors.success : colors.textMuted }]}>Listo en Barra (Para servir)</Text>
-                            <Text style={[styles.timelineSubtitle, { color: colors.textMuted }]}>Comanda terminada y lista para entrega.</Text>
+                            <Text style={[styles.timelineSubtitle, { color: colors.textMuted }]}>Pedido terminado y listo para entrega.</Text>
                           </View>
                         </View>
                       </View>
@@ -1634,7 +1635,7 @@ export default function ClienteMesero({ onBack }) {
                       disabled={trackingOrder.status !== 'ready'}
                       onPress={() => {
                         setOrders(prev => prev.map(o => o.id === selectedTrackingOrderId ? { ...o, status: 'delivered' } : o));
-                        Alert.alert('Comanda Entregada', 'Se ha marcado el pedido como entregado en mesa.');
+                        Alert.alert('Pedido Entregado', 'Se ha marcado el pedido como entregado en mesa.');
                       }}
                     >
                       <Text style={[styles.btnText, trackingOrder.status !== 'ready' && { color: colors.textMuted }]}>
@@ -1658,7 +1659,7 @@ export default function ClienteMesero({ onBack }) {
                 <Text style={{ color: colors.textMuted, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8 }}>
                   Total Consumo + IVA
                 </Text>
-                <Text style={{ color: colors.primary, fontSize: 42, fontWeight: 'bold', marginVertical: 8 }}>
+                <Text style={{ color: colors.primaryText, fontSize: 42, fontWeight: 'bold', marginVertical: 8 }}>
                   ${billingSubtotal.toFixed(2)}
                 </Text>
               </View>
@@ -1722,11 +1723,11 @@ export default function ClienteMesero({ onBack }) {
 
               {paymentMethod === 'Dividido' && (
                 <View style={[styles.card, { backgroundColor: colors.accent + '22', borderColor: colors.primary }]}>
-                  <Text style={{ color: colors.primary, fontWeight: 'bold', marginBottom: 4 }}>Información de Pago Dividido</Text>
+                  <Text style={{ color: colors.primaryText, fontWeight: 'bold', marginBottom: 4 }}>Información de Pago Dividido</Text>
                   <Text style={{ color: colors.textMain, fontSize: 13 }}>
                     Divide la cuenta equitativamente entre los comensales de la mesa.
                   </Text>
-                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15, marginTop: 8 }}>
+                  <Text style={{ color: colors.primaryText, fontWeight: '700', fontSize: 15, marginTop: 8 }}>
                     Costo por persona: ${(billingTotalToPay / (billingTable.occupants ? parseInt(billingTable.occupants.split('/')[0]) : 2)).toFixed(2)} MXN
                   </Text>
                 </View>
@@ -1773,11 +1774,11 @@ export default function ClienteMesero({ onBack }) {
                 <Text style={[styles.cardHeaderTitle, { color: colors.textMain, borderBottomColor: colors.border }]}>
                   Resumen de Ventas Acumuladas
                 </Text>
-                <Text style={{ color: colors.primary, fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 }}>
+                <Text style={{ color: colors.primaryText, fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 }}>
                   ${salesTotal.toFixed(2)} MXN
                 </Text>
                 <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center' }}>
-                  Total correspondiente a {completedOrdersCount} comandas finalizadas hoy.
+                  Total correspondiente a {completedOrdersCount} pedidos finalizados hoy.
                 </Text>
               </View>
 
@@ -1946,7 +1947,7 @@ export default function ClienteMesero({ onBack }) {
               </View>
 
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.cardBg, borderColor: colors.border, borderWidth: 1 }]} onPress={() => setCurrentScreen('edit_profile')}>
-                <Text style={{ color: colors.primary, fontWeight: '600', textAlign: 'center' }}>Editar Datos Personales</Text>
+                <Text style={{ color: colors.primaryText, fontWeight: '600', textAlign: 'center' }}>Editar Datos Personales</Text>
               </TouchableOpacity>
             </ScrollView>
 
@@ -2106,7 +2107,7 @@ export default function ClienteMesero({ onBack }) {
 
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 12 }}>
                     <View style={[styles.tagBadge, { backgroundColor: colors.primary + '15' }]}>
-                      <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+                      <Text style={{ color: colors.primaryText, fontSize: 12, fontWeight: '700' }}>
                         Zona: {selectedTableForDrawer.zone}
                       </Text>
                     </View>
@@ -2146,7 +2147,7 @@ export default function ClienteMesero({ onBack }) {
                         style={[styles.btn, { backgroundColor: colors.primary }]}
                         onPress={() => handleOpenMesa(selectedTableForDrawer)}
                       >
-                        <Text style={styles.btnText}>Recibir Cliente e Iniciar Comanda</Text>
+                        <Text style={styles.btnText}>Recibir Cliente e Iniciar Pedido</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -2168,8 +2169,8 @@ export default function ClienteMesero({ onBack }) {
 
                       <View style={[styles.card, { backgroundColor: colors.primary + '10', borderColor: colors.border, marginVertical: 12, padding: 12 }]}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Consumo acumulado:</Text>
-                          <Text style={{ color: colors.primary, fontWeight: 'bold' }}>${selectedTableForDrawer.totalAccount?.toFixed(2)} MXN</Text>
+                          <Text style={{ color: colors.primaryText, fontWeight: 'bold' }}>Consumo acumulado:</Text>
+                          <Text style={{ color: colors.primaryText, fontWeight: 'bold' }}>${selectedTableForDrawer.totalAccount?.toFixed(2)} MXN</Text>
                         </View>
                       </View>
 

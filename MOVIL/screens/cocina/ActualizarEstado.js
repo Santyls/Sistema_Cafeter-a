@@ -9,18 +9,21 @@ import {
   TextInput,
 } from 'react-native';
 import Icon from '../shared/Icon';
+import getTheme from '../shared/theme';
 
 export default function ActualizarEstado({
   navigate,
   activeOrderId,
   orders,
   onUpdateStatus,
+  darkMode,
 }) {
+  const theme = getTheme(darkMode);
   const order = orders.find((o) => o.id === activeOrderId);
 
   if (!order) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
         <Text style={styles.errorText}>No se encontro el pedido.</Text>
       </SafeAreaView>
     );
@@ -47,7 +50,7 @@ export default function ActualizarEstado({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigate('detalle_pedido')}>
           <Icon name="back" size={22} color="#ffffff" />
@@ -57,29 +60,29 @@ export default function ActualizarEstado({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.orderSummaryCard}>
-          <Text style={styles.summaryTitle}>Pedido #{order.id}</Text>
+        <View style={[styles.orderSummaryCard, { backgroundColor: theme.cardBg }]}>
+          <Text style={[styles.summaryTitle, { color: theme.textMain }]}>Pedido #{order.id}</Text>
           <Text style={styles.summaryTable}>{order.table}</Text>
-          <Text style={styles.summaryTime}>Hora comanda: {order.time}</Text>
+          <Text style={[styles.summaryTime, { color: theme.textMuted }]}>Hora pedido: {order.time}</Text>
         </View>
 
         <Text style={styles.sectionTitle}>Cambiar Estado</Text>
-        <View style={styles.optionsCard}>
+        <View style={[styles.optionsCard, { backgroundColor: theme.cardBg }]}>
           {statusOptions.map((opt) => {
             const isSelected = selectedStatus === opt.value;
             return (
               <TouchableOpacity
                 key={opt.value}
-                style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                style={[styles.optionRow, isSelected && { backgroundColor: theme.bg }]}
                 onPress={() => setSelectedStatus(opt.value)}
               >
                 <View style={styles.optionLeft}>
                   <View style={[styles.statusDot, { backgroundColor: opt.color }]} />
-                  <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                  <Text style={[styles.optionLabel, { color: theme.textMain }, isSelected && styles.optionLabelSelected]}>
                     {opt.label}
                   </Text>
                 </View>
-                <View style={[styles.radioOuter, isSelected && styles.radioOuterActive]}>
+                <View style={[styles.radioOuter, { borderColor: theme.borderStrong }, isSelected && styles.radioOuterActive]}>
                   {isSelected && <View style={styles.radioInner} />}
                 </View>
               </TouchableOpacity>
@@ -89,9 +92,9 @@ export default function ActualizarEstado({
 
         <Text style={styles.sectionTitle}>Comentario interno (opcional)</Text>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]}
           placeholder="Ej: Se preparo sin condimentos adicionales..."
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={theme.textMuted}
           multiline
           numberOfLines={4}
           value={comment}
@@ -99,13 +102,13 @@ export default function ActualizarEstado({
         />
 
         <Text style={styles.sectionTitle}>Historial de Cambios</Text>
-        <View style={styles.historyCard}>
+        <View style={[styles.historyCard, { backgroundColor: theme.cardBg }]}>
           {order.history && order.history.map((hist, idx) => (
             <View key={idx} style={styles.timelineRow}>
               <View style={styles.timelineDot} />
               <View style={styles.timelineContent}>
-                <Text style={styles.timelineTime}>{hist.time}</Text>
-                <Text style={styles.timelineText}>
+                <Text style={[styles.timelineTime, { color: theme.textMuted }]}>{hist.time}</Text>
+                <Text style={[styles.timelineText, { color: theme.textMain }]}>
                   Estado cambiado a <Text style={{fontWeight: 'bold'}}>{hist.status}</Text> por {hist.user}
                 </Text>
                 {hist.comment ? <Text style={styles.timelineComment}>"{hist.comment}"</Text> : null}
@@ -123,33 +126,32 @@ export default function ActualizarEstado({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7f9' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20 },
-  orderSummaryCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
-  summaryTitle: { fontSize: 20, fontWeight: 'bold', color: '#2D1E16' },
+  orderSummaryCard: { borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
+  summaryTitle: { fontSize: 20, fontWeight: 'bold' },
   summaryTable: { fontSize: 16, color: '#8D6E63', fontWeight: '600', marginTop: 4 },
-  summaryTime: { fontSize: 13, color: '#8E8E93', marginTop: 4 },
+  summaryTime: { fontSize: 13, marginTop: 4 },
   sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#8D6E63', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
-  optionsCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 8, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
+  optionsCard: { borderRadius: 20, padding: 8, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12 },
-  optionRowSelected: { backgroundColor: '#F9F8F6' },
   optionLeft: { flexDirection: 'row', alignItems: 'center' },
   statusDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  optionLabel: { fontSize: 16, color: '#2D1E16', fontWeight: '500' },
-  optionLabelSelected: { fontWeight: '700', color: '#2D1E16' },
-  radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#e5e5ea', justifyContent: 'center', alignItems: 'center' },
+  optionLabel: { fontSize: 16, fontWeight: '500' },
+  optionLabelSelected: { fontWeight: '700' },
+  radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioOuterActive: { borderColor: '#2D1E16' },
   radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#2D1E16' },
-  textInput: { backgroundColor: '#ffffff', borderRadius: 20, borderWidth: 1, borderColor: '#e5e5ea', padding: 16, height: 100, fontSize: 15, color: '#2D1E16', textAlignVertical: 'top', marginBottom: 20 },
-  historyCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 20, marginBottom: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
+  textInput: { borderRadius: 20, borderWidth: 1, padding: 16, height: 100, fontSize: 15, textAlignVertical: 'top', marginBottom: 20 },
+  historyCard: { borderRadius: 20, padding: 20, marginBottom: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   timelineRow: { flexDirection: 'row', marginBottom: 16 },
   timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#8D6E63', marginTop: 4, marginRight: 16 },
   timelineContent: { flex: 1 },
-  timelineTime: { fontSize: 12, color: '#8E8E93' },
-  timelineText: { fontSize: 14, color: '#2D1E16', marginTop: 2 },
+  timelineTime: { fontSize: 12 },
+  timelineText: { fontSize: 14, marginTop: 2 },
   timelineComment: { fontSize: 13, color: '#8D6E63', fontStyle: 'italic', marginTop: 4 },
   saveBtn: { backgroundColor: '#2D1E16', borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', marginBottom: 30 },
   saveBtnText: { color: '#ffffff', fontSize: 18, fontWeight: '700' },

@@ -8,12 +8,14 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Icon from '../shared/Icon';
+import getTheme from '../shared/theme';
 
-export default function PedidosListos({ navigate, toggleSidebar, orders }) {
+export default function PedidosListos({ navigate, toggleSidebar, orders, darkMode }) {
+  const theme = getTheme(darkMode);
   const readyOrders = orders.filter((o) => o.status === 'listo');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -26,21 +28,21 @@ export default function PedidosListos({ navigate, toggleSidebar, orders }) {
         {readyOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon name="check-circle" size={60} color="#34C759" />
-            <Text style={styles.emptyText}>No hay pedidos listos para entregar.</Text>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>No hay pedidos listos para entregar.</Text>
           </View>
         ) : (
           readyOrders.map((order) => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.cardHeader}>
+            <View key={order.id} style={[styles.orderCard, { backgroundColor: theme.cardBg }]}>
+              <View style={[styles.cardHeader, { borderBottomColor: theme.border }]}>
                 <View>
-                  <Text style={styles.orderId}>Pedido #{order.id}</Text>
+                  <Text style={[styles.orderId, { color: theme.textMain }]}>Pedido #{order.id}</Text>
                   <Text style={styles.tableText}>{order.table}</Text>
                 </View>
-                <Text style={styles.timeText}>{order.time}</Text>
+                <Text style={[styles.timeText, { color: theme.textMuted }]}>{order.time}</Text>
               </View>
               <View style={styles.productsBox}>
                 {order.products.map((item, idx) => (
-                  <Text key={idx} style={styles.productItem}>
+                  <Text key={idx} style={[styles.productItem, { color: theme.textMain }]}>
                     {item.name} (x{item.qty})
                   </Text>
                 ))}
@@ -65,20 +67,20 @@ export default function PedidosListos({ navigate, toggleSidebar, orders }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7f9' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20, paddingBottom: 100 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
-  emptyText: { fontSize: 16, color: '#8E8E93', textAlign: 'center', marginTop: 20 },
-  orderCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 1, borderBottomColor: '#f2f2f7', paddingBottom: 12, marginBottom: 12 },
-  orderId: { fontSize: 18, fontWeight: 'bold', color: '#2D1E16' },
+  emptyText: { fontSize: 16, textAlign: 'center', marginTop: 20 },
+  orderCard: { borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 1, paddingBottom: 12, marginBottom: 12 },
+  orderId: { fontSize: 18, fontWeight: 'bold' },
   tableText: { fontSize: 14, color: '#8D6E63', fontWeight: '600', marginTop: 2 },
-  timeText: { fontSize: 13, color: '#8E8E93' },
+  timeText: { fontSize: 13 },
   productsBox: { marginBottom: 14 },
-  productItem: { fontSize: 15, color: '#2D1E16', marginBottom: 4, fontWeight: '500' },
+  productItem: { fontSize: 15, marginBottom: 4, fontWeight: '500' },
   notificationBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   notificationText: { fontSize: 13, color: '#2e7d32', fontWeight: '600' },
   bottomBanner: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#2D1E16', padding: 20, flexDirection: 'row', alignItems: 'center', borderTopLeftRadius: 20, borderTopRightRadius: 20 },

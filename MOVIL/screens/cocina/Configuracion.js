@@ -13,13 +13,14 @@ import {
   StatusBar as RNStatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
+import getTheme from '../shared/theme';
 
-export default function Configuracion({ navigate, toggleSidebar, currentUser, onLogout }) {
+export default function Configuracion({ navigate, toggleSidebar, currentUser, onLogout, darkMode, setDarkMode }) {
+  const theme = getTheme(darkMode);
   const [subScreen, setSubScreen] = useState('main');
   const [clockedIn, setClockedIn] = useState(true);
   const [shiftTime] = useState('04:12 hrs');
   const [notificationsOn, setNotificationsOn] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [sounds, setSounds] = useState(true);
   const [editName, setEditName] = useState(currentUser || 'Juan Cocinero');
   const [editEmail, setEditEmail] = useState('cocina.flow@coffeeflow.com');
@@ -58,19 +59,19 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
   if (subScreen === 'statistics') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.appContainer}>
+        <View style={[styles.appContainer, { backgroundColor: theme.bg }]}>
           {renderHeader('Mis Estadisticas', 'Rendimiento en el turno', true)}
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-            <View style={styles.card}>
-              <Text style={styles.cardHeaderTitle}>Resumen de Ventas Acumuladas</Text>
+            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Text style={[styles.cardHeaderTitle, { color: theme.textMain, borderBottomColor: theme.border }]}>Resumen de Ventas Acumuladas</Text>
               <Text style={styles.bigNumber}>${salesTotal.toFixed(2)} MXN</Text>
-              <Text style={styles.mutedCenter}>
+              <Text style={[styles.mutedCenter, { color: theme.textMuted }]}>
                 Total correspondiente a {completedOrdersCount} comandas finalizadas hoy.
               </Text>
             </View>
 
             <Text style={styles.sectionTitle}>Ventas por Hora</Text>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.chartContainer}>
                 {[
                   { hour: '10 AM', val: 120, height: 30 },
@@ -80,23 +81,23 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
                   { hour: '02 PM', val: 150, height: 35 },
                 ].map(bar => (
                   <View key={bar.hour} style={styles.chartCol}>
-                    <Text style={styles.chartLabel}>${bar.val}</Text>
+                    <Text style={[styles.chartLabel, { color: theme.textMuted }]}>${bar.val}</Text>
                     <View style={[styles.chartBar, { height: bar.height }]} />
-                    <Text style={styles.chartHour}>{bar.hour}</Text>
+                    <Text style={[styles.chartHour, { color: theme.textMain }]}>{bar.hour}</Text>
                   </View>
                 ))}
               </View>
             </View>
 
             <Text style={styles.sectionTitle}>Metricas de Eficiencia</Text>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.receiptRow}>
-                <Text style={styles.textMuted}>Ticket Promedio</Text>
-                <Text style={styles.textBold}>${(salesTotal / (completedOrdersCount || 1)).toFixed(2)} MXN</Text>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Ticket Promedio</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>${(salesTotal / (completedOrdersCount || 1)).toFixed(2)} MXN</Text>
               </View>
               <View style={styles.receiptRow}>
-                <Text style={styles.textMuted}>Tiempo Promedio Servicio</Text>
-                <Text style={styles.textBold}>14 minutos</Text>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Tiempo Promedio Servicio</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>14 minutos</Text>
               </View>
             </View>
           </ScrollView>
@@ -108,22 +109,22 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
   if (subScreen === 'alerts') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.appContainer}>
+        <View style={[styles.appContainer, { backgroundColor: theme.bg }]}>
           {renderHeader('Centro de Alertas', 'Historial de avisos', true)}
           <View style={styles.contentContainer}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {notificationHistory.map((item) => (
                 <View
                   key={item.id}
-                  style={[styles.card, !item.read && { borderLeftWidth: 4, borderLeftColor: '#5BC0DE' }]}
+                  style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }, !item.read && { borderLeftWidth: 4, borderLeftColor: '#5BC0DE' }]}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Text style={{ fontSize: 12, color: '#8D6E63', fontWeight: 'bold' }}>
                       {item.type === 'kitchen' ? 'Cocina' : 'Sistema'}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#8E8E93' }}>{item.time}</Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted }}>{item.time}</Text>
                   </View>
-                  <Text style={{ color: '#1C1C1E', fontSize: 13 }}>{item.message}</Text>
+                  <Text style={{ color: theme.textMain, fontSize: 13 }}>{item.message}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -139,7 +140,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
   if (subScreen === 'edit_profile') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.appContainer}>
+        <View style={[styles.appContainer, { backgroundColor: theme.bg }]}>
           {renderHeader('Editar Perfil', 'Configuracion de datos', true)}
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
             <View style={{ alignItems: 'center', marginVertical: 20 }}>
@@ -155,27 +156,27 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
 
             <Text style={styles.sectionTitle}>Datos Personales</Text>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Rol asignado</Text>
+              <Text style={[styles.label, { color: theme.textMuted }]}>Rol asignado</Text>
               <TextInput style={[styles.input, styles.inputDisabled]} value="Cocinero" editable={false} />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Nombre completo</Text>
-              <TextInput style={styles.input} value={editName} onChangeText={setEditName} />
+              <Text style={[styles.label, { color: theme.textMuted }]}>Nombre completo</Text>
+              <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editName} onChangeText={setEditName} />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Correo electronico</Text>
-              <TextInput style={styles.input} value={editEmail} onChangeText={setEditEmail} keyboardType="email-address" />
+              <Text style={[styles.label, { color: theme.textMuted }]}>Correo electronico</Text>
+              <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editEmail} onChangeText={setEditEmail} keyboardType="email-address" />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Numero de telefono</Text>
-              <TextInput style={styles.input} value={editPhone} onChangeText={setEditPhone} keyboardType="phone-pad" />
+              <Text style={[styles.label, { color: theme.textMuted }]}>Numero de telefono</Text>
+              <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editPhone} onChangeText={setEditPhone} keyboardType="phone-pad" />
             </View>
 
             <TouchableOpacity style={styles.btn} onPress={() => { Alert.alert('Guardado', 'Datos actualizados.'); setSubScreen('main'); }}>
               <Text style={styles.btnText}>Guardar cambios</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btnOutlineDanger} onPress={onLogout}>
+            <TouchableOpacity style={[styles.btnOutlineDanger, { backgroundColor: theme.cardBg }]} onPress={onLogout}>
               <Text style={{ color: '#D9534F', fontWeight: '600', textAlign: 'center' }}>Cerrar Sesion</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -186,18 +187,18 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.appContainer}>
+      <View style={[styles.appContainer, { backgroundColor: theme.bg }]}>
         {renderHeader('Configuracion', 'Informacion del cocinero y turno')}
 
         <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-          <View style={[styles.card, { alignItems: 'center' }]}>
+          <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border, alignItems: 'center' }]}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {currentUser ? currentUser.substring(0, 2).toUpperCase() : 'CO'}
               </Text>
             </View>
-            <Text style={styles.waiterName}>{currentUser || 'Cocinero'}</Text>
-            <Text style={styles.waiterRole}>Cocinero</Text>
+            <Text style={[styles.waiterName, { color: theme.textMain }]}>{currentUser || 'Cocinero'}</Text>
+            <Text style={[styles.waiterRole, { color: theme.textMuted }]}>Cocinero</Text>
             <View style={[styles.shiftBadge, { backgroundColor: clockedIn ? '#4E8D7022' : '#D9534F22' }]}>
               <Text style={{ color: clockedIn ? '#4E8D70' : '#D9534F', fontWeight: '600', fontSize: 13 }}>
                 {clockedIn ? '● Turno Activo' : '● Turno Finalizado'}
@@ -206,10 +207,10 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
           </View>
 
           <Text style={styles.sectionTitle}>Panel de Turno</Text>
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.receiptRow}>
-              <Text style={styles.textMuted}>Duracion de Turno</Text>
-              <Text style={styles.textBold}>{shiftTime}</Text>
+              <Text style={[styles.textMuted, { color: theme.textMuted }]}>Duracion de Turno</Text>
+              <Text style={[styles.textBold, { color: theme.textMain }]}>{shiftTime}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -238,23 +239,23 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
           </View>
 
           <Text style={styles.sectionTitle}>Preferencias</Text>
-          <View style={[styles.card, { paddingVertical: 4 }]}>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Notificaciones de Cocina</Text>
+          <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border, paddingVertical: 4 }]}>
+            <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.settingLabel, { color: theme.textMain }]}>Notificaciones de Cocina</Text>
               <Switch value={notificationsOn} onValueChange={setNotificationsOn} trackColor={{ false: '#ccc', true: '#4E8D70' }} />
             </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Modo Oscuro</Text>
+            <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.settingLabel, { color: theme.textMain }]}>Modo Oscuro</Text>
               <Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: '#ccc', true: '#4E8D70' }} />
             </View>
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.settingLabel}>Sonidos del Sistema</Text>
+              <Text style={[styles.settingLabel, { color: theme.textMain }]}>Sonidos del Sistema</Text>
               <Switch value={sounds} onValueChange={setSounds} trackColor={{ false: '#ccc', true: '#4E8D70' }} />
             </View>
           </View>
 
-          <TouchableOpacity style={styles.btnOutline} onPress={() => setSubScreen('edit_profile')}>
-            <Text style={{ color: '#2D1E16', fontWeight: '600', textAlign: 'center' }}>Editar Datos Personales</Text>
+          <TouchableOpacity style={[styles.btnOutline, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setSubScreen('edit_profile')}>
+            <Text style={{ color: theme.textMain, fontWeight: '600', textAlign: 'center' }}>Editar Datos Personales</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2D1E16',
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
-  appContainer: { flex: 1, backgroundColor: '#F9F8F6' },
+  appContainer: { flex: 1 },
   headerContainer: {
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 10 : 16,
@@ -290,41 +291,39 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 13, marginTop: 4, opacity: 0.8, color: '#D7CCC8' },
   contentContainer: { flex: 1, padding: 16 },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(45, 30, 22, 0.08)',
   },
-  cardHeaderTitle: { fontSize: 16, fontWeight: 'bold', color: '#1C1C1E', borderBottomWidth: 1, borderBottomColor: 'rgba(45, 30, 22, 0.08)', paddingBottom: 12, marginBottom: 8, textAlign: 'center' },
+  cardHeaderTitle: { fontSize: 16, fontWeight: 'bold', borderBottomWidth: 1, paddingBottom: 12, marginBottom: 8, textAlign: 'center' },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#8D6E63', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   avatarText: { fontSize: 28, color: '#ffffff', fontWeight: 'bold' },
   avatarCameraBtn: { position: 'absolute', bottom: -2, right: -2, backgroundColor: '#ffffff', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#eee' },
-  waiterName: { fontSize: 20, fontWeight: 'bold', color: '#1C1C1E', marginTop: 4 },
-  waiterRole: { fontSize: 14, color: '#8E8E93', marginTop: 2 },
+  waiterName: { fontSize: 20, fontWeight: 'bold', marginTop: 4 },
+  waiterRole: { fontSize: 14, marginTop: 2 },
   shiftBadge: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, marginTop: 12 },
   sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#8D6E63', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
   receiptRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  textMuted: { color: '#8E8E93' },
-  textBold: { color: '#1C1C1E', fontWeight: 'bold' },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(45, 30, 22, 0.08)' },
-  settingLabel: { fontSize: 15, color: '#1C1C1E', fontWeight: '500' },
+  textMuted: {},
+  textBold: { fontWeight: 'bold' },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1 },
+  settingLabel: { fontSize: 15, fontWeight: '500' },
   smallBtn: { backgroundColor: '#2D1E16', borderRadius: 12, paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },
   smallBtnText: { color: '#ffffff', fontWeight: '600', fontSize: 13, textAlign: 'center' },
   btn: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: '#2D1E16', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2, marginTop: 10 },
   btnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  btnOutline: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(45, 30, 22, 0.08)', borderWidth: 1, marginTop: 10, marginBottom: 40 },
-  btnOutlineDanger: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#D9534F', borderWidth: 1, marginTop: 12, marginBottom: 40 },
+  btnOutline: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, marginTop: 10, marginBottom: 40 },
+  btnOutlineDanger: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderColor: '#D9534F', borderWidth: 1, marginTop: 12, marginBottom: 40 },
   formGroup: { marginBottom: 16, width: '100%' },
-  label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginLeft: 4, color: '#8E8E93' },
+  label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginLeft: 4 },
   input: { width: '100%', padding: 16, borderRadius: 16, borderWidth: 1, fontSize: 15, backgroundColor: 'rgba(255,255,255,0.95)', color: '#1C1C1E', borderColor: 'rgba(45, 30, 22, 0.08)' },
   inputDisabled: { backgroundColor: 'rgba(45, 30, 22, 0.08)', color: '#8E8E93' },
   bigNumber: { color: '#2D1E16', fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 },
-  mutedCenter: { color: '#8E8E93', fontSize: 12, textAlign: 'center' },
+  mutedCenter: { fontSize: 12, textAlign: 'center' },
   chartContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 120, paddingTop: 10 },
   chartCol: { alignItems: 'center' },
   chartBar: { width: 24, backgroundColor: '#2D1E16', borderRadius: 6 },
-  chartLabel: { fontSize: 9, color: '#8E8E93', marginBottom: 4 },
-  chartHour: { fontSize: 10, color: '#1C1C1E', marginTop: 6 },
+  chartLabel: { fontSize: 9, marginBottom: 4 },
+  chartHour: { fontSize: 10, marginTop: 6 },
 });
