@@ -11,9 +11,8 @@ import {
 import Colors from "./styles/colors";
 import Header from "./components/Header";
 import MesaCard from "./components/MesaCard";
-import BottomTab from "./components/BottomTab";
 
-export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa }) {
+export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggleSidebar }) {
   const [busqueda, setBusqueda] = useState("");
 
   const mesasFiltradas = mesas.filter((m) =>
@@ -23,9 +22,9 @@ export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa }) {
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Mesas"
-        subtitle="Gestion de mesas"
-        rightAction={{ icon: "person", onPress: () => cambiarPantalla("perfil") }}
+        title="CoffeeFlow &bull; Panel de Caja"
+        subtitle="Bienvenido, Cajero"
+        rightAction={{ icon: "menu", onPress: toggleSidebar }}
       />
 
       <View style={styles.body}>
@@ -56,8 +55,6 @@ export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa }) {
           showsVerticalScrollIndicator={false}
         />
       </View>
-
-      <BottomTab active="Caja" />
     </SafeAreaView>
   );
 }
@@ -69,6 +66,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
+    marginTop: 16,
     marginBottom: 20,
     fontSize: 16,
     elevation: 3,
