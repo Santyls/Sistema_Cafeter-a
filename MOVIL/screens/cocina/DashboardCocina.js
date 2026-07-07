@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 
@@ -24,123 +26,165 @@ export default function DashboardCocina({
   const unreadNotifications = notifications.filter((n) => !n.read).length;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
-          <Icon name="menu" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>CoffeeFlow</Text>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => navigate('notificaciones')}>
-          <Icon name="bell" size={22} color="#ffffff" />
-          {unreadNotifications > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadNotifications}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.appContainer}>
+        <View style={styles.headerContainer}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerTitleGroup}>
+              <TouchableOpacity style={styles.menuButton} onPress={toggleSidebar}>
+                <Icon name="menu" size={22} color="#ffffff" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>CoffeeFlow &bull; Panel de Cocina</Text>
             </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeTitle}>Hola, {currentUser || 'Cocinero'}!</Text>
-          <Text style={styles.welcomeSubtitle}>Resumen general de la cocina</Text>
+            <TouchableOpacity style={styles.bellBtn} onPress={() => navigate('notificaciones')}>
+              <Icon name="bell" size={20} color="#ffffff" />
+              {unreadNotifications > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadNotifications}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.headerSubtitle}>Bienvenido, {currentUser || 'Cocinero'}</Text>
         </View>
 
-        <View style={styles.grid}>
-          <TouchableOpacity style={styles.card} onPress={() => navigate('pedidos', { filter: 'pendiente' })}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#FFF9DB' }]}>
-              <Icon name="clipboard" size={20} color="#F0AD4E" />
-            </View>
-            <Text style={styles.cardTitle}>Pedidos{"\n"}Pendientes</Text>
-            <Text style={[styles.cardNumber, { color: '#F0AD4E' }]}>{pendingCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => navigate('preparacion')}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#E3F2FD' }]}>
-              <Icon name="flame" size={20} color="#007AFF" />
-            </View>
-            <Text style={styles.cardTitle}>En{"\n"}Preparacion</Text>
-            <Text style={[styles.cardNumber, { color: '#007AFF' }]}>{progressCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => navigate('listos')}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#E8F5E9' }]}>
-              <Icon name="check-circle" size={20} color="#34C759" />
-            </View>
-            <Text style={styles.cardTitle}>Listos{"\n"}para Servir</Text>
-            <Text style={[styles.cardNumber, { color: '#34C759' }]}>{readyCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => navigate('inventario')}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#EFEBE9' }]}>
-              <Icon name="cube" size={20} color="#8D6E63" />
-            </View>
-            <Text style={styles.cardTitle}>Inventario{"\n"}Insumos</Text>
-            <Text style={[styles.cardTextButton, { color: '#8D6E63' }]}>Ver</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => navigate('stock_bajo')}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#FFEBEE' }]}>
-              <Icon name="warning" size={20} color="#FF3B30" />
-            </View>
-            <Text style={styles.cardTitle}>Alertas{"\n"}de Stock</Text>
-            <Text style={[styles.cardNumber, { color: '#FF3B30' }]}>{lowStockCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => navigate('historial')}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#F3E5F5' }]}>
-              <Icon name="receipt" size={20} color="#9b59b6" />
-            </View>
-            <Text style={styles.cardTitle}>Historial{"\n"}de Pedidos</Text>
-            <Text style={[styles.cardTextButton, { color: '#9b59b6' }]}>Ver</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.activitySection}>
-          <Text style={styles.sectionTitle}>Actividad Reciente</Text>
-          <View style={styles.activityList}>
-            <View style={styles.activityItem}>
-              <Icon name="cube" size={20} color="#007AFF" style={{ marginRight: 16 }} />
-              <View style={styles.activityDetails}>
-                <Text style={styles.activityText}>Pedido #1254 recibido</Text>
-                <Text style={styles.activityTime}>Hace 2 min</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.grid}>
+            <TouchableOpacity style={styles.card} onPress={() => navigate('pedidos', { filter: 'pendiente' })}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#FFF9DB' }]}>
+                <Icon name="clipboard" size={20} color="#F0AD4E" />
               </View>
-            </View>
-            <View style={styles.activityItem}>
-              <Icon name="check-circle" size={20} color="#34C759" style={{ marginRight: 16 }} />
-              <View style={styles.activityDetails}>
-                <Text style={styles.activityText}>Pedido #1251 marcado como listo</Text>
-                <Text style={styles.activityTime}>Hace 5 min</Text>
+              <Text style={styles.cardTitle}>Pedidos{"\n"}Pendientes</Text>
+              <Text style={[styles.cardNumber, { color: '#F0AD4E' }]}>{pendingCount}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.card} onPress={() => navigate('preparacion')}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#E3F2FD' }]}>
+                <Icon name="flame" size={20} color="#007AFF" />
               </View>
-            </View>
-            {lowStockCount > 0 && (
+              <Text style={styles.cardTitle}>En{"\n"}Preparacion</Text>
+              <Text style={[styles.cardNumber, { color: '#007AFF' }]}>{progressCount}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.card} onPress={() => navigate('listos')}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#E8F5E9' }]}>
+                <Icon name="check-circle" size={20} color="#34C759" />
+              </View>
+              <Text style={styles.cardTitle}>Listos{"\n"}para Servir</Text>
+              <Text style={[styles.cardNumber, { color: '#34C759' }]}>{readyCount}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.card} onPress={() => navigate('inventario')}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#EFEBE9' }]}>
+                <Icon name="cube" size={20} color="#8D6E63" />
+              </View>
+              <Text style={styles.cardTitle}>Inventario{"\n"}Insumos</Text>
+              <Text style={[styles.cardTextButton, { color: '#8D6E63' }]}>Ver</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.card} onPress={() => navigate('stock_bajo')}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#FFEBEE' }]}>
+                <Icon name="warning" size={20} color="#FF3B30" />
+              </View>
+              <Text style={styles.cardTitle}>Alertas{"\n"}de Stock</Text>
+              <Text style={[styles.cardNumber, { color: '#FF3B30' }]}>{lowStockCount}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.card} onPress={() => navigate('historial')}>
+              <View style={[styles.iconWrapper, { backgroundColor: '#F3E5F5' }]}>
+                <Icon name="receipt" size={20} color="#9b59b6" />
+              </View>
+              <Text style={styles.cardTitle}>Historial{"\n"}de Pedidos</Text>
+              <Text style={[styles.cardTextButton, { color: '#9b59b6' }]}>Ver</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.activitySection}>
+            <Text style={styles.sectionTitle}>Actividad Reciente</Text>
+            <View style={styles.activityList}>
               <View style={styles.activityItem}>
-                <Icon name="warning" size={20} color="#FF3B30" style={{ marginRight: 16 }} />
+                <Icon name="cube" size={20} color="#007AFF" style={{ marginRight: 16 }} />
                 <View style={styles.activityDetails}>
-                  <Text style={styles.activityText}>Stock critico: Insumos por reabastecer</Text>
-                  <Text style={styles.activityTime}>Hace 10 min</Text>
+                  <Text style={styles.activityText}>Pedido #1254 recibido</Text>
+                  <Text style={styles.activityTime}>Hace 2 min</Text>
                 </View>
               </View>
-            )}
+              <View style={styles.activityItem}>
+                <Icon name="check-circle" size={20} color="#34C759" style={{ marginRight: 16 }} />
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityText}>Pedido #1251 marcado como listo</Text>
+                  <Text style={styles.activityTime}>Hace 5 min</Text>
+                </View>
+              </View>
+              {lowStockCount > 0 && (
+                <View style={styles.activityItem}>
+                  <Icon name="warning" size={20} color="#FF3B30" style={{ marginRight: 16 }} />
+                  <View style={styles.activityDetails}>
+                    <Text style={styles.activityText}>Stock critico: Insumos por reabastecer</Text>
+                    <Text style={styles.activityTime}>Hace 10 min</Text>
+                  </View>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7f9' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
-  menuBtn: { padding: 4 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#2D1E16',
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+  },
+  appContainer: {
+    flex: 1,
+    backgroundColor: '#F9F8F6',
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 10 : 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: '#2D1E16',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.8,
+    color: '#D7CCC8',
+  },
   bellBtn: { padding: 4, position: 'relative' },
   badge: { position: 'absolute', right: -4, top: -2, backgroundColor: '#FF3B30', width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   badgeText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   scrollContent: { padding: 20 },
-  welcomeSection: { marginBottom: 24 },
-  welcomeTitle: { fontSize: 24, fontWeight: 'bold', color: '#2D1E16' },
-  welcomeSubtitle: { fontSize: 14, color: '#8E8E93', marginTop: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   card: { backgroundColor: '#ffffff', width: '48%', borderRadius: 20, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 2, alignItems: 'flex-start' },
   iconWrapper: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },

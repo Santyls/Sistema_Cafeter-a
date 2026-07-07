@@ -55,11 +55,22 @@ export default function Exitoso({
         </View>
 
         <PrimaryButton
+          title="Ver ticket"
+          onPress={() => cambiarPantalla("ticket")}
+        />
+        <PrimaryButton
           title="Volver a mesas"
           onPress={() => {
             limpiarPedido();
             cambiarPantalla("inicio");
           }}
+          style={{
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderColor: Colors.primary,
+            marginTop: 10,
+          }}
+          textStyle={{ color: Colors.primary }}
         />
       </View>
     </SafeAreaView>

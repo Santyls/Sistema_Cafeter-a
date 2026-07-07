@@ -10,6 +10,7 @@ import {
 import Colors from "./styles/colors";
 import Header from "./components/Header";
 import PrimaryButton from "./components/PrimaryButton";
+import Icon from "../shared/Icon";
 
 export default function Confirmar({
   mesa,
@@ -62,8 +63,24 @@ export default function Confirmar({
           <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
         </View>
         <PrimaryButton
-          title="Proceder al pago"
+          title="Enviar a cocina"
+          onPress={() => cambiarPantalla("inyeccion")}
+        />
+        <PrimaryButton
+          title="Cobrar ahora"
           onPress={() => cambiarPantalla("pago")}
+          style={{ backgroundColor: Colors.secondary, marginTop: 10 }}
+        />
+        <PrimaryButton
+          title="Cancelar pedido"
+          onPress={() => cambiarPantalla("cancelarPedido")}
+          style={{
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderColor: Colors.danger,
+            marginTop: 10,
+          }}
+          textStyle={{ color: Colors.danger }}
         />
       </View>
     </SafeAreaView>

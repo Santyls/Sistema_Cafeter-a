@@ -192,7 +192,7 @@ export default function Cocina({ onBack }) {
   const renderScreen = () => {
     switch (screen) {
       case 'login':
-        return <LoginCocina navigate={navigate} onLogin={handleLogin} />;
+        return <LoginCocina navigate={navigate} onLogin={handleLogin} onBack={onBack} />;
       case 'recuperar':
         return <RecuperarContrasena navigate={navigate} />;
       case 'dashboard':

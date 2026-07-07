@@ -44,7 +44,7 @@ export default function Sidebar({ isOpen, onClose, currentScreen, navigate, onLo
     { id: 'listos', label: 'Listos para Servir' },
     { id: 'inventario', label: 'Inventario' },
     { id: 'notificaciones', label: 'Notificaciones' },
-    { id: 'configuracion', label: 'Configuracion' },
+    { id: 'configuracion', label: 'Ajustes y Turno' },
   ];
 
   return (
