@@ -1,280 +1,669 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "CoffeeFlow API Docs - Módulo Cliente / Mesero",
-    "description": "Documentación interactiva de la API de CoffeeFlow para el Módulo de Cliente / Mesero.",
-    "version": "1.0.0"
+    "title": "CoffeeFlow API Docs",
+    "description": "Documentacion interactiva completa de la API de CoffeeFlow: Autenticacion, Usuarios, Mesas, Productos, Pedidos, Cocina (ingredientes/recetas/inventario/alertas), Caja (turnos/tickets/pagos/cortes/gastos/compras) y Notificaciones.",
+    "version": "1.1.0"
   },
   "servers": [
-    {
-      "url": "http://localhost:5001",
-      "description": "Servidor Local"
-    }
+    { "url": "http://localhost:5001", "description": "Servidor Local" }
   ],
   "tags": [
-    {
-      "name": "Autenticación",
-      "description": "Inicio de sesión y obtención de datos del usuario autenticado."
-    },
-    {
-      "name": "Cliente / Mesero - Mesas",
-      "description": "Consulta de disponibilidad de mesas y registro de las mismas."
-    },
-    {
-      "name": "Cliente / Mesero - Menú",
-      "description": "Visualización y consulta de la carta de la cafetería."
-    },
-    {
-      "name": "Cliente / Mesero - Pedidos",
-      "description": "Gestión completa del ciclo de vida de los pedidos (levantar orden, actualizar, cancelar, cambiar estados y ver historial)."
-    }
+    { "name": "Autenticacion", "description": "Inicio de sesion, perfil del usuario autenticado y recuperacion de contrasena." },
+    { "name": "Usuarios", "description": "Gestion de usuarios y roles del sistema (solo administrador)." },
+    { "name": "Mesas", "description": "Consulta y administracion de las mesas del restaurante." },
+    { "name": "Productos y Categorias", "description": "Catalogo de categorias y productos del menu." },
+    { "name": "Pedidos", "description": "Ciclo de vida completo de los pedidos: crear, actualizar, cambiar estado, cancelar e historial." },
+    { "name": "Cocina - Ingredientes y Recetas", "description": "Catalogo de ingredientes y las recetas que los relacionan con productos." },
+    { "name": "Cocina - Inventario y Alertas", "description": "Movimientos de inventario (entradas/salidas/ajustes) y alertas de stock bajo." },
+    { "name": "Caja - Turnos y Tickets", "description": "Apertura/cierre de turnos de caja, tickets de venta y registro de pagos." },
+    { "name": "Caja - Cortes, Gastos y Compras", "description": "Cortes de caja, gastos operativos y compras de suministro." },
+    { "name": "Notificaciones", "description": "Notificaciones internas entre modulos (pedido listo, stock bajo, etc.)." }
   ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  },
+  "security": [ { "BearerAuth": [] } ],
   "paths": {
     "/api/auth/login": {
       "post": {
-        "tags": ["Autenticación"],
-        "summary": "Iniciar Sesión",
-        "description": "Autentica al mesero y devuelve el token JWT de acceso.",
+        "tags": ["Autenticacion"],
+        "summary": "Iniciar sesion",
+        "description": "Autentica por usuario o correo y devuelve el token JWT de acceso junto con los datos del usuario.",
+        "security": [],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "usuario": { "type": "string", "example": "mesero1" },
-                  "contrasena": { "type": "string", "example": "mesero123" }
-                },
-                "required": ["usuario", "contrasena"]
-              }
-            }
-          }
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "usuario": { "type": "string", "example": "admin" },
+              "correo": { "type": "string", "example": "admin@cafeteria.com" },
+              "contrasena": { "type": "string", "example": "admin123" }
+            },
+            "required": ["contrasena"]
+          } } }
         },
         "responses": {
-          "200": { "description": "Sesión iniciada con éxito" },
-          "401": { "description": "Credenciales inválidas" }
+          "200": { "description": "Sesion iniciada con exito" },
+          "400": { "description": "Faltan usuario/correo o contrasena" },
+          "401": { "description": "Credenciales invalidas" }
         }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Autenticacion"],
+        "summary": "Cerrar sesion",
+        "responses": { "200": { "description": "Sesion cerrada" } }
       }
     },
     "/api/auth/me": {
       "get": {
-        "tags": ["Autenticación"],
-        "summary": "Obtener Perfil de Usuario Actual",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": { "description": "Datos del perfil del usuario autenticado" }
-        }
+        "tags": ["Autenticacion"],
+        "summary": "Obtener perfil del usuario autenticado",
+        "responses": { "200": { "description": "Datos del usuario" }, "404": { "description": "Usuario no encontrado" } }
       }
     },
-    "/api/mesas": {
-      "get": {
-        "tags": ["Cliente / Mesero - Mesas"],
-        "summary": "Listar Mesas",
-        "description": "Obtiene la lista de todas las mesas del restaurante con su estado actual (disponible/ocupada).",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": { "description": "Listado de mesas obtenido con éxito" }
-        }
-      },
+    "/api/auth/recuperar-password": {
       "post": {
-        "tags": ["Cliente / Mesero - Mesas"],
-        "summary": "Crear Mesa",
-        "description": "Agrega una nueva mesa al plano físico de la cafetería.",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Autenticacion"],
+        "summary": "Solicitar recuperacion de contrasena",
+        "security": [],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "numero_mesa": { "type": "integer", "example": 9 },
-                  "capacidad": { "type": "integer", "example": 4 },
-                  "ubicacion": { "type": "string", "example": "Terraza" }
-                },
-                "required": ["numero_mesa"]
-              }
-            }
-          }
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": { "correo": { "type": "string", "example": "admin@cafeteria.com" } },
+            "required": ["correo"]
+          } } }
         },
-        "responses": {
-          "201": { "description": "Mesa creada exitosamente" }
-        }
+        "responses": { "200": { "description": "Instrucciones enviadas (si el correo existe)" }, "400": { "description": "correo es requerido" } }
       }
+    },
+
+    "/api/usuarios": {
+      "get": {
+        "tags": ["Usuarios"],
+        "summary": "Listar usuarios",
+        "parameters": [ { "name": "rol", "in": "query", "schema": { "type": "string", "enum": ["admin", "mesero", "cocinero", "cajero"] } } ],
+        "responses": { "200": { "description": "Listado de usuarios" } }
+      },
+      "post": {
+        "tags": ["Usuarios"],
+        "summary": "Crear usuario",
+        "description": "Solo administrador.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "nombre": { "type": "string", "example": "Roberto" },
+              "apellido_paterno": { "type": "string", "example": "Gomez" },
+              "apellido_materno": { "type": "string", "example": "Diaz" },
+              "telefono": { "type": "string", "example": "4421234567" },
+              "correo": { "type": "string", "example": "roberto.mesero@cafeteria.com" },
+              "usuario": { "type": "string", "example": "mesero3" },
+              "contrasena": { "type": "string", "example": "mesero123" },
+              "rol": { "type": "string", "enum": ["admin", "mesero", "cocinero", "cajero"], "example": "mesero" }
+            },
+            "required": ["nombre", "correo", "usuario", "contrasena", "rol"]
+          } } }
+        },
+        "responses": { "201": { "description": "Usuario creado" }, "409": { "description": "Correo o usuario ya en uso" } }
+      }
+    },
+    "/api/usuarios/{id_usuario}": {
+      "get": { "tags": ["Usuarios"], "summary": "Obtener usuario", "parameters": [ { "name": "id_usuario", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Usuario" }, "404": { "description": "No encontrado" } } },
+      "put": {
+        "tags": ["Usuarios"],
+        "summary": "Actualizar usuario",
+        "parameters": [ { "name": "id_usuario", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": {
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "telefono": { "type": "string", "example": "4429876543" },
+              "correo": { "type": "string", "example": "nuevo.correo@cafeteria.com" },
+              "activo": { "type": "boolean", "example": true },
+              "contrasena": { "type": "string", "example": "nuevaClave123" },
+              "rol": { "type": "string", "enum": ["admin", "mesero", "cocinero", "cajero"] }
+            }
+          } } }
+        },
+        "responses": { "200": { "description": "Usuario actualizado" }, "404": { "description": "No encontrado" } }
+      },
+      "delete": { "tags": ["Usuarios"], "summary": "Eliminar usuario", "parameters": [ { "name": "id_usuario", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminado" }, "400": { "description": "Un admin no puede eliminarse a si mismo" } } }
+    },
+
+    "/api/mesas": {
+      "get": {
+        "tags": ["Mesas"],
+        "summary": "Listar mesas",
+        "parameters": [ { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["disponible", "ocupada", "reservada"] } } ],
+        "responses": { "200": { "description": "Listado de mesas" } }
+      },
+      "post": {
+        "tags": ["Mesas"],
+        "summary": "Crear mesa",
+        "description": "Solo administrador.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "numero_mesa": { "type": "integer", "example": 9 },
+              "capacidad": { "type": "integer", "example": 6 },
+              "ubicacion": { "type": "string", "example": "Terraza" },
+              "estado": { "type": "string", "enum": ["disponible", "ocupada", "reservada"], "example": "disponible" }
+            },
+            "required": ["numero_mesa"]
+          } } }
+        },
+        "responses": { "201": { "description": "Mesa creada" } }
+      }
+    },
+    "/api/mesas/{id_mesa}": {
+      "get": { "tags": ["Mesas"], "summary": "Obtener mesa", "parameters": [ { "name": "id_mesa", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Mesa" }, "404": { "description": "No encontrada" } } },
+      "put": {
+        "tags": ["Mesas"],
+        "summary": "Actualizar mesa",
+        "description": "Solo administrador.",
+        "parameters": [ { "name": "id_mesa", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "content": { "application/json": { "schema": {
+          "type": "object",
+          "properties": {
+            "capacidad": { "type": "integer", "example": 8 },
+            "ubicacion": { "type": "string", "example": "Terraza ampliada" },
+            "numero_mesa": { "type": "integer" },
+            "estado": { "type": "string", "enum": ["disponible", "ocupada", "reservada"] }
+          }
+        } } } },
+        "responses": { "200": { "description": "Mesa actualizada" }, "404": { "description": "No encontrada" } }
+      },
+      "delete": { "tags": ["Mesas"], "summary": "Eliminar mesa", "description": "Solo administrador.", "parameters": [ { "name": "id_mesa", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminada" }, "404": { "description": "No encontrada" } } }
+    },
+    "/api/mesas/{id_mesa}/estado": {
+      "patch": {
+        "tags": ["Mesas"],
+        "summary": "Cambiar estado de mesa",
+        "parameters": [ { "name": "id_mesa", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": { "estado": { "type": "string", "enum": ["disponible", "ocupada", "reservada"], "example": "ocupada" } },
+            "required": ["estado"]
+          } } }
+        },
+        "responses": { "200": { "description": "Estado actualizado" }, "400": { "description": "Estado invalido" }, "404": { "description": "No encontrada" } }
+      }
+    },
+
+    "/api/categorias": {
+      "get": { "tags": ["Productos y Categorias"], "summary": "Listar categorias", "responses": { "200": { "description": "Listado de categorias" } } },
+      "post": {
+        "tags": ["Productos y Categorias"],
+        "summary": "Crear categoria",
+        "description": "Solo administrador.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "nombre": { "type": "string", "example": "Desayunos" },
+              "descripcion": { "type": "string", "example": "Platillos de desayuno" },
+              "activo": { "type": "boolean", "example": true }
+            },
+            "required": ["nombre"]
+          } } }
+        },
+        "responses": { "201": { "description": "Categoria creada" } }
+      }
+    },
+    "/api/categorias/{id_categoria}": {
+      "put": {
+        "tags": ["Productos y Categorias"],
+        "summary": "Actualizar categoria",
+        "description": "Solo administrador.",
+        "parameters": [ { "name": "id_categoria", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "content": { "application/json": { "schema": {
+          "type": "object",
+          "properties": { "nombre": { "type": "string" }, "descripcion": { "type": "string", "example": "Platillos de desayuno y brunch" }, "activo": { "type": "boolean" } }
+        } } } },
+        "responses": { "200": { "description": "Categoria actualizada" }, "404": { "description": "No encontrada" } }
+      },
+      "delete": { "tags": ["Productos y Categorias"], "summary": "Eliminar categoria", "description": "Solo administrador.", "parameters": [ { "name": "id_categoria", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminada" }, "404": { "description": "No encontrada" } } }
     },
     "/api/productos": {
       "get": {
-        "tags": ["Cliente / Mesero - Menú"],
-        "summary": "Listar Productos (Ver Menú)",
-        "description": "Obtiene la lista de productos disponibles en el menú de la cafetería.",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": { "description": "Carta de productos obtenida exitosamente" }
-        }
-      }
-    },
-    "/api/pedidos": {
-      "get": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Listar Pedidos",
-        "description": "Consulta los pedidos activos de la cafetería. Permite filtrar opcionalmente por estado o por número de mesa.",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Productos y Categorias"],
+        "summary": "Listar productos (ver menu)",
         "parameters": [
-          { "name": "estado", "in": "query", "schema": { "type": "string" }, "description": "Filtrar por estado (pendiente, en_preparacion, listo, entregado, cancelado)" },
-          { "name": "id_mesa", "in": "query", "schema": { "type": "integer" }, "description": "Filtrar por ID de la mesa" }
+          { "name": "id_categoria", "in": "query", "schema": { "type": "integer" } },
+          { "name": "disponible", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } }
         ],
-        "responses": {
-          "200": { "description": "Listado de pedidos" }
-        }
+        "responses": { "200": { "description": "Catalogo de productos" } }
       },
       "post": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Crear Pedido (Levantar Orden)",
-        "description": "Registra una nueva comanda (pedido) para una mesa específica y asocia los productos seleccionados.",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Productos y Categorias"],
+        "summary": "Crear producto",
+        "description": "Solo administrador.",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "id_mesa": { "type": "integer", "example": 1 },
-                  "observaciones": { "type": "string", "example": "Sin azúcar y calientes" },
-                  "detalles": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id_producto": { "type": "integer", "example": 1 },
-                        "cantidad": { "type": "integer", "example": 2 }
-                      }
-                    }
-                  }
-                },
-                "required": ["id_mesa", "detalles"]
-              }
-            }
-          }
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "nombre": { "type": "string", "example": "Chilaquiles Verdes" },
+              "descripcion": { "type": "string", "example": "Chilaquiles banados en salsa verde con pollo" },
+              "precio": { "type": "number", "example": 95 },
+              "id_categoria": { "type": "integer", "example": 1 },
+              "imagen": { "type": "string", "nullable": true },
+              "disponible": { "type": "boolean", "example": true }
+            },
+            "required": ["nombre", "precio"]
+          } } }
         },
-        "responses": {
-          "201": { "description": "Pedido registrado exitosamente" }
-        }
+        "responses": { "201": { "description": "Producto creado" } }
+      }
+    },
+    "/api/productos/{id_producto}": {
+      "get": { "tags": ["Productos y Categorias"], "summary": "Obtener producto", "parameters": [ { "name": "id_producto", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Producto" }, "404": { "description": "No encontrado" } } },
+      "put": {
+        "tags": ["Productos y Categorias"],
+        "summary": "Actualizar producto",
+        "description": "Solo administrador.",
+        "parameters": [ { "name": "id_producto", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "content": { "application/json": { "schema": {
+          "type": "object",
+          "properties": { "precio": { "type": "number", "example": 99 }, "disponible": { "type": "boolean", "example": true }, "nombre": { "type": "string" }, "descripcion": { "type": "string" }, "id_categoria": { "type": "integer" } }
+        } } } },
+        "responses": { "200": { "description": "Producto actualizado" }, "404": { "description": "No encontrado" } }
+      },
+      "delete": { "tags": ["Productos y Categorias"], "summary": "Eliminar producto", "description": "Solo administrador.", "parameters": [ { "name": "id_producto", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminado" }, "404": { "description": "No encontrado" } } }
+    },
+
+    "/api/pedidos": {
+      "get": {
+        "tags": ["Pedidos"],
+        "summary": "Listar pedidos",
+        "parameters": [
+          { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["pendiente", "en_preparacion", "listo", "entregado", "cancelado"] } },
+          { "name": "id_mesa", "in": "query", "schema": { "type": "integer" } },
+          { "name": "id_usuario", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Listado de pedidos" } }
+      },
+      "post": {
+        "tags": ["Pedidos"],
+        "summary": "Crear pedido (levantar orden)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_mesa": { "type": "integer", "example": 1 },
+              "observaciones": { "type": "string", "example": "Cliente frecuente, mesa junto a la ventana" },
+              "metodo_pago": { "type": "string", "nullable": true },
+              "detalles": {
+                "type": "array",
+                "items": { "type": "object", "properties": {
+                  "id_producto": { "type": "integer", "example": 1 },
+                  "cantidad": { "type": "integer", "example": 2 },
+                  "observaciones": { "type": "string", "example": "Sin azucar" }
+                } }
+              }
+            },
+            "required": ["id_mesa", "detalles"]
+          } } }
+        },
+        "responses": { "201": { "description": "Pedido registrado" }, "404": { "description": "Mesa o producto no encontrado" }, "409": { "description": "Producto no disponible" } }
       }
     },
     "/api/pedidos/{id_pedido}": {
-      "get": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Obtener Detalle del Pedido",
-        "description": "Obtiene la información completa de un pedido específico, incluyendo la lista de productos y el historial de cambios.",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
-        ],
-        "responses": {
-          "200": { "description": "Detalle del pedido obtenido" },
-          "404": { "description": "Pedido no encontrado" }
-        }
-      },
+      "get": { "tags": ["Pedidos"], "summary": "Obtener detalle del pedido", "parameters": [ { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Pedido con detalles e historial" }, "404": { "description": "No encontrado" } } },
       "put": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Actualizar Pedido (Modificar Orden)",
-        "description": "Edita las observaciones, el método de pago o reestructura la lista de productos de un pedido siempre y cuando no esté listo/entregado/cancelado.",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "observaciones": { "type": "string", "example": "Se agrega endulzante extra" },
-                  "detalles": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id_producto": { "type": "integer", "example": 1 },
-                        "amount": { "type": "integer", "example": 3 }
-                      }
-                    }
-                  }
-                }
-              }
+        "tags": ["Pedidos"],
+        "summary": "Actualizar pedido",
+        "description": "Bloqueado si el pedido esta en listo, entregado o cancelado.",
+        "parameters": [ { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "content": { "application/json": { "schema": {
+          "type": "object",
+          "properties": {
+            "observaciones": { "type": "string", "example": "Agregar un cafe mas" },
+            "metodo_pago": { "type": "string", "example": "tarjeta" },
+            "detalles": {
+              "type": "array",
+              "items": { "type": "object", "properties": { "id_producto": { "type": "integer" }, "cantidad": { "type": "integer" } } }
             }
           }
-        },
-        "responses": {
-          "200": { "description": "Pedido actualizado con éxito" }
-        }
+        } } } },
+        "responses": { "200": { "description": "Pedido actualizado" }, "404": { "description": "No encontrado" }, "409": { "description": "Pedido no editable en su estado actual" } }
       },
-      "delete": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Cancelar Pedido",
-        "description": "Cancela la orden, liberando la mesa asociada si el pedido se encontraba en estado pendiente.",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
-        ],
-        "responses": {
-          "200": { "description": "Pedido cancelado con éxito" }
-        }
-      }
+      "delete": { "tags": ["Pedidos"], "summary": "Cancelar pedido", "description": "Solo si el pedido esta pendiente o en_preparacion.", "parameters": [ { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Pedido cancelado" }, "409": { "description": "No se puede cancelar en su estado actual" } } }
     },
     "/api/pedidos/{id_pedido}/estado": {
       "patch": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Cambiar Estado del Pedido",
-        "description": "Actualiza el estado de un pedido (pendiente -> en_preparacion -> listo -> entregado -> cancelado).",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
-        ],
+        "tags": ["Pedidos"],
+        "summary": "Cambiar estado del pedido",
+        "description": "pendiente -> en_preparacion -> listo (descuenta inventario y notifica al mesero) -> entregado (libera la mesa). cancelado tambien libera la mesa.",
+        "parameters": [ { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } } ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "estado": { "type": "string", "example": "listo" },
-                  "comentario": { "type": "string", "example": "Terminado a tiempo" }
-                },
-                "required": ["estado"]
-              }
-            }
-          }
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "estado": { "type": "string", "enum": ["pendiente", "en_preparacion", "listo", "entregado", "cancelado"], "example": "listo" },
+              "comentario": { "type": "string", "example": "Terminado a tiempo" }
+            },
+            "required": ["estado"]
+          } } }
         },
-        "responses": {
-          "200": { "description": "Estado actualizado con éxito" }
-        }
+        "responses": { "200": { "description": "Estado actualizado" }, "400": { "description": "Estado invalido" }, "409": { "description": "El pedido ya esta entregado/cancelado" } }
       }
     },
     "/api/pedidos/{id_pedido}/historial": {
+      "get": { "tags": ["Pedidos"], "summary": "Ver historial de estados del pedido", "parameters": [ { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Bitacora de cambios de estado" } } }
+    },
+
+    "/api/ingredientes": {
       "get": {
-        "tags": ["Cliente / Mesero - Pedidos"],
-        "summary": "Ver Historial del Pedido",
-        "description": "Obtiene la bitácora completa de cambios de estado del pedido con timestamps y usuarios responsables.",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Cocina - Ingredientes y Recetas"],
+        "summary": "Listar ingredientes",
+        "parameters": [ { "name": "stock_bajo", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] }, "description": "Filtra solo los que estan por debajo del stock minimo" } ],
+        "responses": { "200": { "description": "Listado de ingredientes" } }
+      },
+      "post": {
+        "tags": ["Cocina - Ingredientes y Recetas"],
+        "summary": "Crear ingrediente",
+        "description": "Administrador o cocinero.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "nombre": { "type": "string", "example": "Canela en polvo" },
+              "unidad_medida": { "type": "string", "example": "kg" },
+              "stock_actual": { "type": "number", "example": 3 },
+              "stock_minimo": { "type": "number", "example": 1 },
+              "activo": { "type": "boolean", "example": true }
+            },
+            "required": ["nombre", "unidad_medida"]
+          } } }
+        },
+        "responses": { "201": { "description": "Ingrediente creado" } }
+      }
+    },
+    "/api/ingredientes/{id_ingrediente}": {
+      "get": { "tags": ["Cocina - Ingredientes y Recetas"], "summary": "Obtener ingrediente", "parameters": [ { "name": "id_ingrediente", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Ingrediente" }, "404": { "description": "No encontrado" } } },
+      "put": {
+        "tags": ["Cocina - Ingredientes y Recetas"],
+        "summary": "Actualizar ingrediente",
+        "description": "Administrador o cocinero.",
+        "parameters": [ { "name": "id_ingrediente", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "content": { "application/json": { "schema": {
+          "type": "object",
+          "properties": { "stock_actual": { "type": "number", "example": 5 }, "stock_minimo": { "type": "number" }, "nombre": { "type": "string" }, "unidad_medida": { "type": "string" }, "activo": { "type": "boolean" } }
+        } } } },
+        "responses": { "200": { "description": "Ingrediente actualizado" }, "404": { "description": "No encontrado" } }
+      },
+      "delete": { "tags": ["Cocina - Ingredientes y Recetas"], "summary": "Eliminar ingrediente", "description": "Administrador o cocinero.", "parameters": [ { "name": "id_ingrediente", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminado" }, "404": { "description": "No encontrado" } } }
+    },
+    "/api/recetas": {
+      "get": {
+        "tags": ["Cocina - Ingredientes y Recetas"],
+        "summary": "Listar recetas",
+        "parameters": [ { "name": "id_producto", "in": "query", "schema": { "type": "integer" } } ],
+        "responses": { "200": { "description": "Listado de recetas" } }
+      },
+      "post": {
+        "tags": ["Cocina - Ingredientes y Recetas"],
+        "summary": "Crear receta",
+        "description": "Administrador o cocinero. Relaciona un producto con un ingrediente y la cantidad que consume.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_producto": { "type": "integer", "example": 1 },
+              "id_ingrediente": { "type": "integer", "example": 4 },
+              "cantidad_requerida": { "type": "number", "example": 0.01 }
+            },
+            "required": ["id_producto", "id_ingrediente", "cantidad_requerida"]
+          } } }
+        },
+        "responses": { "201": { "description": "Receta creada" } }
+      }
+    },
+    "/api/recetas/{id_receta}": {
+      "delete": { "tags": ["Cocina - Ingredientes y Recetas"], "summary": "Eliminar receta", "description": "Administrador o cocinero.", "parameters": [ { "name": "id_receta", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Eliminada" }, "404": { "description": "No encontrada" } } }
+    },
+    "/api/inventario-movimientos": {
+      "get": {
+        "tags": ["Cocina - Inventario y Alertas"],
+        "summary": "Listar movimientos de inventario",
+        "parameters": [ { "name": "id_ingrediente", "in": "query", "schema": { "type": "integer" } } ],
+        "responses": { "200": { "description": "Listado de movimientos" } }
+      },
+      "post": {
+        "tags": ["Cocina - Inventario y Alertas"],
+        "summary": "Registrar movimiento de inventario",
+        "description": "Administrador o cocinero. En 'ajuste', cantidad representa el stock absoluto nuevo. Genera alerta automatica si el stock resultante queda por debajo del minimo.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_ingrediente": { "type": "integer", "example": 3 },
+              "tipo_movimiento": { "type": "string", "enum": ["entrada", "salida", "ajuste"], "example": "entrada" },
+              "cantidad": { "type": "number", "example": 10 },
+              "referencia": { "type": "string", "example": "compra-proveedor" },
+              "observaciones": { "type": "string", "example": "Reabastecimiento semanal" }
+            },
+            "required": ["id_ingrediente", "tipo_movimiento", "cantidad"]
+          } } }
+        },
+        "responses": { "201": { "description": "Movimiento registrado" }, "400": { "description": "tipo_movimiento invalido" }, "404": { "description": "Ingrediente no encontrado" } }
+      }
+    },
+    "/api/alertas-stock": {
+      "get": {
+        "tags": ["Cocina - Inventario y Alertas"],
+        "summary": "Listar alertas de stock",
+        "parameters": [ { "name": "atendida", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } } ],
+        "responses": { "200": { "description": "Listado de alertas" } }
+      }
+    },
+    "/api/alertas-stock/{id_alerta}/atender": {
+      "patch": { "tags": ["Cocina - Inventario y Alertas"], "summary": "Marcar alerta como atendida", "description": "Administrador o cocinero.", "parameters": [ { "name": "id_alerta", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Alerta atendida" }, "404": { "description": "No encontrada" } } }
+    },
+
+    "/api/caja": {
+      "get": {
+        "tags": ["Caja - Turnos y Tickets"],
+        "summary": "Listar turnos de caja",
+        "description": "Administrador o cajero.",
+        "parameters": [ { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["abierto", "cerrado"] } } ],
+        "responses": { "200": { "description": "Listado de turnos" } }
+      },
+      "post": {
+        "tags": ["Caja - Turnos y Tickets"],
+        "summary": "Abrir turno de caja",
+        "description": "Administrador o cajero.",
+        "requestBody": {
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": { "fondo_inicial": { "type": "number", "example": 500 }, "observaciones": { "type": "string", "example": "Turno matutino" } }
+          } } }
+        },
+        "responses": { "201": { "description": "Turno abierto" } }
+      }
+    },
+    "/api/caja/{id_caja}": {
+      "get": { "tags": ["Caja - Turnos y Tickets"], "summary": "Obtener turno de caja", "description": "Administrador o cajero.", "parameters": [ { "name": "id_caja", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Turno" }, "404": { "description": "No encontrado" } } }
+    },
+    "/api/caja/{id_caja}/cerrar": {
+      "patch": { "tags": ["Caja - Turnos y Tickets"], "summary": "Cerrar turno de caja", "description": "Administrador o cajero.", "parameters": [ { "name": "id_caja", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Turno cerrado" }, "409": { "description": "Ya estaba cerrado" } } }
+    },
+    "/api/tickets": {
+      "get": {
+        "tags": ["Caja - Turnos y Tickets"],
+        "summary": "Listar tickets",
+        "description": "Administrador o cajero.",
         "parameters": [
-          { "name": "id_pedido", "in": "path", "required": true, "schema": { "type": "integer" } }
+          { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["pendiente", "pagado"] } },
+          { "name": "id_caja", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": {
-          "200": { "description": "Historial de estados" }
-        }
+        "responses": { "200": { "description": "Listado de tickets" } }
+      },
+      "post": {
+        "tags": ["Caja - Turnos y Tickets"],
+        "summary": "Crear ticket",
+        "description": "Administrador o cajero. Requiere una caja en estado abierto.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_caja": { "type": "integer", "example": 7 },
+              "id_pedido": { "type": "integer", "example": 132 },
+              "total": { "type": "number", "example": 197.2 },
+              "impuesto": { "type": "number", "example": 27.2 },
+              "descuento": { "type": "number", "example": 0 }
+            },
+            "required": ["id_caja", "total"]
+          } } }
+        },
+        "responses": { "201": { "description": "Ticket creado" }, "400": { "description": "Caja no existe o no esta abierta" } }
       }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+    },
+    "/api/tickets/{id_ticket}": {
+      "get": { "tags": ["Caja - Turnos y Tickets"], "summary": "Obtener ticket (con pagos)", "description": "Administrador o cajero.", "parameters": [ { "name": "id_ticket", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Ticket con lista de pagos" }, "404": { "description": "No encontrado" } } }
+    },
+    "/api/pagos": {
+      "post": {
+        "tags": ["Caja - Turnos y Tickets"],
+        "summary": "Registrar pago de ticket",
+        "description": "Administrador o cajero. Cuando la suma de pagos alcanza el total, el ticket pasa a 'pagado'.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_ticket": { "type": "integer", "example": 110 },
+              "monto": { "type": "number", "example": 197.2 },
+              "tipo_pago": { "type": "string", "example": "efectivo" },
+              "referencia": { "type": "string", "nullable": true },
+              "cambio": { "type": "number", "example": 2.8 }
+            },
+            "required": ["id_ticket", "monto", "tipo_pago"]
+          } } }
+        },
+        "responses": { "201": { "description": "Pago registrado" }, "404": { "description": "Ticket no encontrado" }, "409": { "description": "El ticket ya fue pagado" } }
       }
+    },
+    "/api/cortes-caja": {
+      "get": { "tags": ["Caja - Cortes, Gastos y Compras"], "summary": "Listar cortes de caja", "description": "Administrador o cajero.", "responses": { "200": { "description": "Listado de cortes" } } },
+      "post": {
+        "tags": ["Caja - Cortes, Gastos y Compras"],
+        "summary": "Crear corte de caja",
+        "description": "Administrador o cajero. Calcula automaticamente los totales por metodo de pago a partir de los tickets pagados de la caja.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": { "id_caja": { "type": "integer", "example": 7 }, "diferencia": { "type": "number", "example": 0 } },
+            "required": ["id_caja"]
+          } } }
+        },
+        "responses": { "201": { "description": "Corte generado" }, "404": { "description": "Caja no encontrada" } }
+      }
+    },
+    "/api/gastos": {
+      "get": { "tags": ["Caja - Cortes, Gastos y Compras"], "summary": "Listar gastos", "description": "Administrador o cajero.", "responses": { "200": { "description": "Listado de gastos" } } },
+      "post": {
+        "tags": ["Caja - Cortes, Gastos y Compras"],
+        "summary": "Registrar gasto",
+        "description": "Administrador o cajero.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_caja": { "type": "integer", "example": 7 },
+              "concepto": { "type": "string", "example": "Compra de servilletas y vasos" },
+              "monto": { "type": "number", "example": 350.5 },
+              "categoria": { "type": "string", "example": "Papeleria" },
+              "comprobante": { "type": "string", "example": "FAC-9001" }
+            },
+            "required": ["concepto", "monto"]
+          } } }
+        },
+        "responses": { "201": { "description": "Gasto registrado" } }
+      }
+    },
+    "/api/compras-suministro": {
+      "get": { "tags": ["Caja - Cortes, Gastos y Compras"], "summary": "Listar compras de suministro", "description": "Administrador o cajero.", "responses": { "200": { "description": "Listado de compras" } } },
+      "post": {
+        "tags": ["Caja - Cortes, Gastos y Compras"],
+        "summary": "Registrar compra de suministro",
+        "description": "Administrador o cajero.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "id_caja": { "type": "integer", "example": 7 },
+              "proveedor": { "type": "string", "example": "Cafe del Valle S.A." },
+              "total": { "type": "number", "example": 2400 },
+              "estado": { "type": "string", "enum": ["pendiente", "recibido"], "example": "pendiente" },
+              "factura": { "type": "string", "example": "FAC-SUM-2001" },
+              "notas": { "type": "string", "example": "Pedido extraordinario de cafe en grano" }
+            },
+            "required": ["total"]
+          } } }
+        },
+        "responses": { "201": { "description": "Compra registrada" } }
+      }
+    },
+
+    "/api/notificaciones": {
+      "get": {
+        "tags": ["Notificaciones"],
+        "summary": "Listar notificaciones",
+        "description": "Por defecto devuelve las del usuario autenticado.",
+        "parameters": [
+          { "name": "id_receptor", "in": "query", "schema": { "type": "integer" } },
+          { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["enviada", "leida"] } }
+        ],
+        "responses": { "200": { "description": "Listado de notificaciones" } }
+      },
+      "post": {
+        "tags": ["Notificaciones"],
+        "summary": "Crear notificacion",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "tipo": { "type": "string", "example": "pedido_listo" },
+              "mensaje": { "type": "string", "example": "El pedido PED-TEST esta listo para entregar." },
+              "id_receptor": { "type": "integer", "example": 2 },
+              "id_pedido": { "type": "integer", "nullable": true }
+            },
+            "required": ["tipo", "mensaje", "id_receptor"]
+          } } }
+        },
+        "responses": { "201": { "description": "Notificacion creada" } }
+      }
+    },
+    "/api/notificaciones/{id_notificacion}/leida": {
+      "patch": { "tags": ["Notificaciones"], "summary": "Marcar notificacion como leida", "parameters": [ { "name": "id_notificacion", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Marcada como leida" }, "404": { "description": "No encontrada" } } }
+    },
+
+    "/api/health": {
+      "get": { "tags": ["Autenticacion"], "summary": "Health check", "security": [], "responses": { "200": { "description": "status: ok" } } }
     }
   }
 }

@@ -84,15 +84,26 @@ var _exportContext = { type: '', data: [], headers: [], mapFn: null, title: '', 
 
 function openExportModal(type) {
   _exportContext.type = type;
-  var today = new Date().toISOString().slice(0, 10);
-  var monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  document.getElementById('exportFechaInicio').value = monthAgo;
-  document.getElementById('exportFechaFin').value = today;
+  var noDates = !!_exportContext.noDates;
+  var hint = document.getElementById('exportDatesHint');
+  var row = document.getElementById('exportDatesRow');
+  if (hint) hint.style.display = noDates ? 'none' : '';
+  if (row) row.style.display = noDates ? 'none' : '';
+  if (!noDates) {
+    var today = new Date().toISOString().slice(0, 10);
+    var monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    document.getElementById('exportFechaInicio').value = monthAgo;
+    document.getElementById('exportFechaFin').value = today;
+  }
   document.getElementById('exportTitle').textContent = 'Exportar ' + type.charAt(0).toUpperCase() + type.slice(1);
   openModal('modalExport');
 }
 
 function getExportFiltered() {
+  if (_exportContext.noDates) {
+    if (!_exportContext.data.length) { alert('No hay registros para exportar.'); return null; }
+    return { data: _exportContext.data, desde: null, hasta: null };
+  }
   var desde = document.getElementById('exportFechaInicio').value;
   var hasta = document.getElementById('exportFechaFin').value;
   if (!desde || !hasta) { alert('Selecciona ambas fechas'); return null; }
@@ -111,9 +122,10 @@ function getExportFiltered() {
 }
 
 function buildFilename(base) {
+  var hoy = new Date().toISOString().slice(0, 10);
+  if (_exportContext.noDates) return base + '_' + hoy;
   var desde = document.getElementById('exportFechaInicio').value;
   var hasta = document.getElementById('exportFechaFin').value;
-  var hoy = new Date().toISOString().slice(0, 10);
   return base + '_' + hoy + '_del_' + desde + '_al_' + hasta;
 }
 
@@ -131,7 +143,7 @@ function doExportPDF() {
   doc.setFontSize(16);
   doc.text(ctx.title, 14, 20);
   doc.setFontSize(10);
-  doc.text('Rango: ' + result.desde + ' a ' + result.hasta, 14, 28);
+  doc.text(ctx.noDates ? 'Corte al dia de la fecha' : 'Rango: ' + result.desde + ' a ' + result.hasta, 14, 28);
   doc.text('Generado: ' + new Date().toLocaleDateString('es-MX') + ' ' + new Date().toLocaleTimeString('es-MX'), 14, 34);
   doc.text('Total de registros: ' + result.data.length, 14, 40);
   doc.autoTable({
@@ -182,6 +194,18 @@ function exportProductos() {
     mapFn: function(p) { return [p.nombre, p._categoria || '-', fmt(p.precio), p._ventas || 0, fmt(p._ingreso || 0)]; }
   };
   openExportModal('productos');
+}
+
+function exportInventario() {
+  _exportContext = {
+    type: 'inventario', data: _inventarioData, dateField: null, noDates: true,
+    title: 'Reporte de Inventario', headers: ['ID', 'Nombre', 'Unidad', 'Stock actual', 'Stock minimo', 'Estado'],
+    mapFn: function(i) {
+      var low = Number(i.stock_actual) < Number(i.stock_minimo);
+      return [i.id_ingrediente, i.nombre || '-', i.unidad_medida || '-', i.stock_actual + ' ' + (i.unidad_medida || ''), i.stock_minimo + ' ' + (i.unidad_medida || ''), low ? 'Stock bajo' : 'Normal'];
+    }
+  };
+  openExportModal('inventario');
 }
 
 // ===================== CHARTS =====================
@@ -575,7 +599,7 @@ function renderPedidosTable(data) {
   tbody.innerHTML = data.length ? data.map(function(p) {
     var actions = '<button class="icon-btn" title="Ver detalle" onclick="verPedido(' + p.id_pedido + ')">' + IC.eye + '</button>';
     if (p.estado === 'pendiente') actions += ' <button class="icon-btn danger" title="Cancelar" onclick="cancelarPedido(' + p.id_pedido + ')">' + IC.trash + '</button>';
-    return '<tr><td>' + (p.numero_pedido || '-') + '</td><td>Mesa ' + (p.id_mesa || '-') + '</td><td>' + (p.usuario_nombre || 'ID: ' + p.id_usuario) + '</td><td>' + fmt(p.total) + '</td><td>' + statusBadge(p.estado) + '</td><td>' + fmtTime(p.fecha_creacion) + '</td><td class="row-actions">' + actions + '</td></tr>';
+    return '<tr><td>' + (p.numero_pedido || '-') + '</td><td>Mesa ' + (p.mesa_numero || p.id_mesa || '-') + '</td><td>' + (p.usuario_nombre || 'ID: ' + p.id_usuario) + '</td><td>' + fmt(p.total) + '</td><td>' + statusBadge(p.estado) + '</td><td>' + fmtTime(p.fecha_creacion) + '</td><td class="row-actions">' + actions + '</td></tr>';
   }).join('') : '<tr><td colspan="7" style="text-align:center;color:#888;">No hay pedidos en este periodo</td></tr>';
 }
 
