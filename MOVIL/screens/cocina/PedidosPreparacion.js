@@ -6,16 +6,18 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
 
-export default function PedidosPreparacion({ navigate, toggleSidebar, orders, onSelectOrder, darkMode }) {
+export default function PedidosPreparacion({ navigate, toggleSidebar, orders, onSelectOrder, currentUser, darkMode }) {
   const theme = getTheme(darkMode);
   const prepOrders = orders.filter((o) => o.status === 'en_preparacion');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -46,9 +48,9 @@ export default function PedidosPreparacion({ navigate, toggleSidebar, orders, on
               <View style={styles.cardMiddle}>
                 <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Productos:</Text>
                 <View style={styles.productsList}>
-                  {order.products.map((item, idx) => (
+                  {((order.items || order.products) || []).map((item, idx) => (
                     <Text key={idx} style={[styles.productText, { color: theme.textMain }]}>
-                      {item.name} (x{item.qty})
+                      {item.product?.name || item.name} (x{item.qty})
                     </Text>
                   ))}
                 </View>
@@ -70,13 +72,21 @@ export default function PedidosPreparacion({ navigate, toggleSidebar, orders, on
           ))
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20 },
@@ -85,7 +95,7 @@ const styles = StyleSheet.create({
   orderCard: { borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, paddingBottom: 12, marginBottom: 12 },
   orderId: { fontSize: 18, fontWeight: 'bold' },
-  tableText: { fontSize: 14, color: '#8D6E63', fontWeight: '600' },
+  tableText: { fontSize: 14, color: '#9A7B1C', fontWeight: '600' },
   timerBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E3F2FD', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   timerText: { color: '#007AFF', fontSize: 12, fontWeight: '700' },
   cardMiddle: { marginBottom: 16 },
@@ -94,6 +104,6 @@ const styles = StyleSheet.create({
   productText: { fontSize: 15, marginBottom: 4, fontWeight: '500' },
   cookRow: { flexDirection: 'row', alignItems: 'center' },
   cookText: { fontSize: 13, fontStyle: 'italic' },
-  actionBtn: { backgroundColor: '#2D1E16', borderRadius: 12, height: 44, justifyContent: 'center', alignItems: 'center' },
+  actionBtn: { backgroundColor: '#0A1931', borderRadius: 12, height: 44, justifyContent: 'center', alignItems: 'center' },
   actionBtnText: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
 });

@@ -1,6 +1,6 @@
 from ..extensions import db
 
-ESTADOS_MESA = ("disponible", "ocupada", "reservada")
+ESTADOS_MESA = ("disponible", "ocupada", "reservada", "esperando_pago")
 
 
 class Mesa(db.Model):

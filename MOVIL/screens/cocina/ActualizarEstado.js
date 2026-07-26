@@ -7,6 +7,8 @@ import {
   ScrollView,
   SafeAreaView,
   TextInput,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
@@ -19,7 +21,7 @@ export default function ActualizarEstado({
   darkMode,
 }) {
   const theme = getTheme(darkMode);
-  const order = orders.find((o) => o.id === activeOrderId);
+  const order = orders.find((o) => String(o.id) === String(activeOrderId));
 
   if (!order) {
     return (
@@ -36,9 +38,15 @@ export default function ActualizarEstado({
     { value: 'pendiente', label: 'Pendiente', color: '#F0AD4E' },
     { value: 'en_preparacion', label: 'En Preparacion', color: '#007AFF' },
     { value: 'listo', label: 'Listo para Servir', color: '#34C759' },
+    { value: 'cancelado', label: 'Cancelar Pedido', color: '#B71C1C' },
   ];
 
   const handleSave = () => {
+    if (selectedStatus === 'cancelado' && !comment.trim()) {
+      const { Alert } = require('react-native');
+      Alert.alert('Motivo requerido', 'Por favor, escribe el motivo por el cual deseas cancelar el pedido en la sección de comentarios.');
+      return;
+    }
     onUpdateStatus(order.id, selectedStatus, comment);
     if (selectedStatus === 'listo') {
       navigate('listos');
@@ -50,7 +58,7 @@ export default function ActualizarEstado({
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigate('detalle_pedido')}>
           <Icon name="back" size={22} color="#ffffff" />
@@ -121,21 +129,29 @@ export default function ActualizarEstado({
           <Text style={styles.saveBtnText}>Guardar Cambios</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20 },
   orderSummaryCard: { borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   summaryTitle: { fontSize: 20, fontWeight: 'bold' },
-  summaryTable: { fontSize: 16, color: '#8D6E63', fontWeight: '600', marginTop: 4 },
+  summaryTable: { fontSize: 16, color: '#9A7B1C', fontWeight: '600', marginTop: 4 },
   summaryTime: { fontSize: 13, marginTop: 4 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#8D6E63', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#9A7B1C', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
   optionsCard: { borderRadius: 20, padding: 8, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12 },
   optionLeft: { flexDirection: 'row', alignItems: 'center' },
@@ -143,17 +159,17 @@ const styles = StyleSheet.create({
   optionLabel: { fontSize: 16, fontWeight: '500' },
   optionLabelSelected: { fontWeight: '700' },
   radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  radioOuterActive: { borderColor: '#2D1E16' },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#2D1E16' },
+  radioOuterActive: { borderColor: '#0A1931' },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#0A1931' },
   textInput: { borderRadius: 20, borderWidth: 1, padding: 16, height: 100, fontSize: 15, textAlignVertical: 'top', marginBottom: 20 },
   historyCard: { borderRadius: 20, padding: 20, marginBottom: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   timelineRow: { flexDirection: 'row', marginBottom: 16 },
-  timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#8D6E63', marginTop: 4, marginRight: 16 },
+  timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#9A7B1C', marginTop: 4, marginRight: 16 },
   timelineContent: { flex: 1 },
   timelineTime: { fontSize: 12 },
   timelineText: { fontSize: 14, marginTop: 2 },
-  timelineComment: { fontSize: 13, color: '#8D6E63', fontStyle: 'italic', marginTop: 4 },
-  saveBtn: { backgroundColor: '#2D1E16', borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', marginBottom: 30 },
+  timelineComment: { fontSize: 13, color: '#9A7B1C', fontStyle: 'italic', marginTop: 4 },
+  saveBtn: { backgroundColor: '#0A1931', borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', marginBottom: 30 },
   saveBtnText: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
   errorText: { fontSize: 18, textAlign: 'center', color: '#FF3B30', marginTop: 40 },
 });

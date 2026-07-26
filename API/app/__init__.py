@@ -24,6 +24,7 @@ def create_app(config_class=Config):
     from .routes.cocina_routes import cocina_bp
     from .routes.caja_routes import caja_bp
     from .routes.notificaciones_routes import notificaciones_bp
+    from .routes.reservaciones_routes import reservaciones_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(usuarios_bp, url_prefix="/api/usuarios")
@@ -33,6 +34,7 @@ def create_app(config_class=Config):
     app.register_blueprint(cocina_bp, url_prefix="/api")
     app.register_blueprint(caja_bp, url_prefix="/api")
     app.register_blueprint(notificaciones_bp, url_prefix="/api/notificaciones")
+    app.register_blueprint(reservaciones_bp, url_prefix="/api/reservaciones")
 
     with app.app_context():
         from . import models  # noqa: F401  (registra los modelos en SQLAlchemy)
@@ -41,7 +43,13 @@ def create_app(config_class=Config):
 
     @app.route("/api/health")
     def health():
-        return jsonify({"status": "ok"})
+        from .models.mesa import Mesa
+        m4 = Mesa.query.filter_by(numero_mesa=4).first()
+        return jsonify({
+            "status": "ok",
+            "db_url": str(db.engine.url),
+            "m4_capacidad": m4.capacidad if m4 else None
+        })
 
     @app.route("/docs")
     def swagger_ui():

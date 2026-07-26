@@ -31,7 +31,7 @@ export default function Sidebar({ isOpen, onClose, currentScreen, navigate, onLo
     Animated.timing(slideAnim, {
       toValue: isOpen ? 0 : -SIDEBAR_WIDTH,
       duration: 250,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [isOpen]);
 
@@ -103,7 +103,7 @@ export default function Sidebar({ isOpen, onClose, currentScreen, navigate, onLo
 const styles = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 9999 },
   backdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)' },
-  drawer: { width: SIDEBAR_WIDTH, height: '100%', backgroundColor: '#2D1E16', paddingHorizontal: 20, shadowColor: '#000', shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 16 },
+  drawer: { width: SIDEBAR_WIDTH, height: '100%', backgroundColor: '#0A1931', paddingHorizontal: 20, shadowColor: '#000', shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 16 },
   safeArea: { flex: 1 },
   header: { paddingVertical: 30, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
   logoRow: { flexDirection: 'row', alignItems: 'center' },

@@ -618,3 +618,126 @@ table.data-table tr:hover td {
   color: #fff;
   border-color: var(--coffee);
 }
+
+/* ---------- Notifications Bell ---------- */
+.notification-bell-container {
+  position: relative;
+  margin-right: 8px;
+}
+
+.bell-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--cream-dark);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.bell-icon:hover {
+  background: rgba(111, 78, 55, 0.15);
+}
+
+.bell-icon.wiggle {
+  animation: wiggleKeyframe 0.6s ease-in-out;
+}
+
+@keyframes wiggleKeyframe {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  90% { transform: rotate(-5deg); }
+  100% { transform: rotate(0); }
+}
+
+.notifications-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 320px;
+  background: #fff;
+  border: 1px solid var(--cream-dark);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(59, 37, 25, 0.12);
+  z-index: 1000;
+  margin-top: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+}
+
+.notifications-dropdown.open {
+  display: block;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cream-light);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background: rgba(111, 78, 55, 0.04);
+}
+
+.notification-item.unread {
+  background: rgba(200, 137, 58, 0.08);
+}
+
+.notification-item.unread:hover {
+  background: rgba(200, 137, 58, 0.12);
+}
+
+.notification-item .title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-item .title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.notification-item .time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.notification-item .message {
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.notification-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #2d1e16;
+  color: #fff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 9999;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInToast 0.3s ease-out;
+}
+
+@keyframes slideInToast {
+  from { transform: translateY(100px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

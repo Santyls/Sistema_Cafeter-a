@@ -42,7 +42,7 @@ export default function RecuperarContrasena({ navigate }) {
             <TextInput
               style={styles.input}
               placeholder="ejemplo@correo.com"
-              placeholderTextColor="#8D6E63"
+              placeholderTextColor="#9A7B1C"
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -66,7 +66,7 @@ export default function RecuperarContrasena({ navigate }) {
 
         <TouchableOpacity onPress={() => navigate('login')} style={styles.loginLink}>
           <View style={styles.linkRow}>
-            <Icon name="back" size={16} color="#8D6E63" />
+            <Icon name="back" size={16} color="#9A7B1C" />
             <Text style={styles.loginLinkText}> Volver al Login</Text>
           </View>
         </TouchableOpacity>
@@ -77,20 +77,20 @@ export default function RecuperarContrasena({ navigate }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f7f9' },
-  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A1931', paddingVertical: 18, paddingHorizontal: 16 },
   backBtn: { padding: 8 },
   headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', marginLeft: 16 },
   scrollContent: { padding: 24 },
   description: { fontSize: 16, color: '#555555', lineHeight: 24, marginBottom: 24, textAlign: 'center' },
   formCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2, marginBottom: 30 },
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, color: '#8D6E63', fontWeight: '600', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#e5e5ea', borderRadius: 12, height: 50, paddingHorizontal: 16, fontSize: 16, color: '#2D1E16' },
-  btn: { backgroundColor: '#2D1E16', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center' },
+  label: { fontSize: 14, color: '#9A7B1C', fontWeight: '600', marginBottom: 8 },
+  input: { borderWidth: 1, borderColor: '#e5e5ea', borderRadius: 12, height: 50, paddingHorizontal: 16, fontSize: 16, color: '#0A1931' },
+  btn: { backgroundColor: '#0A1931', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center' },
   btnText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
   successCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 199, 89, 0.1)', borderWidth: 1, borderColor: '#34C759', borderRadius: 12, padding: 16, marginTop: 20 },
   successText: { flex: 1, color: '#27ae60', fontSize: 14, fontWeight: '500' },
   loginLink: { alignItems: 'center', paddingVertical: 10 },
   linkRow: { flexDirection: 'row', alignItems: 'center' },
-  loginLinkText: { color: '#8D6E63', fontSize: 16, fontWeight: '600' },
+  loginLinkText: { color: '#9A7B1C', fontSize: 16, fontWeight: '600' },
 });

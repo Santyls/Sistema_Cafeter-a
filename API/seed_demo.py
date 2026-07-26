@@ -38,8 +38,19 @@ def dias_atras(dias, hora=12, minuto=0):
 
 with app.app_context():
     if Pedido.query.first():
-        print("Ya existen pedidos de demostracion. No se vuelve a sembrar.")
-        raise SystemExit(0)
+        print("Limpiando datos previos de demostración...")
+        Pago.query.delete()
+        Ticket.query.delete()
+        DetallePedido.query.delete()
+        PedidoEstadoHistorial.query.delete()
+        Notificacion.query.delete()
+        Pedido.query.delete()
+        Gasto.query.delete()
+        CompraSuministro.query.delete()
+        AlertaStock.query.delete()
+        CorteCaja.query.delete()
+        Caja.query.delete()
+        db.session.commit()
 
     if not Usuario.query.first():
         print("Primero ejecuta 'python seed.py' para crear los usuarios y datos base.")
@@ -172,7 +183,7 @@ with app.app_context():
     total_tickets = 0
 
     # --- Pedidos distribuidos en los ultimos 180 dias ---
-    for dia_offset in range(180, -1, -1):
+    for dia_offset in range(180, 0, -1):
         pedidos_del_dia = 1 if dia_offset > 3 else random.randint(2, 4)  # mas actividad en dias recientes
         if random.random() < 0.35 and dia_offset > 3:
             pedidos_del_dia = 0  # dias sin actividad (fines de semana cerrados, etc.)
@@ -276,7 +287,7 @@ with app.app_context():
         ("Papeleria", "Vasos y servilletas desechables"), ("Papeleria", "Tickets y rollos de papel"),
     ]
     n_gastos = 0
-    for dia_offset in range(180, -1, -1):
+    for dia_offset in range(180, 0, -1):
         if random.random() < 0.85:
             continue  # no todos los dias hay gasto
         categoria, concepto = random.choice(conceptos_gastos)
@@ -296,7 +307,7 @@ with app.app_context():
     # --- Compras de suministro ---
     proveedores = ["Cafe del Valle S.A.", "Lacteos La Hacienda", "Distribuidora Fruver", "Panificadora Central", "Desechables MX"]
     for i in range(10):
-        dia_offset = random.randint(0, 170)
+        dia_offset = random.randint(1, 170)
         fecha_compra = dias_atras(dia_offset, hora=random.randint(9, 16))
         caja_asociada = caja_para_fecha(fecha_compra)
         db.session.add(CompraSuministro(
@@ -321,14 +332,14 @@ with app.app_context():
     for idx, ing in enumerate(ingredientes_bajos):
         db.session.add(Notificacion(
             tipo="stock_bajo", mensaje=f"Stock bajo de {ing.nombre}: {ing.stock_actual} {ing.unidad_medida} disponibles.",
-            id_receptor=admin.id_usuario, estado="enviada", fecha_envio=dias_atras(0, hora=9),
+            id_receptor=admin.id_usuario, estado="enviada", fecha_envio=dias_atras(1, hora=9),
         ))
         # La primera mitad queda pendiente de atender; el resto simula alertas ya resueltas.
         atendida = idx >= len(ingredientes_bajos) // 2
         db.session.add(AlertaStock(
             id_ingrediente=ing.id_ingrediente, stock_actual=ing.stock_actual, stock_minimo=ing.stock_minimo,
-            fecha_alerta=dias_atras(random.randint(0, 5), hora=9),
-            atendida=atendida, fecha_atendida=dias_atras(random.randint(0, 2), hora=15) if atendida else None,
+            fecha_alerta=dias_atras(random.randint(1, 5), hora=9),
+            atendida=atendida, fecha_atendida=dias_atras(random.randint(1, 2), hora=15) if atendida else None,
         ))
     db.session.commit()
     print(f"Alertas de stock creadas: {len(ingredientes_bajos)}")

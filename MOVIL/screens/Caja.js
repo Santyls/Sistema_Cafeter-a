@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { View, Modal, TouchableOpacity, Text, StyleSheet, TextInput } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import FadeInView from "./shared/FadeInView";
 
 import { MESAS } from "./CAJA/data/mesas";
 import { PRODUCTOS } from "./CAJA/data/productos";
@@ -23,14 +24,42 @@ import HistorialTickets from "./CAJA/historialTickets";
 import Perfil from "./CAJA/perfil";
 import SidebarCaja from "./CAJA/components/SidebarCaja";
 
-export default function Caja({ onBack }) {
+export default function Caja(props) {
+  const { onBack, token, setToken } = props;
   const [pantalla, setPantalla] = useState("login");
+  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+  const [idCajaActiva, setIdCajaActiva] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mesas] = useState(MESAS);
+  const mesas = (props.tables || []).map(t => ({
+    id: t.id,
+    numero: t.id,
+    estado: t.waitingPayment ? "Esperando Pago" : (t.status === "busy" ? "Ocupada" : "Libre"),
+    tiempo: t.waitTime || "--",
+    personas: t.occupants ? parseInt(t.occupants.split('/')[0]) : 0,
+    total: t.totalAccount ? t.totalAccount.toFixed(2) : "0.00",
+    waitingPayment: t.waitingPayment
+  }));
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
+  const [cancellationReasonModal, setCancellationReasonModal] = useState(null);
+  const [cancelledItemsToHighlight, setCancelledItemsToHighlight] = useState([]);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
   const [pedido, setPedido] = useState([]);
   const [metodoPago, setMetodoPago] = useState("");
   const [montoRecibido, setMontoRecibido] = useState("");
+
+  React.useEffect(() => {
+    if (mesaSeleccionada && props.tableCarts && props.tableCarts[mesaSeleccionada.id]) {
+      const mapped = props.tableCarts[mesaSeleccionada.id]
+        .map((item, idx) => ({
+          id: idx,
+          nombre: item.product?.name || item.name,
+          cantidad: item.qty,
+          precio: item.product?.price || item.precio || 0
+        }));
+      setPedido(mapped);
+    }
+  }, [mesaSeleccionada, props.tableCarts]);
 
   const cambiarPantalla = (p) => {
     setSidebarOpen(false);
@@ -39,7 +68,137 @@ export default function Caja({ onBack }) {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  const seleccionarMesa = (mesa) => setMesaSeleccionada(mesa);
+  const seleccionarMesa = (mesa) => {
+    const activeOrders = (props.orders || []).filter(o => 
+      String(o.tableId) === String(mesa.id) && 
+      o.status !== 'entregado_pagado' && 
+      o.status !== 'cancelado'
+    );
+
+    if (activeOrders.length === 0) {
+      const { Alert } = require('react-native');
+      Alert.alert("Sin cuenta activa", "Esta mesa no tiene pedidos registrados pendientes de pago.");
+      return;
+    }
+
+    const pendingOrder = activeOrders.find(o => o.status === 'pendiente' || o.status === 'en_preparacion');
+    if (pendingOrder) {
+      const { Alert } = require('react-native');
+      Alert.alert(
+        "No se puede cobrar",
+        `El pedido #${pendingOrder.id} se encuentra en preparación o pendiente en cocina. Estatus actual: "${pendingOrder.status}".`
+      );
+      return;
+    }
+
+    if (!mesa.waitingPayment) {
+      const { Alert } = require('react-native');
+      Alert.alert(
+        "No se puede cobrar",
+        "El mesero no ha notificado el cobro de esta mesa a la Caja todavía."
+      );
+      return;
+    }
+
+    // Check if there was any cancelled order for this table
+    const cancelledOrders = (props.orders || []).filter(o => 
+      String(o.tableId) === String(mesa.id) && 
+      o.status === 'cancelado'
+    );
+    
+    const lastCancelledWithComment = [...cancelledOrders].reverse().find(o => 
+      o.history && o.history.find(h => h.status === 'cancelado' && h.comment)
+    );
+
+    if (lastCancelledWithComment) {
+      const histEntry = lastCancelledWithComment.history.find(h => h.status === 'cancelado' && h.comment);
+      const reason = histEntry ? histEntry.comment : "No se especificó motivo.";
+      const cancelledProductNames = (lastCancelledWithComment.items || []).map(item => item.name || item.product?.name).join(', ') || "No especificado";
+      
+      const cancelledNames = (lastCancelledWithComment.items || []).map(item => item.name || item.product?.name).filter(Boolean);
+      setCancelledItemsToHighlight(cancelledNames);
+      
+      setCancellationReasonModal({
+        orderId: lastCancelledWithComment.id,
+        reason: reason,
+        products: cancelledProductNames,
+        mesaNum: mesa.numero || mesa.id,
+        onConfirm: () => {
+          setCancellationReasonModal(null);
+          setMesaSeleccionada(mesa);
+          setPantalla("pedido");
+        }
+      });
+    } else {
+      setCancelledItemsToHighlight([]);
+      setMesaSeleccionada(mesa);
+      setPantalla("pedido");
+    }
+  };
+
+  const handleRequestDeleteItem = (item) => {
+    setItemToDelete(item);
+    setDeleteReason("");
+  };
+
+  const handleConfirmDeleteItem = () => {
+    if (!itemToDelete || !deleteReason.trim()) return;
+    
+    if (mesaSeleccionada && props.setTableCarts) {
+      props.setTableCarts(prevCarts => {
+        const updated = { ...prevCarts };
+        if (updated[mesaSeleccionada.id]) {
+          updated[mesaSeleccionada.id] = updated[mesaSeleccionada.id].filter(cartItem => {
+            const name = cartItem.product?.name || cartItem.name;
+            return name !== itemToDelete.nombre;
+          });
+          
+          const newCartItems = updated[mesaSeleccionada.id];
+          const newCartTotal = newCartItems.reduce((acc, item) => acc + (item.calculatedPrice || 0), 0);
+          
+          if (props.setTables) {
+            props.setTables(prevTables => prevTables.map(t => {
+              if (t.id === mesaSeleccionada.id) {
+                return {
+                  ...t,
+                  totalAccount: newCartTotal,
+                  status: newCartItems.length > 0 ? 'busy' : 'available'
+                };
+              }
+              return t;
+            }));
+          }
+        }
+        return updated;
+      });
+      
+      if (props.setOrders) {
+        props.setOrders(prev => [
+          {
+            id: Math.floor(Math.random() * 900 + 100).toString(),
+            tableId: mesaSeleccionada.id,
+            tableName: mesaSeleccionada.name || `Mesa ${mesaSeleccionada.id}`,
+            waiter: 'Cajero',
+            items: [{ name: itemToDelete.nombre, qty: itemToDelete.cantidad, price: itemToDelete.precio }],
+            total: itemToDelete.cantidad * itemToDelete.precio,
+            status: 'cancelado',
+            time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+            history: [
+              {
+                time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+                status: 'cancelado',
+                user: 'Cajero',
+                comment: `Eliminado de cuenta por Cajero. Motivo: "${deleteReason}"`
+              }
+            ]
+          },
+          ...prev
+        ]);
+      }
+    }
+    
+    setItemToDelete(null);
+  };
 
   const agregarProducto = (producto) => {
     setPedido((prev) => {
@@ -65,6 +224,95 @@ export default function Caja({ onBack }) {
   };
 
   const limpiarPedido = () => {
+    if (mesaSeleccionada) {
+      const activeOrders = (props.orders || []).filter(o => 
+        String(o.tableId) === String(mesaSeleccionada.id) && 
+        o.status !== 'cancelado' && 
+        o.status !== 'entregado_pagado'
+      );
+      
+      activeOrders.forEach(order => {
+        // 1. Update order status to entregado
+        fetch(`http://192.168.1.7:5001/api/pedidos/${order.id}/estado`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            estado: 'entregado',
+            comentario: 'Pedido cobrado y entregado en Caja'
+          })
+        })
+          .then(res => {
+            if (!res.ok) throw new Error("Error updating order status");
+            return res.json();
+          })
+          .then(() => {
+            // 2. Create Ticket in the backend
+            if (idCajaActiva) {
+              const ticketTotal = order.total || total;
+              const subVal = ticketTotal / 1.16;
+              const taxVal = ticketTotal - subVal;
+              
+              return fetch('http://192.168.1.7:5001/api/tickets', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  id_caja: idCajaActiva,
+                  id_pedido: parseInt(order.id),
+                  total: parseFloat(ticketTotal.toFixed(2)),
+                  impuesto: parseFloat(taxVal.toFixed(2)),
+                  descuento: 0
+                })
+              });
+            }
+          })
+          .then(res => {
+            if (res && res.ok) return res.json();
+          })
+          .then(ticketData => {
+            // 3. Register the Pago in the backend to mark ticket as Paid
+            if (ticketData && ticketData.id_ticket) {
+              return fetch('http://192.168.1.7:5001/api/pagos', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  id_ticket: ticketData.id_ticket,
+                  monto: parseFloat((order.total || total).toFixed(2)),
+                  tipo_pago: metodoPago === 'tarjeta' ? 'tarjeta' : metodoPago === 'transferencia' ? 'transferencia' : 'efectivo',
+                  cambio: parseFloat((parseFloat(montoRecibido || 0) - (order.total || total)).toFixed(2)) || 0
+                })
+              });
+            }
+          })
+          .catch(err => console.log('Error syncing checkout/ticket status:', err));
+      });
+    }
+
+    if (mesaSeleccionada && props.setTables) {
+      props.setTables(prev => prev.map(t => t.id === mesaSeleccionada.id ? { ...t, status: 'available', totalAccount: 0, waitingPayment: false } : t));
+    }
+    if (mesaSeleccionada && props.setTableCarts) {
+      props.setTableCarts(prev => {
+        const updated = { ...prev };
+        delete updated[mesaSeleccionada.id];
+        return updated;
+      });
+    }
+    if (mesaSeleccionada && props.setOrders) {
+      props.setOrders(prev => prev.map(o => 
+        String(o.tableId) === String(mesaSeleccionada.id) && o.status !== 'cancelado'
+          ? { ...o, status: 'entregado_pagado' }
+          : o
+      ));
+    }
     setPedido([]);
     setMesaSeleccionada(null);
     setMetodoPago("");
@@ -84,9 +332,24 @@ export default function Caja({ onBack }) {
   const renderPantalla = () => {
     switch (pantalla) {
       case "login":
-        return <Login cambiarPantalla={cambiarPantalla} onBack={onBack} />;
+        return (
+          <Login
+            cambiarPantalla={cambiarPantalla}
+            onBack={onBack}
+            onLoginSuccess={(tok, usr) => {
+              setToken(tok);
+              setUsuarioLogueado(usr);
+            }}
+          />
+        );
       case "aperturaTurno":
-        return <AperturaTurno cambiarPantalla={cambiarPantalla} />;
+        return (
+          <AperturaTurno
+            cambiarPantalla={cambiarPantalla}
+            token={token}
+            onTurnoAbierto={(idCaja) => setIdCajaActiva(idCaja)}
+          />
+        );
       case "inicio":
         return (
           <Inicio
@@ -108,6 +371,8 @@ export default function Caja({ onBack }) {
             agregarProducto={agregarProducto}
             quitarProducto={quitarProducto}
             cambiarPantalla={cambiarPantalla}
+            onDeleteItem={handleRequestDeleteItem}
+            cancelledItemsToHighlight={cancelledItemsToHighlight}
           />
         );
       case "confirmar":
@@ -183,6 +448,9 @@ export default function Caja({ onBack }) {
           <PedidoListo
             cambiarPantalla={cambiarPantalla}
             toggleSidebar={toggleSidebar}
+            orders={props.orders}
+            mesas={mesas}
+            seleccionarMesa={seleccionarMesa}
           />
         );
       case "gastos":
@@ -190,6 +458,9 @@ export default function Caja({ onBack }) {
           <Gastos
             cambiarPantalla={cambiarPantalla}
             toggleSidebar={toggleSidebar}
+            token={token}
+            usuarioLogueado={usuarioLogueado}
+            idCajaActiva={idCajaActiva}
           />
         );
       case "suministros":
@@ -197,6 +468,9 @@ export default function Caja({ onBack }) {
           <Suministros
             cambiarPantalla={cambiarPantalla}
             toggleSidebar={toggleSidebar}
+            token={token}
+            usuarioLogueado={usuarioLogueado}
+            idCajaActiva={idCajaActiva}
           />
         );
       case "corteCaja":
@@ -204,6 +478,9 @@ export default function Caja({ onBack }) {
           <CorteCaja
             cambiarPantalla={cambiarPantalla}
             toggleSidebar={toggleSidebar}
+            token={token}
+            usuarioLogueado={usuarioLogueado}
+            idCajaActiva={idCajaActiva}
           />
         );
       case "historialTickets":
@@ -211,19 +488,30 @@ export default function Caja({ onBack }) {
           <HistorialTickets
             cambiarPantalla={cambiarPantalla}
             toggleSidebar={toggleSidebar}
+            token={token}
           />
         );
       case "perfil":
-        return <Perfil cambiarPantalla={cambiarPantalla} toggleSidebar={toggleSidebar} onLogout={handleLogout} />;
+        return (
+          <Perfil
+            cambiarPantalla={cambiarPantalla}
+            toggleSidebar={toggleSidebar}
+            onLogout={handleLogout}
+            token={token}
+            usuarioLogueado={usuarioLogueado}
+          />
+        );
       default:
-        return <Login cambiarPantalla={cambiarPantalla} />;
+        return <Login cambiarPantalla={cambiarPantalla} onLoginSuccess={(tok, usr) => { setToken(tok); setUsuarioLogueado(usr); }} />;
     }
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar style="dark" />
-      {renderPantalla()}
+    <View style={{ flex: 1, backgroundColor: "#0A1931" }}>
+      <StatusBar style="light" />
+      <FadeInView key={pantalla} style={{ flex: 1 }} translateY={10}>
+        {renderPantalla()}
+      </FadeInView>
       {pantalla !== "login" && pantalla !== "aperturaTurno" && (
         <SidebarCaja
           isOpen={sidebarOpen}
@@ -233,6 +521,191 @@ export default function Caja({ onBack }) {
           onLogout={handleLogout}
         />
       )}
+
+      {/* Cancellation Reason bottom sheet modal */}
+      {cancellationReasonModal && (
+        <Modal
+          visible={!!cancellationReasonModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setCancellationReasonModal(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.bottomSheetCard}>
+              <View style={styles.dragBar} />
+              
+              <View style={styles.warningHeader}>
+                <Text style={styles.warningTitle}>⚠️ Pedido Cancelado</Text>
+                <Text style={styles.warningSubtitle}>
+                  Un pedido de la Mesa {cancellationReasonModal.mesaNum} fue cancelado en cocina y no se cobrará.
+                </Text>
+              </View>
+
+              <View style={styles.reasonBox}>
+                <Text style={styles.reasonLabel}>Producto(s) Cancelado(s):</Text>
+                <Text style={[styles.reasonText, { marginBottom: 12, color: "#B71C1C", fontWeight: "bold", fontStyle: "normal" }]}>
+                  {cancellationReasonModal.products}
+                </Text>
+
+                <Text style={styles.reasonLabel}>Motivo de la cancelación:</Text>
+                <Text style={styles.reasonText}>"{cancellationReasonModal.reason}"</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={cancellationReasonModal.onConfirm}
+              >
+                <Text style={styles.confirmBtnText}>Entendido, proceder al cobro</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Delete Item Modal */}
+      {itemToDelete && (
+        <Modal
+          visible={!!itemToDelete}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setItemToDelete(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.bottomSheetCard}>
+              <View style={styles.dragBar} />
+              
+              <View style={styles.warningHeader}>
+                <Text style={[styles.warningTitle, { color: "#D32F2F" }]}>⚠️ Eliminar Producto</Text>
+                <Text style={styles.warningSubtitle}>
+                  ¿Estás seguro de que deseas eliminar "{itemToDelete.nombre}" (x{itemToDelete.cantidad}) de la cuenta de la mesa?
+                </Text>
+              </View>
+
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 14, fontWeight: "bold", color: "#333", marginBottom: 8 }}>
+                  Motivo de la eliminación (Obligatorio):
+                </Text>
+                <TextInput
+                  style={styles.textInputReason}
+                  placeholder="Ej: Plato devuelto, error al capturar..."
+                  placeholderTextColor="#888"
+                  value={deleteReason}
+                  onChangeText={setDeleteReason}
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, { flex: 1, backgroundColor: "#E0E0E0" }]}
+                  onPress={() => setItemToDelete(null)}
+                >
+                  <Text style={[styles.confirmBtnText, { color: "#333" }]}>Cancelar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.confirmBtn, 
+                    { flex: 1, backgroundColor: deleteReason.trim() ? "#D32F2F" : "#FFA7A7" }
+                  ]}
+                  disabled={!deleteReason.trim()}
+                  onPress={handleConfirmDeleteItem}
+                >
+                  <Text style={styles.confirmBtnText}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  bottomSheetCard: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 40,
+    width: "100%",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  dragBar: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  warningHeader: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  warningTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#B71C1C",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  warningSubtitle: {
+    fontSize: 14,
+    color: "#555555",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  reasonBox: {
+    backgroundColor: "#FFEBEE",
+    borderLeftWidth: 4,
+    borderLeftColor: "#B71C1C",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  reasonLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#B71C1C",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  reasonText: {
+    fontSize: 15,
+    color: "#333333",
+    fontWeight: "500",
+    fontStyle: "italic",
+  },
+  confirmBtn: {
+    backgroundColor: "#0A1931",
+    borderRadius: 16,
+    height: 54,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  confirmBtnText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  textInputReason: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#333",
+    backgroundColor: "#F9F9F9",
+  },
+});

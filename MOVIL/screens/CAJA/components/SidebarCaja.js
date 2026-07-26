@@ -37,7 +37,7 @@ export default function SidebarCaja({
     Animated.timing(slideAnim, {
       toValue: isOpen ? 0 : -SIDEBAR_WIDTH,
       duration: 250,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [isOpen]);
 
@@ -46,8 +46,6 @@ export default function SidebarCaja({
   const menuItems = [
     { id: "inicio", label: "Inicio" },
     { id: "pedidoListo", label: "Pedidos Listos" },
-    { id: "gastos", label: "Registro de Gastos" },
-    { id: "suministros", label: "Compra de Suministros" },
     { id: "corteCaja", label: "Corte de Caja" },
     { id: "historialTickets", label: "Historial de Tickets" },
     { id: "perfil", label: "Ajustes y Turno" },
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
   drawer: {
     width: SIDEBAR_WIDTH,
     height: "100%",
-    backgroundColor: "#2D1E16",
+    backgroundColor: "#0A1931",
     paddingHorizontal: 20,
     shadowColor: "#000",
     shadowOffset: { width: 4, height: 0 },

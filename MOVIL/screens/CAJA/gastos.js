@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -22,13 +21,88 @@ const MOCK_GASTOS = [
   { id: 3, concepto: "Servilletas y desechables", monto: 85.0, categoria: "Insumos", fecha: "15/03/2024 11:00" },
 ];
 
-export default function Gastos({ cambiarPantalla, toggleSidebar }) {
+export default function Gastos({ cambiarPantalla, toggleSidebar, token, usuarioLogueado, idCajaActiva }) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
+  const [listaGastos, setListaGastos] = useState([]);
+
+  const cargarGastos = () => {
+    fetch('http://192.168.1.7:5001/api/gastos', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Error al obtener gastos");
+      return res.json();
+    })
+    .then(data => {
+      // Filter by active caja session if available
+      const filtrados = idCajaActiva 
+        ? data.filter(g => g.id_caja === idCajaActiva)
+        : data;
+      setListaGastos(filtrados);
+    })
+    .catch(err => {
+      console.warn("Usando mock de gastos:", err);
+      setListaGastos(MOCK_GASTOS);
+    });
+  };
+
+  React.useEffect(() => {
+    cargarGastos();
+  }, [idCajaActiva]);
+
+  const registrarGasto = () => {
+    const parsedMonto = parseFloat(monto);
+    if (!concepto || isNaN(parsedMonto) || !categoriaSeleccionada) return;
+
+    fetch('http://192.168.1.7:5001/api/gastos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id_caja: idCajaActiva || 1,
+        concepto: concepto,
+        monto: parsedMonto,
+        categoria: categoriaSeleccionada
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Error al registrar gasto");
+      return res.json();
+    })
+    .then(() => {
+      const { Alert } = require('react-native');
+      Alert.alert("Éxito", "Gasto registrado en la base de datos.");
+      setConcepto("");
+      setMonto("");
+      setCategoriaSeleccionada("");
+      cargarGastos();
+    })
+    .catch(err => {
+      const { Alert } = require('react-native');
+      Alert.alert("Error", "No se pudo guardar en la base de datos, guardado localmente.");
+      // Fallback local addition
+      const nuevo = {
+        id: Date.now(),
+        concepto,
+        monto: parsedMonto,
+        categoria: categoriaSeleccionada,
+        fecha: new Date().toLocaleString("es-MX")
+      };
+      setListaGastos(prev => [nuevo, ...prev]);
+      setConcepto("");
+      setMonto("");
+      setCategoriaSeleccionada("");
+    });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Registro de gastos"
         subtitle="Control financiero"
@@ -36,7 +110,7 @@ export default function Gastos({ cambiarPantalla, toggleSidebar }) {
         rightAction={{ icon: "menu", onPress: toggleSidebar }}
       />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} style={{ backgroundColor: Colors.background }}>
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Nuevo gasto</Text>
 
@@ -82,19 +156,15 @@ export default function Gastos({ cambiarPantalla, toggleSidebar }) {
 
           <PrimaryButton
             title="Registrar gasto"
-            onPress={() => {
-              setConcepto("");
-              setMonto("");
-              setCategoriaSeleccionada("");
-            }}
+            onPress={registrarGasto}
             disabled={!concepto || !monto || !categoriaSeleccionada}
           />
         </View>
 
         <Text style={styles.sectionTitle}>Gastos del dia</Text>
 
-        {MOCK_GASTOS.map((gasto) => (
-          <View key={gasto.id} style={styles.gastoCard}>
+        {listaGastos.map((gasto) => (
+          <View key={gasto.id || gasto.id_gasto} style={styles.gastoCard}>
             <View style={styles.gastoLeft}>
               <View style={styles.gastoIcon}>
                 <Icon name="receipt" size={20} color={Colors.secondary} />
@@ -102,27 +172,27 @@ export default function Gastos({ cambiarPantalla, toggleSidebar }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.gastoConcepto}>{gasto.concepto}</Text>
                 <Text style={styles.gastoInfo}>
-                  {gasto.categoria} - {gasto.fecha}
+                  {gasto.categoria} - {gasto.fecha || gasto.fecha_envio || "Hoy"}
                 </Text>
               </View>
             </View>
-            <Text style={styles.gastoMonto}>-${gasto.monto.toFixed(2)}</Text>
+            <Text style={styles.gastoMonto}>-${parseFloat(gasto.monto).toFixed(2)}</Text>
           </View>
         ))}
 
         <View style={styles.totalCard}>
           <Text style={styles.totalCardLabel}>Total gastos del dia</Text>
           <Text style={styles.totalCardValue}>
-            -${MOCK_GASTOS.reduce((s, g) => s + g.monto, 0).toFixed(2)}
+            -${listaGastos.reduce((s, g) => s + parseFloat(g.monto), 0).toFixed(2)}
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 20, paddingBottom: 40 },
   formCard: {
     backgroundColor: Colors.white,

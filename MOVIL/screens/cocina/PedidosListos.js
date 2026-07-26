@@ -6,16 +6,18 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
 
-export default function PedidosListos({ navigate, toggleSidebar, orders, darkMode }) {
+export default function PedidosListos({ navigate, toggleSidebar, orders, currentUser, darkMode }) {
   const theme = getTheme(darkMode);
   const readyOrders = orders.filter((o) => o.status === 'listo');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -41,9 +43,9 @@ export default function PedidosListos({ navigate, toggleSidebar, orders, darkMod
                 <Text style={[styles.timeText, { color: theme.textMuted }]}>{order.time}</Text>
               </View>
               <View style={styles.productsBox}>
-                {order.products.map((item, idx) => (
+                {((order.items || order.products) || []).map((item, idx) => (
                   <Text key={idx} style={[styles.productItem, { color: theme.textMain }]}>
-                    {item.name} (x{item.qty})
+                    {item.product?.name || item.name} (x{item.qty})
                   </Text>
                 ))}
               </View>
@@ -54,6 +56,13 @@ export default function PedidosListos({ navigate, toggleSidebar, orders, darkMod
             </View>
           ))
         )}
+        
+        <TouchableOpacity 
+          style={styles.backToDashboardBtn} 
+          onPress={() => navigate('dashboard')}
+        >
+          <Text style={styles.backToDashboardBtnText}>Volver al Inicio</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.bottomBanner}>
@@ -62,13 +71,21 @@ export default function PedidosListos({ navigate, toggleSidebar, orders, darkMod
           Estos pedidos han sido notificados al mesero y estan listos en barra.
         </Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20, paddingBottom: 100 },
@@ -77,12 +94,31 @@ const styles = StyleSheet.create({
   orderCard: { borderRadius: 20, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 1, paddingBottom: 12, marginBottom: 12 },
   orderId: { fontSize: 18, fontWeight: 'bold' },
-  tableText: { fontSize: 14, color: '#8D6E63', fontWeight: '600', marginTop: 2 },
+  tableText: { fontSize: 14, color: '#9A7B1C', fontWeight: '600', marginTop: 2 },
   timeText: { fontSize: 13 },
   productsBox: { marginBottom: 14 },
   productItem: { fontSize: 15, marginBottom: 4, fontWeight: '500' },
   notificationBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   notificationText: { fontSize: 13, color: '#2e7d32', fontWeight: '600' },
-  bottomBanner: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#2D1E16', padding: 20, flexDirection: 'row', alignItems: 'center', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  bottomBanner: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#0A1931', padding: 20, flexDirection: 'row', alignItems: 'center', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   bannerText: { flex: 1, color: '#ffffff', fontSize: 13, fontWeight: '500', lineHeight: 18 },
+  backToDashboardBtn: {
+    backgroundColor: '#0A1931',
+    borderRadius: 16,
+    height: 54,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  backToDashboardBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
