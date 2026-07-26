@@ -1,29 +1,28 @@
 import React from "react";
-import { SafeAreaView, View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 
 import Colors from "./styles/colors";
 import Header from "./components/Header";
 import Icon from "../shared/Icon";
 import PrimaryButton from "./components/PrimaryButton";
+import FadeInView from "../shared/FadeInView";
 
-const MOCK_PEDIDOS_LISTOS = [
-  {
-    id: 1,
-    mesa: 3,
-    items: ["2x Cappuccino", "1x Panini Jamon"],
-    hora: "14:45",
-  },
-  {
-    id: 2,
-    mesa: 7,
-    items: ["1x Latte", "2x Croissant", "1x Jugo Natural"],
-    hora: "14:30",
-  },
-];
+export default function PedidoListo({ cambiarPantalla, toggleSidebar, orders = [], mesas = [], seleccionarMesa }) {
+  const readyOrders = orders.filter((o) => o.status === 'listo');
 
-export default function PedidoListo({ cambiarPantalla, toggleSidebar }) {
+  const handleCobrar = (pedido) => {
+    const tableId = pedido.tableId;
+    const tableObj = mesas.find(m => String(m.id) === String(tableId));
+    if (tableObj && seleccionarMesa) {
+      seleccionarMesa(tableObj);
+    } else {
+      // Fallback
+      cambiarPantalla("pago");
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Pedidos listos"
         subtitle="Listos para cobrar"
@@ -32,39 +31,46 @@ export default function PedidoListo({ cambiarPantalla, toggleSidebar }) {
       />
 
       <ScrollView contentContainerStyle={styles.body}>
-        {MOCK_PEDIDOS_LISTOS.map((pedido) => (
-          <View key={pedido.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.mesaBadge}>
-                <Text style={styles.mesaText}>Mesa {pedido.mesa}</Text>
+        {readyOrders.length === 0 ? (
+          <FadeInView style={styles.emptyContainer} translateY={10}>
+            <Icon name="check-circle" size={60} color={Colors.success} />
+            <Text style={styles.emptyText}>No hay pedidos listos por cobrar por el momento.</Text>
+          </FadeInView>
+        ) : (
+          readyOrders.map((pedido, index) => (
+            <FadeInView key={pedido.id} delay={index * 100} translateY={20} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.mesaBadge}>
+                  <Text style={styles.mesaText}>{pedido.tableName || pedido.table || `Mesa ${pedido.tableId}`}</Text>
+                </View>
+                <View style={styles.horaBadge}>
+                  <Icon name="time" size={14} color={Colors.success} />
+                  <Text style={styles.horaText}> {pedido.time || pedido.timeStamp || 'Hace un momento'}</Text>
+                </View>
               </View>
-              <View style={styles.horaBadge}>
-                <Icon name="time" size={14} color={Colors.success} />
-                <Text style={styles.horaText}> {pedido.hora}</Text>
+              <View style={styles.itemsList}>
+                {((pedido.items || pedido.products) || []).map((item, idx) => (
+                  <Text key={idx} style={styles.itemText}>
+                    • {item.product?.name || item.name} (x{item.qty})
+                  </Text>
+                ))}
               </View>
-            </View>
-            <View style={styles.itemsList}>
-              {pedido.items.map((item, idx) => (
-                <Text key={idx} style={styles.itemText}>
-                  {item}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.statusRow}>
-              <View style={styles.statusBadge}>
-                <Icon name="check-circle" size={16} color={Colors.success} />
-                <Text style={styles.statusText}> Listo para servir</Text>
+              <View style={styles.statusRow}>
+                <View style={styles.statusBadge}>
+                  <Icon name="check-circle" size={16} color={Colors.success} />
+                  <Text style={styles.statusText}> Listo en Barra</Text>
+                </View>
               </View>
-            </View>
-            <PrimaryButton
-              title="Cobrar pedido"
-              onPress={() => cambiarPantalla("pago")}
-              style={{ marginTop: 12 }}
-            />
-          </View>
-        ))}
+              <PrimaryButton
+                title="Cobrar pedido"
+                onPress={() => handleCobrar(pedido)}
+                style={{ marginTop: 12 }}
+              />
+            </FadeInView>
+          ))
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -107,4 +113,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusText: { color: Colors.success, fontSize: 13, fontWeight: "700" },
+  emptyContainer: { alignItems: "center", marginTop: 80, paddingHorizontal: 20 },
+  emptyText: { fontSize: 16, textAlign: 'center', marginTop: 20, color: Colors.textLight, fontWeight: '600' },
 });

@@ -61,13 +61,25 @@ def crear_usuario():
 
 
 @usuarios_bp.route("/<int:id_usuario>", methods=["PUT"])
-@roles_required("admin")
+@jwt_required()
 def actualizar_usuario(id_usuario):
+    current_user_id = int(get_jwt_identity())
+    requesting_user = db.session.get(Usuario, current_user_id)
+    if not requesting_user:
+        return jsonify({"error": "Usuario solicitante no encontrado"}), 404
+
+    if requesting_user.rol != "admin" and current_user_id != id_usuario:
+        return jsonify({"error": "No tienes permisos para realizar esta accion"}), 403
+
     user = db.session.get(Usuario, id_usuario)
     if not user:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
     data = request.get_json(silent=True) or {}
+
+    if requesting_user.rol != "admin":
+        data.pop("rol", None)
+        data.pop("activo", None)
 
     if "rol" in data and data["rol"] not in ROLES_VALIDOS:
         return jsonify({"error": f"Rol invalido. Debe ser uno de: {', '.join(ROLES_VALIDOS)}"}), 400

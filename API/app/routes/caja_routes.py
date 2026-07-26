@@ -77,7 +77,8 @@ def listar_tickets():
         query = query.filter_by(estado=estado)
     if id_caja:
         query = query.filter_by(id_caja=id_caja)
-    return jsonify([t.to_dict() for t in query.order_by(Ticket.fecha.desc()).all()]), 200
+    with_pagos = request.args.get("with_pagos") == "true"
+    return jsonify([t.to_dict(with_pagos=with_pagos) for t in query.order_by(Ticket.fecha.desc()).all()]), 200
 
 
 @caja_bp.route("/tickets/<int:id_ticket>", methods=["GET"])
@@ -252,3 +253,96 @@ def crear_compra():
     db.session.add(compra)
     db.session.commit()
     return jsonify(compra.to_dict()), 201
+
+
+@caja_bp.route("/caja/enviar-ticket", methods=["POST"])
+def enviar_ticket():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email")
+    if not email:
+        return jsonify({"error": "El correo es requerido"}), 400
+
+    folio = data.get("folio", "TCK-DEMO")
+    mesa = data.get("mesa", "N/A")
+    total = data.get("total", 0.0)
+    pedido = data.get("pedido", [])
+    metodo_pago = data.get("metodoPago", "Efectivo")
+    fecha = datetime.now().strftime("%d/%m/%Y")
+    hora = datetime.now().strftime("%H:%M")
+
+    items_text = ""
+    for item in pedido:
+        cant = item.get("cantidad", 1)
+        name = item.get("nombre", "Producto")
+        price = item.get("precio", 0.0)
+        items_text += f"<tr><td style='padding: 8px;'>{cant}x {name}</td><td style='padding: 8px; text-align: right;'>${(cant * price):.2f}</td></tr>"
+
+    html_content = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #F9F8F6; padding: 20px; color: #2D1E16;">
+        <div style="max-width: 480px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; padding: 24px; border: 1px solid #E5E5EA; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #2D1E16; margin: 0;">CoffeeFlow</h2>
+                <p style="color: #8E8E93; margin: 4px 0 0 0; font-size: 14px;">Comprobante de Pago Digital</p>
+            </div>
+            <div style="border-top: 1px dashed #E5E5EA; border-bottom: 1px dashed #E5E5EA; padding: 12px 0; margin-bottom: 20px;">
+                <table style="width: 100%; font-size: 13px; color: #8E8E93;">
+                    <tr><td>Folio:</td><td style="text-align: right; color: #2D1E16; font-weight: bold;">{folio}</td></tr>
+                    <tr><td>Mesa:</td><td style="text-align: right; color: #2D1E16;">{mesa}</td></tr>
+                    <tr><td>Fecha:</td><td style="text-align: right; color: #2D1E16;">{fecha} {hora}</td></tr>
+                    <tr><td>Método de Pago:</td><td style="text-align: right; color: #2D1E16;">{metodo_pago}</td></tr>
+                </table>
+            </div>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #E5E5EA; color: #8E8E93; font-size: 12px; text-transform: uppercase;">
+                        <th style="text-align: left; padding: 8px 0;">Producto</th>
+                        <th style="text-align: right; padding: 8px 0;">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {items_text}
+                </tbody>
+            </table>
+            <div style="border-top: 1px solid #E5E5EA; padding-top: 16px; font-size: 16px; font-weight: bold; color: #2D1E16;">
+                <table style="width: 100%;">
+                    <tr><td>TOTAL</td><td style="text-align: right; color: #2D1E16;">${total:.2f}</td></tr>
+                </table>
+            </div>
+            <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #8E8E93; font-style: italic;">
+                ¡Gracias por su visita!
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    try:
+        sender_email = "albertolunarufino@gmail.com"
+        print(f"ENVIANDO CORREO TICKET DESDE {sender_email} HACIA {email}:")
+        
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Ticket de Compra - Folio {folio}"
+        msg["From"] = sender_email
+        msg["To"] = email
+        msg.attach(MIMEText(html_content, "html"))
+        
+        try:
+            # Connect to standard mailhog SMTP or local smtp container
+            with smtplib.SMTP("mailhog", 1025, timeout=2) as server:
+                server.sendmail(sender_email, email, msg.as_string())
+        except Exception:
+            try:
+                # Fallback to localhost port 1025
+                with smtplib.SMTP("localhost", 1025, timeout=2) as server:
+                    server.sendmail(sender_email, email, msg.as_string())
+            except Exception:
+                pass
+            
+        return jsonify({"message": "Ticket enviado con éxito por correo electrónico."}), 200
+    except Exception as e:
+        return jsonify({"error": f"Fallo al enviar correo: {str(e)}"}), 500

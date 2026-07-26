@@ -66,7 +66,7 @@ def listar_pedidos():
     if id_usuario:
         query = query.filter_by(id_usuario=id_usuario)
     pedidos = query.order_by(Pedido.fecha_creacion.desc()).all()
-    return jsonify([p.to_dict() for p in pedidos]), 200
+    return jsonify([p.to_dict(with_detalles=True, with_historial=True) for p in pedidos]), 200
 
 
 @pedidos_bp.route("/<int:id_pedido>", methods=["GET"])

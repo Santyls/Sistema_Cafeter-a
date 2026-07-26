@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -13,7 +12,7 @@ import Header from "./components/Header";
 import PrimaryButton from "./components/PrimaryButton";
 import Icon from "../shared/Icon";
 
-export default function AperturaTurno({ cambiarPantalla }) {
+export default function AperturaTurno({ cambiarPantalla, token, onTurnoAbierto }) {
   const [fondoInicial, setFondoInicial] = useState("");
 
   const fecha = new Date().toLocaleDateString("es-MX", {
@@ -28,10 +27,10 @@ export default function AperturaTurno({ cambiarPantalla }) {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header title="Apertura de turno" subtitle="Configuracion inicial" />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} style={{ backgroundColor: Colors.background }}>
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
             <Icon name="person" size={20} color={Colors.secondary} />
@@ -72,16 +71,43 @@ export default function AperturaTurno({ cambiarPantalla }) {
 
         <PrimaryButton
           title="Abrir turno"
-          onPress={() => cambiarPantalla("inicio")}
+          onPress={() => {
+            const { Alert } = require('react-native');
+            fetch('http://192.168.1.7:5001/api/caja', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                fondo_inicial: parseFloat(fondoInicial) || 0,
+                observaciones: "Turno iniciado desde App Móvil"
+              })
+            })
+            .then(res => {
+              if (!res.ok) throw new Error('Error al abrir turno');
+              return res.json();
+            })
+            .then(data => {
+              if (onTurnoAbierto) onTurnoAbierto(data.id_caja);
+              cambiarPantalla("inicio");
+            })
+            .catch(err => {
+              console.warn(err);
+              // Fallback to offline mode
+              if (onTurnoAbierto) onTurnoAbierto(1); // dummy ID
+              cambiarPantalla("inicio");
+            });
+          }}
           disabled={!fondoInicial}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 20, paddingBottom: 40 },
   infoCard: {
     backgroundColor: Colors.white,

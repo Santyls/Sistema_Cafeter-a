@@ -34,7 +34,12 @@ class Pedido(db.Model):
             "id_pedido": self.id_pedido,
             "numero_pedido": self.numero_pedido,
             "id_mesa": self.id_mesa,
+            "mesa_numero": self.mesa.numero_mesa if self.mesa else None,
             "id_usuario": self.id_usuario,
+            "usuario_nombre": (
+                f"{self.usuario.nombre} {self.usuario.apellido_paterno or ''}".strip()
+                if self.usuario else None
+            ),
             "fecha_creacion": self.fecha_creacion.isoformat() if self.fecha_creacion else None,
             "fecha_actualizacion": self.fecha_actualizacion.isoformat() if self.fecha_actualizacion else None,
             "estado": self.estado,

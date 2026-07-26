@@ -54,7 +54,7 @@ const ICON_MAP = {
   chevron: "chevron-forward",
 };
 
-export default function Icon({ name, size = 20, color = "#2D1E16", style }) {
+export default function Icon({ name, size = 20, color = "#0A1931", style }) {
   const ionName = ICON_MAP[name] || name;
   return <Ionicons name={ionName} size={size} color={color} style={style} />;
 }

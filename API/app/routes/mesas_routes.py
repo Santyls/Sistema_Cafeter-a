@@ -11,6 +11,13 @@ mesas_bp = Blueprint("mesas", __name__)
 @mesas_bp.route("", methods=["GET"])
 @jwt_required()
 def listar_mesas():
+    # Passively check and expire reservations older than 5 minutes
+    from .reservaciones_routes import check_expired_reservations
+    try:
+        check_expired_reservations()
+    except Exception as e:
+        print("Failed to run check_expired_reservations during listar_mesas:", e)
+
     estado = request.args.get("estado")
     query = Mesa.query
     if estado:

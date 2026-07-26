@@ -1,4 +1,17 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: cafeteria-db
+    environment:
+      POSTGRES_USER: cafeteria_user
+      POSTGRES_PASSWORD: cafeteria_password
+      POSTGRES_DB: cafeteria_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
   api:
     build: ./API
     container_name: cafeteria-api
@@ -9,6 +22,9 @@ services:
     environment:
       SECRET_KEY: dev-secret-key
       JWT_SECRET_KEY: dev-jwt-secret-key
+      DATABASE_URL: postgresql://cafeteria_user:cafeteria_password@db:5432/cafeteria_db
+    depends_on:
+      - db
     restart: unless-stopped
 
   web:
@@ -19,3 +35,7 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  pgdata:
+

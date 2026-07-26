@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -20,7 +19,7 @@ export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggle
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="CoffeeFlow &bull; Panel de Caja"
         subtitle="Bienvenido, Cajero"
@@ -55,13 +54,13 @@ export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggle
           showsVerticalScrollIndicator={false}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  body: { flex: 1, paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: "transparent" },
+  body: { flex: 1, paddingHorizontal: 20, backgroundColor: Colors.background },
   search: {
     backgroundColor: Colors.white,
     borderRadius: 16,

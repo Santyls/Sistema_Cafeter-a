@@ -28,13 +28,13 @@ export default function Exitoso({
         </View>
         <Text style={styles.title}>Pago exitoso!</Text>
         <Text style={styles.subtitle}>
-          El cobro de la Mesa {mesa.numero} se realizo correctamente
+          El cobro de la Mesa {mesa ? (mesa.numero || mesa.id || '') : 'N/A'} se realizó correctamente
         </Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Mesa</Text>
-            <Text style={styles.value}>{mesa.numero}</Text>
+            <Text style={styles.value}>{mesa ? (mesa.numero || mesa.id || '') : 'N/A'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Total cobrado</Text>

@@ -1,0 +1,486 @@
+{
+  "info": {
+    "_postman_id": "b6f2a2b0-1a4a-4a2b-9a1a-coffeflowapi01",
+    "name": "CoffeFlow",
+    "description": "Coleccion completa de la API de CoffeFlow (Sistema de Cafeteria). Incluye Auth, Usuarios, Mesas, Productos, Pedidos, Cocina/Inventario, Caja y Notificaciones. Usa el environment 'CoffeFlow - Local' e inicia con el request 'Login - admin' para guardar el token automaticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [ { "key": "token", "value": "{{token}}", "type": "string" } ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5001/api" }
+  ],
+  "item": [
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Login - admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access_token) { pm.environment.set('token', data.access_token); pm.environment.set('id_usuario_actual', data.usuario.id_usuario); }",
+                  "pm.test('Login exitoso (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"usuario\": \"admin\",\n  \"contrasena\": \"admin123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/auth/login" }
+          }
+        },
+        {
+          "name": "Login - mesero1",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const data = pm.response.json();",
+              "if (data.access_token) { pm.environment.set('token', data.access_token); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"usuario\": \"mesero1\",\n  \"contrasena\": \"mesero123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/auth/login" }
+          }
+        },
+        {
+          "name": "Login - cocinero1",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const data = pm.response.json();",
+              "if (data.access_token) { pm.environment.set('token', data.access_token); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"usuario\": \"cocinero1\",\n  \"contrasena\": \"cocinero123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/auth/login" }
+          }
+        },
+        {
+          "name": "Login - cajero1",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const data = pm.response.json();",
+              "if (data.access_token) { pm.environment.set('token', data.access_token); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"usuario\": \"cajero1\",\n  \"contrasena\": \"cajero123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/auth/login" }
+          }
+        },
+        {
+          "name": "Me (usuario autenticado)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/auth/me" } }
+        },
+        {
+          "name": "Logout",
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/auth/logout" } }
+        },
+        {
+          "name": "Recuperar password",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"correo\": \"admin@cafeteria.com\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/auth/recuperar-password" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Usuarios (admin)",
+      "item": [
+        { "name": "Listar usuarios", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/usuarios" } } },
+        { "name": "Listar usuarios por rol (mesero)", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/usuarios?rol=mesero" } } },
+        { "name": "Obtener usuario", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/usuarios/1" } } },
+        {
+          "name": "Crear usuario",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_usuario_nuevo', pm.response.json().id_usuario); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Roberto\",\n  \"apellido_paterno\": \"Gomez\",\n  \"apellido_materno\": \"Diaz\",\n  \"telefono\": \"4421234567\",\n  \"correo\": \"roberto.mesero@cafeteria.com\",\n  \"usuario\": \"mesero3\",\n  \"contrasena\": \"mesero123\",\n  \"rol\": \"mesero\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/usuarios" }
+          }
+        },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"telefono\": \"4429876543\",\n  \"activo\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/usuarios/{{id_usuario_nuevo}}" }
+          }
+        },
+        { "name": "Eliminar usuario", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/usuarios/{{id_usuario_nuevo}}" } } }
+      ]
+    },
+    {
+      "name": "03 - Mesas",
+      "item": [
+        { "name": "Listar mesas", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/mesas" } } },
+        { "name": "Listar mesas disponibles", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/mesas?estado=disponible" } } },
+        { "name": "Obtener mesa", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/mesas/1" } } },
+        {
+          "name": "Crear mesa (admin)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_mesa_nueva', pm.response.json().id_mesa); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"numero_mesa\": 9,\n  \"capacidad\": 6,\n  \"ubicacion\": \"Terraza\",\n  \"estado\": \"disponible\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/mesas" }
+          }
+        },
+        {
+          "name": "Actualizar mesa (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"capacidad\": 8,\n  \"ubicacion\": \"Terraza ampliada\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/mesas/{{id_mesa_nueva}}" }
+          }
+        },
+        {
+          "name": "Cambiar estado de mesa",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"ocupada\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/mesas/{{id_mesa_nueva}}/estado" }
+          }
+        },
+        { "name": "Eliminar mesa (admin)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/mesas/{{id_mesa_nueva}}" } } }
+      ]
+    },
+    {
+      "name": "04 - Productos y Categorias",
+      "item": [
+        { "name": "Listar categorias", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/categorias" } } },
+        {
+          "name": "Crear categoria (admin)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_categoria_nueva', pm.response.json().id_categoria); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Desayunos\",\n  \"descripcion\": \"Platillos de desayuno\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/categorias" }
+          }
+        },
+        {
+          "name": "Actualizar categoria (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"descripcion\": \"Platillos de desayuno y brunch\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/categorias/{{id_categoria_nueva}}" }
+          }
+        },
+        { "name": "Eliminar categoria (admin)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/categorias/{{id_categoria_nueva}}" } } },
+        { "name": "Listar productos", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/productos" } } },
+        { "name": "Listar productos por categoria", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/productos?id_categoria=1" } } },
+        { "name": "Listar productos disponibles", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/productos?disponible=true" } } },
+        { "name": "Obtener producto", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/productos/1" } } },
+        {
+          "name": "Crear producto (admin)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_producto_nuevo', pm.response.json().id_producto); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Chilaquiles Verdes\",\n  \"descripcion\": \"Chilaquiles banados en salsa verde con pollo\",\n  \"precio\": 95,\n  \"id_categoria\": 1,\n  \"disponible\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/productos" }
+          }
+        },
+        {
+          "name": "Actualizar producto (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"precio\": 99,\n  \"disponible\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/productos/{{id_producto_nuevo}}" }
+          }
+        },
+        { "name": "Eliminar producto (admin)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/productos/{{id_producto_nuevo}}" } } }
+      ]
+    },
+    {
+      "name": "05 - Pedidos",
+      "item": [
+        { "name": "Listar pedidos", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/pedidos" } } },
+        { "name": "Listar pedidos por estado (pendiente)", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/pedidos?estado=pendiente" } } },
+        { "name": "Listar pedidos por mesa", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/pedidos?id_mesa=1" } } },
+        { "name": "Obtener pedido (con detalles e historial)", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/pedidos/132" } } },
+        { "name": "Historial de un pedido", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/pedidos/132/historial" } } },
+        {
+          "name": "Crear pedido (mesero)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_pedido_nuevo', pm.response.json().id_pedido); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_mesa\": 1,\n  \"observaciones\": \"Cliente frecuente, mesa junto a la ventana\",\n  \"detalles\": [\n    { \"id_producto\": 1, \"cantidad\": 2, \"observaciones\": \"Sin azucar\" },\n    { \"id_producto\": 2, \"cantidad\": 1 }\n  ]\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos" }
+          }
+        },
+        {
+          "name": "Actualizar pedido (agregar/cambiar productos)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"observaciones\": \"Agregar un cafe mas\",\n  \"detalles\": [\n    { \"id_producto\": 1, \"cantidad\": 3 }\n  ]\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}" }
+          }
+        },
+        {
+          "name": "Cambiar estado - en_preparacion (cocinero)",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"en_preparacion\",\n  \"comentario\": \"Se inicia preparacion\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}/estado" }
+          }
+        },
+        {
+          "name": "Cambiar estado - listo (descuenta inventario)",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"listo\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}/estado" }
+          }
+        },
+        {
+          "name": "Cambiar estado - entregado (cajero, libera mesa)",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"entregado\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}/estado" }
+          }
+        },
+        { "name": "Cancelar pedido", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}" } } }
+      ]
+    },
+    {
+      "name": "06 - Cocina e Inventario",
+      "item": [
+        { "name": "Listar ingredientes", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/ingredientes" } } },
+        { "name": "Listar ingredientes con stock bajo", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/ingredientes?stock_bajo=true" } } },
+        { "name": "Obtener ingrediente", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/ingredientes/3" } } },
+        {
+          "name": "Crear ingrediente",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_ingrediente_nuevo', pm.response.json().id_ingrediente); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Canela en polvo\",\n  \"unidad_medida\": \"kg\",\n  \"stock_actual\": 3,\n  \"stock_minimo\": 1\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/ingredientes" }
+          }
+        },
+        {
+          "name": "Actualizar ingrediente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"stock_actual\": 5\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/ingredientes/{{id_ingrediente_nuevo}}" }
+          }
+        },
+        { "name": "Eliminar ingrediente", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/ingredientes/{{id_ingrediente_nuevo}}" } } },
+        { "name": "Listar recetas", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/recetas" } } },
+        { "name": "Listar recetas de un producto", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/recetas?id_producto=1" } } },
+        {
+          "name": "Crear receta",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_receta_nueva', pm.response.json().id_receta); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_producto\": 1,\n  \"id_ingrediente\": 4,\n  \"cantidad_requerida\": 0.01\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/recetas" }
+          }
+        },
+        { "name": "Eliminar receta", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/recetas/{{id_receta_nueva}}" } } },
+        { "name": "Listar movimientos de inventario", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/inventario-movimientos" } } },
+        { "name": "Listar movimientos de un ingrediente", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/inventario-movimientos?id_ingrediente=3" } } },
+        {
+          "name": "Registrar entrada de inventario (reabastecer)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_ingrediente\": 3,\n  \"tipo_movimiento\": \"entrada\",\n  \"cantidad\": 10,\n  \"referencia\": \"compra-proveedor\",\n  \"observaciones\": \"Reabastecimiento semanal\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/inventario-movimientos" }
+          }
+        },
+        {
+          "name": "Registrar ajuste de inventario",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_ingrediente\": 3,\n  \"tipo_movimiento\": \"ajuste\",\n  \"cantidad\": 8,\n  \"observaciones\": \"Ajuste por conteo fisico\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/inventario-movimientos" }
+          }
+        },
+        { "name": "Listar alertas de stock", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/alertas-stock" } } },
+        { "name": "Listar alertas no atendidas", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/alertas-stock?atendida=false" } } },
+        { "name": "Atender alerta de stock", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{base_url}}/alertas-stock/1/atender" } } }
+      ]
+    },
+    {
+      "name": "07 - Caja",
+      "item": [
+        { "name": "Listar turnos de caja", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/caja" } } },
+        { "name": "Listar turnos abiertos", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/caja?estado=abierto" } } },
+        { "name": "Obtener turno de caja", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/caja/7" } } },
+        {
+          "name": "Abrir turno de caja",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_caja_nueva', pm.response.json().id_caja); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"fondo_inicial\": 500,\n  \"observaciones\": \"Turno vespertino de prueba\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/caja" }
+          }
+        },
+        { "name": "Cerrar turno de caja", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{base_url}}/caja/{{id_caja_nueva}}/cerrar" } } },
+        { "name": "Listar tickets", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/tickets" } } },
+        { "name": "Listar tickets por estado", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/tickets?estado=pagado" } } },
+        { "name": "Obtener ticket (con pagos)", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/tickets/106" } } },
+        {
+          "name": "Crear ticket (usa la caja abierta id 7)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_ticket_nuevo', pm.response.json().id_ticket); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_caja\": 7,\n  \"id_pedido\": 132,\n  \"total\": 197.2,\n  \"impuesto\": 27.2,\n  \"descuento\": 0\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/tickets" }
+          }
+        },
+        {
+          "name": "Registrar pago de ticket (efectivo)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_ticket\": {{id_ticket_nuevo}},\n  \"monto\": 197.2,\n  \"tipo_pago\": \"efectivo\",\n  \"cambio\": 2.8\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pagos" }
+          }
+        },
+        { "name": "Listar cortes de caja", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/cortes-caja" } } },
+        {
+          "name": "Crear corte de caja",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_caja\": 7,\n  \"diferencia\": 0\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/cortes-caja" }
+          }
+        },
+        { "name": "Listar gastos", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/gastos" } } },
+        {
+          "name": "Crear gasto",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_caja\": 7,\n  \"concepto\": \"Compra de servilletas y vasos\",\n  \"monto\": 350.5,\n  \"categoria\": \"Papeleria\",\n  \"comprobante\": \"FAC-9001\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/gastos" }
+          }
+        },
+        { "name": "Listar compras de suministro", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/compras-suministro" } } },
+        {
+          "name": "Crear compra de suministro",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_caja\": 7,\n  \"proveedor\": \"Cafe del Valle S.A.\",\n  \"total\": 2400,\n  \"estado\": \"pendiente\",\n  \"factura\": \"FAC-SUM-2001\",\n  \"notas\": \"Pedido extraordinario de cafe en grano\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/compras-suministro" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Notificaciones",
+      "item": [
+        { "name": "Listar mis notificaciones", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/notificaciones" } } },
+        { "name": "Listar notificaciones de un usuario", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/notificaciones?id_receptor=2" } } },
+        { "name": "Listar notificaciones no leidas", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/notificaciones?estado=enviada" } } },
+        {
+          "name": "Crear notificacion",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "if (pm.response.code === 201) { pm.environment.set('id_notificacion_nueva', pm.response.json().id_notificacion); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"tipo\": \"pedido_listo\",\n  \"mensaje\": \"El pedido PED-TEST esta listo para entregar.\",\n  \"id_receptor\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/notificaciones" }
+          }
+        },
+        { "name": "Marcar notificacion como leida", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{base_url}}/notificaciones/{{id_notificacion_nueva}}/leida" } } }
+      ]
+    },
+    {
+      "name": "09 - Utilidad",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "noauth" },
+            "url": { "raw": "http://localhost:5001/api/health" }
+          }
+        }
+      ]
+    }
+  ]
+}

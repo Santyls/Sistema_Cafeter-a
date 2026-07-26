@@ -3,6 +3,14 @@
 {% block page_title %}Panorama general{% endblock %}
 
 {% block content %}
+<div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-radius: 12px; background-color: #ffffff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+  <span style="font-weight: 600; color: #1e293b; font-size: 15px;">Filtrar estadísticas de tarjetas:</span>
+  <select id="filtroPeriodo" style="border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; outline: none;">
+    <option value="mes">Este Mes (Predeterminado)</option>
+    <option value="hoy">Hoy</option>
+  </select>
+</div>
+
 <div class="grid grid-4" style="margin-bottom: 20px;">
   <div class="card stat-card">
     <div class="stat-icon bg-red"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>

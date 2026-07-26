@@ -1,40 +1,98 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import Colors from "../styles/colors";
 import Icon from "../../shared/Icon";
 
 export default function MesaCard({ mesa, estado, tiempo, personas, total, onPress }) {
   const libre = estado === "Libre";
+  const esperandoPago = estado === "Esperando Pago";
+
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let anim = null;
+    if (esperandoPago) {
+      anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
+          Animated.timing(pulseAnim, { toValue: 0, duration: 1000, useNativeDriver: false })
+        ])
+      );
+      anim.start();
+    } else {
+      pulseAnim.setValue(0);
+    }
+    return () => {
+      if (anim) anim.stop();
+    };
+  }, [esperandoPago]);
+
+  const animatedBorderColor = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [Colors.danger, '#34C759']
+  });
+
+  const animatedBg = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [Colors.white, '#E8F5E9']
+  });
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      style={[styles.card, { borderLeftColor: libre ? Colors.success : Colors.danger }]}
+    <Animated.View
+      style={{
+        transform: [{ scale: esperandoPago ? pulseAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.02]
+        }) : 1 }]
+      }}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Mesa {mesa}</Text>
-        <View style={[styles.badge, { backgroundColor: libre ? Colors.libre : Colors.ocupada }]}>
-          <Text style={[styles.badgeText, { color: libre ? Colors.success : Colors.danger }]}>
-            {estado}
-          </Text>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        style={[
+          styles.card, 
+          { 
+            borderLeftColor: libre ? Colors.success : (esperandoPago ? '#34C759' : Colors.danger),
+            backgroundColor: esperandoPago ? animatedBg : Colors.white,
+            borderWidth: esperandoPago ? 2 : 0,
+            borderColor: esperandoPago ? animatedBorderColor : 'transparent'
+          }
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Mesa {mesa}</Text>
+          <View style={[
+            styles.badge, 
+            { 
+              backgroundColor: libre ? Colors.libre : (esperandoPago ? 'rgba(78, 141, 112, 0.15)' : Colors.ocupada) 
+            }
+          ]}>
+            <Text style={[
+              styles.badgeText, 
+              { 
+                color: libre ? Colors.success : (esperandoPago ? '#4E8D70' : Colors.danger) 
+              }
+            ]}>
+              {estado}
+            </Text>
+          </View>
         </View>
-      </View>
-      <View style={styles.info}>
-        <View style={styles.infoRow}>
-          <Icon name="time" size={14} color={Colors.textLight} />
-          <Text style={styles.label}> {tiempo}</Text>
+        <View style={styles.info}>
+          <View style={styles.infoRow}>
+            <Icon name="time" size={14} color={Colors.textLight} />
+            <Text style={styles.label}> {tiempo}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Icon name="people" size={14} color={Colors.textLight} />
+            <Text style={styles.label}> {personas} personas</Text>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <Icon name="people" size={14} color={Colors.textLight} />
-          <Text style={styles.label}> {personas} personas</Text>
+        <View style={styles.footer}>
+          <Text style={styles.total}>${total}</Text>
+          <Icon name="forward" size={22} color={Colors.secondary} />
         </View>
-      </View>
-      <View style={styles.footer}>
-        <Text style={styles.total}>${total}</Text>
-        <Icon name="forward" size={22} color={Colors.secondary} />
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

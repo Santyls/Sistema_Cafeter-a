@@ -17,18 +17,31 @@ with app.app_context():
     admin = Usuario(nombre="Admin", apellido_paterno="Sistema", correo="admin@cafeteria.com", usuario="admin", rol="admin")
     admin.set_password("admin123")
 
-    mesero = Usuario(nombre="Juan", apellido_paterno="Perez", correo="mesero@cafeteria.com", usuario="mesero1", rol="mesero")
+    mesero = Usuario(nombre="Santiago", apellido_paterno="Mesero", correo="santiago@cafeteria.com", usuario="santiago", rol="mesero")
     mesero.set_password("mesero123")
 
-    cocinero = Usuario(nombre="Carla", apellido_paterno="Ruiz", correo="cocinero@cafeteria.com", usuario="cocinero1", rol="cocinero")
-    cocinero.set_password("cocinero123")
+    cocinero = Usuario(nombre="BP", apellido_paterno="Cocina", correo="bp@cafeteria.com", usuario="bp", rol="cocinero")
+    cocinero.set_password("cocina123")
 
-    cajero = Usuario(nombre="Ana", apellido_paterno="Lopez", correo="cajero@cafeteria.com", usuario="cajero1", rol="cajero")
-    cajero.set_password("cajero123")
+    cajero = Usuario(nombre="Alberto", apellido_paterno="Caja", correo="alberto@cafeteria.com", usuario="alberto", rol="cajero")
+    cajero.set_password("caja123")
 
     db.session.add_all([admin, mesero, cocinero, cajero])
 
-    mesas = [Mesa(numero_mesa=i, capacidad=4, ubicacion="Salon principal") for i in range(1, 9)]
+    mesas = [
+        Mesa(numero_mesa=1, capacidad=2, ubicacion="Salon principal"),
+        Mesa(numero_mesa=2, capacidad=3, ubicacion="Salon principal"),
+        Mesa(numero_mesa=3, capacidad=4, ubicacion="Salon principal"),
+        Mesa(numero_mesa=4, capacidad=5, ubicacion="Salon principal"),
+        Mesa(numero_mesa=5, capacidad=6, ubicacion="Salon principal"),
+        Mesa(numero_mesa=6, capacidad=7, ubicacion="Salon principal"),
+        Mesa(numero_mesa=7, capacidad=8, ubicacion="Salon principal"),
+        Mesa(numero_mesa=8, capacidad=9, ubicacion="Salon principal"),
+        Mesa(numero_mesa=9, capacidad=10, ubicacion="Salon principal"),
+        Mesa(numero_mesa=10, capacidad=11, ubicacion="Terraza"),
+        Mesa(numero_mesa=11, capacidad=12, ubicacion="VIP"),
+        Mesa(numero_mesa=12, capacidad=15, ubicacion="VIP"),
+    ]
     db.session.add_all(mesas)
 
     cat_bebidas = Categoria(nombre="Bebidas Calientes", descripcion="Cafe, te y bebidas calientes")

@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -23,14 +22,14 @@ export default function Pago({
   cambiarPantalla,
 }) {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Metodo de pago"
         subtitle={`Total: $${total.toFixed(2)}`}
         onBack={() => cambiarPantalla("confirmar")}
       />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} style={{ backgroundColor: Colors.background }}>
         <PaymentOption
           icon="cash"
           title="Efectivo"
@@ -76,12 +75,12 @@ export default function Pago({
           disabled={!metodoPago}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 20, paddingBottom: 40 },
   efectivoSection: { marginBottom: 20 },
   label: { color: Colors.text, fontWeight: "600", marginBottom: 8 },
