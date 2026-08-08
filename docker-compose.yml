@@ -1,14 +1,34 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: cafeteria-db
+    environment:
+      POSTGRES_USER: cafeteria
+      POSTGRES_PASSWORD: cafeteria
+      POSTGRES_DB: cafeteria
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cafeteria -d cafeteria"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build: ./API
     container_name: cafeteria-api
     ports:
       - "5001:5001"
-    volumes:
-      - ./API/instance:/app/instance
     environment:
       SECRET_KEY: dev-secret-key
       JWT_SECRET_KEY: dev-jwt-secret-key
+      DATABASE_URL: postgresql+psycopg2://cafeteria:cafeteria@db:5432/cafeteria
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   web:
@@ -19,3 +39,6 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  pgdata:

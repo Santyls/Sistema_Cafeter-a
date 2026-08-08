@@ -1,18 +1,21 @@
 from datetime import datetime, timezone
 
-from ..extensions import db
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+
+from ..database import Base
 
 
-class Caja(db.Model):
+class Caja(Base):
     __tablename__ = "caja"
 
-    id_caja = db.Column(db.Integer, primary_key=True)
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    fecha_apertura = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    fecha_cierre = db.Column(db.DateTime)
-    fondo_inicial = db.Column(db.Numeric(10, 2), default=0)
-    estado = db.Column(db.String(20), default="abierto")
-    observaciones = db.Column(db.String(255))
+    id_caja = Column(Integer, primary_key=True)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    fecha_apertura = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    fecha_cierre = Column(DateTime(timezone=True))
+    fondo_inicial = Column(Numeric(10, 2), default=0)
+    estado = Column(String(20), default="abierto")
+    observaciones = Column(String(255))
 
     def to_dict(self):
         return {
@@ -26,21 +29,21 @@ class Caja(db.Model):
         }
 
 
-class Ticket(db.Model):
+class Ticket(Base):
     __tablename__ = "tickets"
 
-    id_ticket = db.Column(db.Integer, primary_key=True)
-    folio = db.Column(db.String(20), unique=True)
-    id_pedido = db.Column(db.Integer, db.ForeignKey("pedidos.id_pedido"))
-    id_caja = db.Column(db.Integer, db.ForeignKey("caja.id_caja"), nullable=False)
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    total = db.Column(db.Numeric(10, 2), nullable=False)
-    impuesto = db.Column(db.Numeric(10, 2), default=0)
-    descuento = db.Column(db.Numeric(10, 2), default=0)
-    estado = db.Column(db.String(30), default="pendiente")
+    id_ticket = Column(Integer, primary_key=True)
+    folio = Column(String(20), unique=True)
+    id_pedido = Column(Integer, ForeignKey("pedidos.id_pedido"))
+    id_caja = Column(Integer, ForeignKey("caja.id_caja"), nullable=False)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    total = Column(Numeric(10, 2), nullable=False)
+    impuesto = Column(Numeric(10, 2), default=0)
+    descuento = Column(Numeric(10, 2), default=0)
+    estado = Column(String(30), default="pendiente")
 
-    pagos = db.relationship("Pago", backref="ticket", lazy=True, cascade="all, delete-orphan")
+    pagos = relationship("Pago", backref="ticket", lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self, with_pagos=False):
         data = {
@@ -60,16 +63,16 @@ class Ticket(db.Model):
         return data
 
 
-class Pago(db.Model):
+class Pago(Base):
     __tablename__ = "pagos"
 
-    id_pago = db.Column(db.Integer, primary_key=True)
-    id_ticket = db.Column(db.Integer, db.ForeignKey("tickets.id_ticket"), nullable=False)
-    monto = db.Column(db.Numeric(10, 2), nullable=False)
-    tipo_pago = db.Column(db.String(30), nullable=False)
-    referencia = db.Column(db.String(100))
-    fecha_pago = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    cambio = db.Column(db.Numeric(10, 2), default=0)
+    id_pago = Column(Integer, primary_key=True)
+    id_ticket = Column(Integer, ForeignKey("tickets.id_ticket"), nullable=False)
+    monto = Column(Numeric(10, 2), nullable=False)
+    tipo_pago = Column(String(30), nullable=False)
+    referencia = Column(String(100))
+    fecha_pago = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    cambio = Column(Numeric(10, 2), default=0)
 
     def to_dict(self):
         return {
@@ -83,18 +86,18 @@ class Pago(db.Model):
         }
 
 
-class CorteCaja(db.Model):
+class CorteCaja(Base):
     __tablename__ = "cortes_caja"
 
-    id_corte = db.Column(db.Integer, primary_key=True)
-    id_caja = db.Column(db.Integer, db.ForeignKey("caja.id_caja"), nullable=False)
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    fecha_corte = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    total_ventas = db.Column(db.Numeric(10, 2), default=0)
-    total_efectivo = db.Column(db.Numeric(10, 2), default=0)
-    total_tarjeta = db.Column(db.Numeric(10, 2), default=0)
-    total_transferencia = db.Column(db.Numeric(10, 2), default=0)
-    diferencia = db.Column(db.Numeric(10, 2), default=0)
+    id_corte = Column(Integer, primary_key=True)
+    id_caja = Column(Integer, ForeignKey("caja.id_caja"), nullable=False)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    fecha_corte = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    total_ventas = Column(Numeric(10, 2), default=0)
+    total_efectivo = Column(Numeric(10, 2), default=0)
+    total_tarjeta = Column(Numeric(10, 2), default=0)
+    total_transferencia = Column(Numeric(10, 2), default=0)
+    diferencia = Column(Numeric(10, 2), default=0)
 
     def to_dict(self):
         return {
@@ -110,17 +113,17 @@ class CorteCaja(db.Model):
         }
 
 
-class Gasto(db.Model):
+class Gasto(Base):
     __tablename__ = "gastos"
 
-    id_gasto = db.Column(db.Integer, primary_key=True)
-    id_caja = db.Column(db.Integer, db.ForeignKey("caja.id_caja"))
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    concepto = db.Column(db.String(150), nullable=False)
-    monto = db.Column(db.Numeric(10, 2), nullable=False)
-    categoria = db.Column(db.String(80))
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    comprobante = db.Column(db.String(255))
+    id_gasto = Column(Integer, primary_key=True)
+    id_caja = Column(Integer, ForeignKey("caja.id_caja"))
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    concepto = Column(String(150), nullable=False)
+    monto = Column(Numeric(10, 2), nullable=False)
+    categoria = Column(String(80))
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    comprobante = Column(String(255))
 
     def to_dict(self):
         return {
@@ -135,18 +138,18 @@ class Gasto(db.Model):
         }
 
 
-class CompraSuministro(db.Model):
+class CompraSuministro(Base):
     __tablename__ = "compras_suministro"
 
-    id_compra = db.Column(db.Integer, primary_key=True)
-    id_caja = db.Column(db.Integer, db.ForeignKey("caja.id_caja"))
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    proveedor = db.Column(db.String(150))
-    total = db.Column(db.Numeric(10, 2), nullable=False)
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    estado = db.Column(db.String(30), default="pendiente")
-    factura = db.Column(db.String(100))
-    notas = db.Column(db.String(255))
+    id_compra = Column(Integer, primary_key=True)
+    id_caja = Column(Integer, ForeignKey("caja.id_caja"))
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    proveedor = Column(String(150))
+    total = Column(Numeric(10, 2), nullable=False)
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    estado = Column(String(30), default="pendiente")
+    factura = Column(String(100))
+    notas = Column(String(255))
 
     def to_dict(self):
         return {

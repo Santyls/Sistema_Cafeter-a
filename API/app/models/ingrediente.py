@@ -1,15 +1,18 @@
-from ..extensions import db
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+
+from ..database import Base
 
 
-class Ingrediente(db.Model):
+class Ingrediente(Base):
     __tablename__ = "ingredientes"
 
-    id_ingrediente = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    unidad_medida = db.Column(db.String(20), nullable=False)
-    stock_actual = db.Column(db.Numeric(10, 2), default=0)
-    stock_minimo = db.Column(db.Numeric(10, 2), default=0)
-    activo = db.Column(db.Boolean, default=True)
+    id_ingrediente = Column(Integer, primary_key=True)
+    nombre = Column(String(100), nullable=False)
+    unidad_medida = Column(String(20), nullable=False)
+    stock_actual = Column(Numeric(10, 2), default=0)
+    stock_minimo = Column(Numeric(10, 2), default=0)
+    activo = Column(Boolean, default=True)
 
     def to_dict(self):
         return {
@@ -22,15 +25,15 @@ class Ingrediente(db.Model):
         }
 
 
-class Receta(db.Model):
+class Receta(Base):
     __tablename__ = "receta"
 
-    id_receta = db.Column(db.Integer, primary_key=True)
-    id_producto = db.Column(db.Integer, db.ForeignKey("productos.id_producto"), nullable=False)
-    id_ingrediente = db.Column(db.Integer, db.ForeignKey("ingredientes.id_ingrediente"), nullable=False)
-    cantidad_requerida = db.Column(db.Numeric(10, 2), nullable=False)
+    id_receta = Column(Integer, primary_key=True)
+    id_producto = Column(Integer, ForeignKey("productos.id_producto"), nullable=False)
+    id_ingrediente = Column(Integer, ForeignKey("ingredientes.id_ingrediente"), nullable=False)
+    cantidad_requerida = Column(Numeric(10, 2), nullable=False)
 
-    ingrediente = db.relationship("Ingrediente")
+    ingrediente = relationship("Ingrediente")
 
     def to_dict(self):
         return {

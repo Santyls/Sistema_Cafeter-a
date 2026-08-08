@@ -1,15 +1,18 @@
-from ..extensions import db
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+
+from ..database import Base
 
 
-class Categoria(db.Model):
+class Categoria(Base):
     __tablename__ = "categorias"
 
-    id_categoria = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.String(255))
-    activo = db.Column(db.Boolean, default=True)
+    id_categoria = Column(Integer, primary_key=True)
+    nombre = Column(String(100), nullable=False)
+    descripcion = Column(String(255))
+    activo = Column(Boolean, default=True)
 
-    productos = db.relationship("Producto", backref="categoria", lazy=True)
+    productos = relationship("Producto", backref="categoria", lazy=True)
 
     def to_dict(self):
         return {
@@ -20,18 +23,18 @@ class Categoria(db.Model):
         }
 
 
-class Producto(db.Model):
+class Producto(Base):
     __tablename__ = "productos"
 
-    id_producto = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.String(255))
-    precio = db.Column(db.Numeric(10, 2), nullable=False)
-    imagen = db.Column(db.String(255))
-    disponible = db.Column(db.Boolean, default=True)
-    id_categoria = db.Column(db.Integer, db.ForeignKey("categorias.id_categoria"))
+    id_producto = Column(Integer, primary_key=True)
+    nombre = Column(String(100), nullable=False)
+    descripcion = Column(String(255))
+    precio = Column(Numeric(10, 2), nullable=False)
+    imagen = Column(String(255))
+    disponible = Column(Boolean, default=True)
+    id_categoria = Column(Integer, ForeignKey("categorias.id_categoria"))
 
-    recetas = db.relationship("Receta", backref="producto", lazy=True, cascade="all, delete-orphan")
+    recetas = relationship("Receta", backref="producto", lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {

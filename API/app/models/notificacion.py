@@ -1,19 +1,21 @@
 from datetime import datetime, timezone
 
-from ..extensions import db
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+
+from ..database import Base
 
 
-class Notificacion(db.Model):
+class Notificacion(Base):
     __tablename__ = "notificaciones"
 
-    id_notificacion = db.Column(db.Integer, primary_key=True)
-    id_pedido = db.Column(db.Integer, db.ForeignKey("pedidos.id_pedido"), nullable=True)
-    tipo = db.Column(db.String(30), nullable=False)
-    mensaje = db.Column(db.String(255), nullable=False)
-    id_receptor = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False)
-    estado = db.Column(db.String(20), default="enviada")
-    fecha_envio = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    fecha_lectura = db.Column(db.DateTime)
+    id_notificacion = Column(Integer, primary_key=True)
+    id_pedido = Column(Integer, ForeignKey("pedidos.id_pedido"), nullable=True)
+    tipo = Column(String(30), nullable=False)
+    mensaje = Column(String(255), nullable=False)
+    id_receptor = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
+    estado = Column(String(20), default="enviada")
+    fecha_envio = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    fecha_lectura = Column(DateTime(timezone=True))
 
     def to_dict(self):
         return {

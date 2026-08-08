@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 5001
 
-CMD ["sh", "-c", "python seed.py; python run.py"]
+CMD ["sh", "-c", "python seed.py; python seed_demo.py; uvicorn app.main:app --host 0.0.0.0 --port 5001"]

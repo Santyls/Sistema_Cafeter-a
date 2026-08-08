@@ -272,6 +272,11 @@ function initLogin() {
           btn.disabled = false; btn.textContent = 'Iniciar sesion';
           return;
         }
+        if (r.data.usuario && r.data.usuario.rol !== 'admin') {
+          alert('Acceso denegado: solo usuarios con rol Administrador pueden acceder al panel.');
+          btn.disabled = false; btn.textContent = 'Iniciar sesion';
+          return;
+        }
         clearAttempts();
         Auth.setToken(r.data.access_token);
         Auth.setUser(r.data.usuario);

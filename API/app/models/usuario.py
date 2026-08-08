@@ -1,29 +1,30 @@
 from datetime import datetime, timezone
 
-from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from ..extensions import db
+from ..database import Base
 
 ROLES_VALIDOS = ("admin", "mesero", "cocinero", "cajero")
 
 
-class Usuario(db.Model):
+class Usuario(Base):
     __tablename__ = "usuarios"
 
-    id_usuario = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    apellido_paterno = db.Column(db.String(100))
-    apellido_materno = db.Column(db.String(100))
-    telefono = db.Column(db.String(15))
-    correo = db.Column(db.String(150), unique=True, nullable=False)
-    usuario = db.Column(db.String(50), unique=True, nullable=False)
-    contrasena_hash = db.Column(db.String(255), nullable=False)
-    rol = db.Column(db.String(30), nullable=False)
-    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    activo = db.Column(db.Boolean, default=True)
+    id_usuario = Column(Integer, primary_key=True)
+    nombre = Column(String(100), nullable=False)
+    apellido_paterno = Column(String(100))
+    apellido_materno = Column(String(100))
+    telefono = Column(String(15))
+    correo = Column(String(150), unique=True, nullable=False)
+    usuario = Column(String(50), unique=True, nullable=False)
+    contrasena_hash = Column(String(255), nullable=False)
+    rol = Column(String(30), nullable=False)
+    fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    activo = Column(Boolean, default=True)
 
     def set_password(self, password):
-        self.contrasena_hash = generate_password_hash(password, method='pbkdf2')
+        self.contrasena_hash = generate_password_hash(password, method="pbkdf2")
 
     def check_password(self, password):
         return check_password_hash(self.contrasena_hash, password)

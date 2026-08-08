@@ -13,8 +13,8 @@ import random
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from app import create_app
-from app.extensions import db
+from app import models  # noqa: F401  (registra los modelos)
+from app.database import Base, SessionLocal, engine
 from app.models.caja import Caja, CompraSuministro, CorteCaja, Gasto, Pago, Ticket
 from app.models.ingrediente import Ingrediente, Receta
 from app.models.inventario import AlertaStock
@@ -24,24 +24,25 @@ from app.models.pedido import DetallePedido, Pedido, PedidoEstadoHistorial
 from app.models.producto import Categoria, Producto
 from app.models.usuario import Usuario
 
-app = create_app()
+Base.metadata.create_all(bind=engine)
 
 random.seed(42)
 
 
 def dias_atras(dias, hora=12, minuto=0):
-    # Naive (sin tzinfo): SQLite no conserva timezone, y los defaults del modelo
-    # tambien se releen como naive tras un commit, asi que mantenemos consistencia.
-    base = datetime.now(timezone.utc).replace(tzinfo=None)
+    # Datetimes conscientes de zona horaria (UTC): PostgreSQL los almacena como timestamptz.
+    base = datetime.now(timezone.utc)
     return (base - timedelta(days=dias)).replace(hour=hora, minute=minuto, second=0, microsecond=0)
 
 
-with app.app_context():
-    if Pedido.query.first():
+session = SessionLocal()
+
+try:
+    if session.query(Pedido).first():
         print("Ya existen pedidos de demostracion. No se vuelve a sembrar.")
         raise SystemExit(0)
 
-    if not Usuario.query.first():
+    if not session.query(Usuario).first():
         print("Primero ejecuta 'python seed.py' para crear los usuarios y datos base.")
         raise SystemExit(1)
 
@@ -52,23 +53,23 @@ with app.app_context():
         dict(nombre="Laura", apellido_paterno="Torres", correo="cajero2@cafeteria.com", usuario="cajero2", rol="cajero", password="cajero123"),
     ]
     for u in extra_usuarios:
-        if not Usuario.query.filter_by(usuario=u["usuario"]).first():
+        if not session.query(Usuario).filter_by(usuario=u["usuario"]).first():
             nuevo = Usuario(nombre=u["nombre"], apellido_paterno=u["apellido_paterno"], correo=u["correo"], usuario=u["usuario"], rol=u["rol"])
             nuevo.set_password(u["password"])
-            db.session.add(nuevo)
-    db.session.commit()
+            session.add(nuevo)
+    session.commit()
 
-    admin = Usuario.query.filter_by(usuario="admin").first()
-    meseros = Usuario.query.filter_by(rol="mesero").all()
-    cocineros = Usuario.query.filter_by(rol="cocinero").all()
-    cajeros = Usuario.query.filter_by(rol="cajero").all()
+    admin = session.query(Usuario).filter_by(usuario="admin").first()
+    meseros = session.query(Usuario).filter_by(rol="mesero").all()
+    cocineros = session.query(Usuario).filter_by(rol="cocinero").all()
+    cajeros = session.query(Usuario).filter_by(rol="cajero").all()
 
     # --- Categorias / productos adicionales ---
-    cat_bebidas = Categoria.query.filter_by(nombre="Bebidas Calientes").first()
-    cat_frias = Categoria.query.filter_by(nombre="Bebidas Frias").first()
-    cat_postres = Categoria.query.filter_by(nombre="Postres").first()
+    cat_bebidas = session.query(Categoria).filter_by(nombre="Bebidas Calientes").first()
+    cat_frias = session.query(Categoria).filter_by(nombre="Bebidas Frias").first()
+    cat_postres = session.query(Categoria).filter_by(nombre="Postres").first()
 
-    productos_existentes = {p.nombre: p for p in Producto.query.all()}
+    productos_existentes = {p.nombre: p for p in session.query(Producto).all()}
 
     nuevos_productos = [
         dict(nombre="Latte Vainilla", descripcion="Espresso con leche vaporizada y jarabe de vainilla", precio=70, id_categoria=cat_bebidas.id_categoria),
@@ -83,14 +84,13 @@ with app.app_context():
     ]
     for pdata in nuevos_productos:
         if pdata["nombre"] not in productos_existentes:
-            nuevo = Producto(**pdata)
-            db.session.add(nuevo)
-    db.session.commit()
+            session.add(Producto(**pdata))
+    session.commit()
 
-    productos = Producto.query.all()
+    productos = session.query(Producto).all()
 
     # --- Ingredientes adicionales (con stock variado, algunos bajos para alertas) ---
-    ingredientes_existentes = {i.nombre: i for i in Ingrediente.query.all()}
+    ingredientes_existentes = {i.nombre: i for i in session.query(Ingrediente).all()}
     nuevos_ingredientes = [
         dict(nombre="Chocolate en polvo", unidad_medida="kg", stock_actual=1.2, stock_minimo=2),
         dict(nombre="Azucar", unidad_medida="kg", stock_actual=8, stock_minimo=3),
@@ -104,11 +104,10 @@ with app.app_context():
     ]
     for idata in nuevos_ingredientes:
         if idata["nombre"] not in ingredientes_existentes:
-            nuevo = Ingrediente(**idata)
-            db.session.add(nuevo)
-    db.session.commit()
+            session.add(Ingrediente(**idata))
+    session.commit()
 
-    ingredientes = {i.nombre: i for i in Ingrediente.query.all()}
+    ingredientes = {i.nombre: i for i in session.query(Ingrediente).all()}
 
     recetas_nuevas = [
         ("Latte Vainilla", "Cafe en grano", 0.02), ("Latte Vainilla", "Leche entera", 0.15), ("Latte Vainilla", "Jarabe de vainilla", 0.03),
@@ -121,16 +120,16 @@ with app.app_context():
         ("Muffin de Chocolate", "Harina", 0.06), ("Muffin de Chocolate", "Chocolate en polvo", 0.03),
         ("Croissant de Almendra", "Harina", 0.07), ("Croissant de Almendra", "Mantequilla", 0.04),
     ]
-    recetas_existentes = {(r.id_producto, r.id_ingrediente) for r in Receta.query.all()}
+    recetas_existentes = {(r.id_producto, r.id_ingrediente) for r in session.query(Receta).all()}
     productos_por_nombre = {p.nombre: p for p in productos}
     for nombre_prod, nombre_ing, cantidad in recetas_nuevas:
         prod = productos_por_nombre.get(nombre_prod)
         ing = ingredientes.get(nombre_ing)
         if prod and ing and (prod.id_producto, ing.id_ingrediente) not in recetas_existentes:
-            db.session.add(Receta(id_producto=prod.id_producto, id_ingrediente=ing.id_ingrediente, cantidad_requerida=cantidad))
-    db.session.commit()
+            session.add(Receta(id_producto=prod.id_producto, id_ingrediente=ing.id_ingrediente, cantidad_requerida=cantidad))
+    session.commit()
 
-    mesas = Mesa.query.order_by(Mesa.numero_mesa).all()
+    mesas = session.query(Mesa).order_by(Mesa.numero_mesa).all()
 
     # --- Cajas (turnos) distribuidos en los ultimos 6 meses, la mas reciente queda abierta ---
     cajas = []
@@ -145,13 +144,13 @@ with app.app_context():
             fecha_cierre=fecha_apertura + timedelta(hours=10),
             observaciones=f"Turno matutino - {fecha_apertura.strftime('%B %Y')}",
         )
-        db.session.add(caja)
+        session.add(caja)
         cajas.append(caja)
     # Turno actual, abierto, para poder seguir probando desde Postman
     caja_hoy = Caja(id_usuario=random.choice(cajeros).id_usuario, fondo_inicial=500, estado="abierto", fecha_apertura=dias_atras(0, hora=8))
-    db.session.add(caja_hoy)
+    session.add(caja_hoy)
     cajas.append(caja_hoy)
-    db.session.commit()
+    session.commit()
 
     def caja_para_fecha(fecha):
         anteriores = [c for c in cajas if c.fecha_apertura <= fecha]
@@ -205,22 +204,22 @@ with app.app_context():
                 metodo_pago=random.choice(["efectivo", "tarjeta", "transferencia"]) if estado in ("entregado", "listo") else None,
                 observaciones=random.choice([None, None, None, "Sin azucar", "Extra caliente", "Para llevar"]),
             )
-            db.session.add(pedido)
-            db.session.flush()
+            session.add(pedido)
+            session.flush()
 
             for prod, cantidad in zip(elegidos, cantidades):
                 subtotal = float(prod.precio) * cantidad
-                db.session.add(DetallePedido(
+                session.add(DetallePedido(
                     id_pedido=pedido.id_pedido, id_producto=prod.id_producto,
                     cantidad=cantidad, precio_unitario=prod.precio, subtotal=subtotal,
                 ))
 
-            db.session.add(PedidoEstadoHistorial(
+            session.add(PedidoEstadoHistorial(
                 id_pedido=pedido.id_pedido, estado_anterior=None, estado_nuevo="pendiente",
                 id_usuario=mesero.id_usuario, fecha_cambio=fecha_creacion,
             ))
             if estado != "pendiente":
-                db.session.add(PedidoEstadoHistorial(
+                session.add(PedidoEstadoHistorial(
                     id_pedido=pedido.id_pedido, estado_anterior="pendiente", estado_nuevo=estado,
                     id_usuario=random.choice(cocineros).id_usuario, fecha_cambio=fecha_creacion + timedelta(minutes=15),
                 ))
@@ -229,7 +228,7 @@ with app.app_context():
             # Ticket + pago solo para pedidos cobrados (entregado / listo)
             if estado in ("entregado", "listo"):
                 caja_asociada = caja_para_fecha(fecha_creacion)
-                cajero = db.session.get(Usuario, caja_asociada.id_usuario)
+                cajero = session.get(Usuario, caja_asociada.id_usuario)
                 impuesto = round(total * 0.16, 2)
                 fecha_ticket = fecha_creacion + timedelta(minutes=20)
                 ticket = Ticket(
@@ -237,34 +236,34 @@ with app.app_context():
                     id_usuario=cajero.id_usuario, fecha=fecha_ticket, total=total + impuesto,
                     impuesto=impuesto, descuento=0, estado="pagado",
                 )
-                db.session.add(ticket)
-                db.session.flush()
+                session.add(ticket)
+                session.flush()
                 tipo_pago = random.choice(TIPOS_PAGO)
                 monto = float(total) + impuesto
-                db.session.add(Pago(
+                session.add(Pago(
                     id_ticket=ticket.id_ticket, monto=monto, tipo_pago=tipo_pago,
                     fecha_pago=fecha_ticket, cambio=round(random.uniform(0, 20), 2) if tipo_pago == "efectivo" else 0,
                 ))
                 total_tickets += 1
 
-    db.session.commit()
+    session.commit()
     print(f"Pedidos creados: {total_pedidos} | Tickets pagados: {total_tickets}")
 
     # --- Cortes de caja para turnos cerrados ---
     for caja in cajas:
         if caja.estado != "cerrado":
             continue
-        tickets_caja = Ticket.query.filter_by(id_caja=caja.id_caja, estado="pagado").all()
+        tickets_caja = session.query(Ticket).filter_by(id_caja=caja.id_caja, estado="pagado").all()
         total_efectivo = sum(float(p.monto) for t in tickets_caja for p in t.pagos if p.tipo_pago == "efectivo")
         total_tarjeta = sum(float(p.monto) for t in tickets_caja for p in t.pagos if p.tipo_pago == "tarjeta")
         total_transferencia = sum(float(p.monto) for t in tickets_caja for p in t.pagos if p.tipo_pago == "transferencia")
-        db.session.add(CorteCaja(
+        session.add(CorteCaja(
             id_caja=caja.id_caja, id_usuario=caja.id_usuario, fecha_corte=caja.fecha_cierre,
             total_ventas=total_efectivo + total_tarjeta + total_transferencia,
             total_efectivo=total_efectivo, total_tarjeta=total_tarjeta, total_transferencia=total_transferencia,
             diferencia=0,
         ))
-    db.session.commit()
+    session.commit()
 
     # --- Gastos distribuidos en los ultimos 6 meses ---
     conceptos_gastos = [
@@ -284,13 +283,13 @@ with app.app_context():
         usuario_gasto = random.choice(cajeros + [admin])
         fecha_gasto = dias_atras(dia_offset, hora=random.randint(9, 18))
         caja_asociada = caja_para_fecha(fecha_gasto)
-        db.session.add(Gasto(
+        session.add(Gasto(
             id_caja=caja_asociada.id_caja, id_usuario=usuario_gasto.id_usuario, concepto=concepto,
             monto=monto, categoria=categoria, fecha=fecha_gasto,
             comprobante=f"FAC-{random.randint(1000,9999)}" if random.random() < 0.6 else None,
         ))
         n_gastos += 1
-    db.session.commit()
+    session.commit()
     print(f"Gastos creados: {n_gastos}")
 
     # --- Compras de suministro ---
@@ -299,43 +298,51 @@ with app.app_context():
         dia_offset = random.randint(0, 170)
         fecha_compra = dias_atras(dia_offset, hora=random.randint(9, 16))
         caja_asociada = caja_para_fecha(fecha_compra)
-        db.session.add(CompraSuministro(
+        session.add(CompraSuministro(
             id_caja=caja_asociada.id_caja, id_usuario=random.choice(cajeros).id_usuario,
             proveedor=random.choice(proveedores), total=round(random.uniform(500, 6000), 2),
             fecha=fecha_compra, estado=random.choice(["pendiente", "recibido", "recibido", "recibido"]),
             factura=f"FAC-SUM-{1000+i}", notas="Pedido mensual de insumos" if i % 2 == 0 else None,
         ))
-    db.session.commit()
+    session.commit()
     print("Compras de suministro creadas: 10")
 
     # --- Notificaciones recientes (pedidos listos, alertas de stock) ---
-    pedidos_recientes_listos = Pedido.query.filter(Pedido.estado.in_(["listo", "entregado"])).order_by(Pedido.fecha_creacion.desc()).limit(6).all()
+    pedidos_recientes_listos = (
+        session.query(Pedido)
+        .filter(Pedido.estado.in_(["listo", "entregado"]))
+        .order_by(Pedido.fecha_creacion.desc())
+        .limit(6)
+        .all()
+    )
     for p in pedidos_recientes_listos:
-        db.session.add(Notificacion(
+        session.add(Notificacion(
             id_pedido=p.id_pedido, tipo="pedido_listo",
             mensaje=f"El pedido {p.numero_pedido} esta listo para entregar.",
             id_receptor=p.id_usuario, estado=random.choice(["enviada", "leida"]),
             fecha_envio=p.fecha_creacion + timedelta(minutes=18),
         ))
-    ingredientes_bajos = Ingrediente.query.filter(Ingrediente.stock_actual < Ingrediente.stock_minimo).all()
+    ingredientes_bajos = session.query(Ingrediente).filter(Ingrediente.stock_actual < Ingrediente.stock_minimo).all()
     for idx, ing in enumerate(ingredientes_bajos):
-        db.session.add(Notificacion(
+        session.add(Notificacion(
             tipo="stock_bajo", mensaje=f"Stock bajo de {ing.nombre}: {ing.stock_actual} {ing.unidad_medida} disponibles.",
             id_receptor=admin.id_usuario, estado="enviada", fecha_envio=dias_atras(0, hora=9),
         ))
         # La primera mitad queda pendiente de atender; el resto simula alertas ya resueltas.
         atendida = idx >= len(ingredientes_bajos) // 2
-        db.session.add(AlertaStock(
+        session.add(AlertaStock(
             id_ingrediente=ing.id_ingrediente, stock_actual=ing.stock_actual, stock_minimo=ing.stock_minimo,
             fecha_alerta=dias_atras(random.randint(0, 5), hora=9),
             atendida=atendida, fecha_atendida=dias_atras(random.randint(0, 2), hora=15) if atendida else None,
         ))
-    db.session.commit()
+    session.commit()
     print(f"Alertas de stock creadas: {len(ingredientes_bajos)}")
 
     print("\nDatos de demostracion creados correctamente.")
-    print(f"Usuarios extra: mesero2/mesero123, cocinero2/cocinero123, cajero2/cajero123")
-    print(f"Productos totales: {Producto.query.count()} | Ingredientes totales: {Ingrediente.query.count()}")
-    print(f"Pedidos: {Pedido.query.count()} | Tickets pagados: {Ticket.query.filter_by(estado='pagado').count()}")
-    print(f"Gastos: {Gasto.query.count()} | Cortes de caja: {CorteCaja.query.count()} | Compras: {CompraSuministro.query.count()}")
+    print("Usuarios extra: mesero2/mesero123, cocinero2/cocinero123, cajero2/cajero123")
+    print(f"Productos totales: {session.query(Producto).count()} | Ingredientes totales: {session.query(Ingrediente).count()}")
+    print(f"Pedidos: {session.query(Pedido).count()} | Tickets pagados: {session.query(Ticket).filter_by(estado='pagado').count()}")
+    print(f"Gastos: {session.query(Gasto).count()} | Cortes de caja: {session.query(CorteCaja).count()} | Compras: {session.query(CompraSuministro).count()}")
     print(f"Caja abierta actualmente: id_caja={caja_hoy.id_caja} (usar para nuevos tickets desde Postman)")
+finally:
+    session.close()

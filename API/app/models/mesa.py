@@ -1,16 +1,18 @@
-from ..extensions import db
+from sqlalchemy import Column, Integer, String
+
+from ..database import Base
 
 ESTADOS_MESA = ("disponible", "ocupada", "reservada")
 
 
-class Mesa(db.Model):
+class Mesa(Base):
     __tablename__ = "mesas"
 
-    id_mesa = db.Column(db.Integer, primary_key=True)
-    numero_mesa = db.Column(db.Integer, unique=True, nullable=False)
-    capacidad = db.Column(db.Integer, default=4)
-    ubicacion = db.Column(db.String(100))
-    estado = db.Column(db.String(30), default="disponible")
+    id_mesa = Column(Integer, primary_key=True)
+    numero_mesa = Column(Integer, unique=True, nullable=False)
+    capacidad = Column(Integer, default=4)
+    ubicacion = Column(String(100))
+    estado = Column(String(30), default="disponible")
 
     def to_dict(self):
         return {

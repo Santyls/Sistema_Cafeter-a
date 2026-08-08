@@ -1,25 +1,28 @@
 from datetime import datetime, timezone
 
-from ..extensions import db
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+
+from ..database import Base
 
 TIPOS_MOVIMIENTO = ("entrada", "salida", "ajuste")
 
 
-class InventarioMovimiento(db.Model):
+class InventarioMovimiento(Base):
     __tablename__ = "inventario_movimientos"
 
-    id_movimiento = db.Column(db.Integer, primary_key=True)
-    id_ingrediente = db.Column(db.Integer, db.ForeignKey("ingredientes.id_ingrediente"), nullable=False)
-    tipo_movimiento = db.Column(db.String(20), nullable=False)
-    cantidad = db.Column(db.Numeric(10, 2), nullable=False)
-    stock_anterior = db.Column(db.Numeric(10, 2))
-    stock_nuevo = db.Column(db.Numeric(10, 2))
-    fecha_movimiento = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"))
-    referencia = db.Column(db.String(100))
-    observaciones = db.Column(db.String(255))
+    id_movimiento = Column(Integer, primary_key=True)
+    id_ingrediente = Column(Integer, ForeignKey("ingredientes.id_ingrediente"), nullable=False)
+    tipo_movimiento = Column(String(20), nullable=False)
+    cantidad = Column(Numeric(10, 2), nullable=False)
+    stock_anterior = Column(Numeric(10, 2))
+    stock_nuevo = Column(Numeric(10, 2))
+    fecha_movimiento = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"))
+    referencia = Column(String(100))
+    observaciones = Column(String(255))
 
-    ingrediente = db.relationship("Ingrediente")
+    ingrediente = relationship("Ingrediente")
 
     def to_dict(self):
         return {
@@ -37,18 +40,18 @@ class InventarioMovimiento(db.Model):
         }
 
 
-class AlertaStock(db.Model):
+class AlertaStock(Base):
     __tablename__ = "alertas_stock"
 
-    id_alerta = db.Column(db.Integer, primary_key=True)
-    id_ingrediente = db.Column(db.Integer, db.ForeignKey("ingredientes.id_ingrediente"), nullable=False)
-    stock_actual = db.Column(db.Numeric(10, 2))
-    stock_minimo = db.Column(db.Numeric(10, 2))
-    fecha_alerta = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    atendida = db.Column(db.Boolean, default=False)
-    fecha_atendida = db.Column(db.DateTime)
+    id_alerta = Column(Integer, primary_key=True)
+    id_ingrediente = Column(Integer, ForeignKey("ingredientes.id_ingrediente"), nullable=False)
+    stock_actual = Column(Numeric(10, 2))
+    stock_minimo = Column(Numeric(10, 2))
+    fecha_alerta = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    atendida = Column(Boolean, default=False)
+    fecha_atendida = Column(DateTime(timezone=True))
 
-    ingrediente = db.relationship("Ingrediente")
+    ingrediente = relationship("Ingrediente")
 
     def to_dict(self):
         return {

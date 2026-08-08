@@ -265,6 +265,15 @@
           }
         },
         {
+          "name": "Inyectar orden a cocina (cajero, valida inventario)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"comentario\": \"Orden validada e inyectada por caja\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{base_url}}/pedidos/{{id_pedido_nuevo}}/inyectar" }
+          }
+        },
+        {
           "name": "Cambiar estado - en_preparacion (cocinero)",
           "request": {
             "method": "PATCH",
