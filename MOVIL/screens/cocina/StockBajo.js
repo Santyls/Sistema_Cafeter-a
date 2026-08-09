@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
@@ -27,7 +29,10 @@ export default function StockBajo({ navigate, inventory, onMarkAlertsAsAddressed
   const confirmRestock = () => {
     const amount = parseFloat(restockAmount);
     if (restockTarget && !isNaN(amount) && amount > 0) {
-      onRestockItem(restockTarget.name, amount);
+      Alert.alert(
+        'Solicitud Enviada',
+        `Se ha enviado una solicitud de reabastecimiento para ${amount} ${restockTarget.unit} de "${restockTarget.name}" al Administrador.`
+      );
     }
     setRestockTarget(null);
     setRestockAmount('');
@@ -40,7 +45,7 @@ export default function StockBajo({ navigate, inventory, onMarkAlertsAsAddressed
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigate('dashboard')}>
           <Icon name="back" size={22} color="#ffffff" />
@@ -71,7 +76,7 @@ export default function StockBajo({ navigate, inventory, onMarkAlertsAsAddressed
                 </View>
               </View>
               <TouchableOpacity style={styles.actionBtn} onPress={() => openRestock(item)}>
-                <Text style={styles.actionBtnText}>Reabastecer</Text>
+                <Text style={styles.actionBtnText}>Solicitar</Text>
               </TouchableOpacity>
             </View>
           ))
@@ -89,13 +94,13 @@ export default function StockBajo({ navigate, inventory, onMarkAlertsAsAddressed
       <Modal visible={!!restockTarget} transparent animationType="fade" onRequestClose={() => setRestockTarget(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: theme.cardBg }]}>
-            <Text style={[styles.modalTitle, { color: theme.textMain }]}>Reabastecer {restockTarget?.name}</Text>
+            <Text style={[styles.modalTitle, { color: theme.textMain }]}>Solicitar reabastecimiento: {restockTarget?.name}</Text>
             <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
               Disponible actualmente: {restockTarget?.actual} {restockTarget?.unit}
             </Text>
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]}
-              placeholder={`Cantidad a agregar (${restockTarget?.unit || ''})`}
+              placeholder={`Cantidad solicitada (${restockTarget?.unit || ''})`}
               placeholderTextColor={theme.textMuted}
               keyboardType="numeric"
               value={restockAmount}
@@ -113,13 +118,21 @@ export default function StockBajo({ navigate, inventory, onMarkAlertsAsAddressed
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 20 },
@@ -132,10 +145,10 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 16, fontWeight: 'bold' },
   warningText: { fontSize: 14, color: '#FF3B30', marginTop: 4 },
   limitText: { fontSize: 12, marginTop: 2 },
-  actionBtn: { backgroundColor: '#2D1E16', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, marginLeft: 10 },
+  actionBtn: { backgroundColor: '#0A1931', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, marginLeft: 10 },
   actionBtnText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
   footer: { padding: 20, backgroundColor: 'transparent' },
-  clearBtn: { backgroundColor: '#8D6E63', borderRadius: 16, height: 54, justifyContent: 'center', alignItems: 'center' },
+  clearBtn: { backgroundColor: '#9A7B1C', borderRadius: 16, height: 54, justifyContent: 'center', alignItems: 'center' },
   clearBtnText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   modalCard: { width: '100%', maxWidth: 400, borderRadius: 20, padding: 24 },
@@ -145,6 +158,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancelBtn: { flex: 1, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   modalCancelText: { fontWeight: '600', fontSize: 15 },
-  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#2D1E16', justifyContent: 'center', alignItems: 'center' },
+  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#0A1931', justifyContent: 'center', alignItems: 'center' },
   modalConfirmText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
 });

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class CajaCreate(BaseModel):
@@ -114,3 +114,18 @@ class CompraOut(BaseModel):
     estado: str | None
     factura: str | None
     notas: str | None
+
+
+class TicketItemIn(BaseModel):
+    nombre: str = "Producto"
+    cantidad: int = 1
+    precio: float = 0.0
+
+
+class EnviarTicketIn(BaseModel):
+    email: EmailStr
+    folio: str = "TCK-DEMO"
+    mesa: str | int = "N/A"
+    total: float = 0.0
+    metodoPago: str = "Efectivo"
+    pedido: list[TicketItemIn] = []

@@ -10,20 +10,55 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar as RNStatusBar,
+  Alert,
 } from 'react-native';
 import Icon from '../shared/Icon';
 
+import { API_BASE_URL } from '../../config/api';
 export default function LoginCocina({ navigate, onLogin, onBack }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handlePressLogin = () => {
+    const userLower = username.trim().toLowerCase();
+    if (!userLower || !password) {
+      Alert.alert('Campos Incompletos', 'Por favor ingresa tu ID/Correo y contraseña.');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onLogin(username || 'cocinero1', password || 'cocinero123');
-    }, 1000);
+    fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        usuario: userLower,
+        contrasena: password,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          return res.json().then((err) => {
+            throw new Error(err.error || 'Credenciales incorrectas');
+          });
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setLoading(false);
+        const user = data.usuario;
+        if (user.rol !== 'cocinero' && user.rol !== 'admin') {
+          Alert.alert('Acceso Denegado', 'Tu rol no tiene acceso a este módulo de Cocina.');
+          return;
+        }
+        onLogin(user.nombre, password, data.access_token);
+      })
+      .catch((error) => {
+        setLoading(false);
+        Alert.alert('Error de Inicio de Sesión', error.message || 'No se pudo conectar con el servidor.');
+      });
   };
 
   return (
@@ -31,7 +66,7 @@ export default function LoginCocina({ navigate, onLogin, onBack }) {
       <View style={styles.appContainer}>
         <ScrollView contentContainerStyle={styles.authScroll}>
           <View style={styles.logoContainer}>
-            <Icon name="coffee" size={40} color="#2D1E16" />
+            <Icon name="coffee" size={40} color="#0A1931" />
           </View>
           <Text style={styles.appTitleText}>CoffeeFlow Pro</Text>
           <Text style={styles.appSubtitleText}>Modulo de Cocina</Text>
@@ -92,7 +127,7 @@ export default function LoginCocina({ navigate, onLogin, onBack }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#2D1E16',
+    backgroundColor: '#0A1931',
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
   appContainer: {
@@ -125,7 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     letterSpacing: -0.5,
-    color: '#2D1E16',
+    color: '#0A1931',
   },
   appSubtitleText: {
     fontSize: 14,
@@ -164,7 +199,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2D1E16',
+    backgroundColor: '#0A1931',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -184,7 +219,7 @@ const styles = StyleSheet.create({
   linksText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8D6E63',
+    color: '#9A7B1C',
   },
   linksTextMuted: {
     fontSize: 14,

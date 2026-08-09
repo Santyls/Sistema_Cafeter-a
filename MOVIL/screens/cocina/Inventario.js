@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   TextInput,
   Modal,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
@@ -21,9 +23,12 @@ export default function Inventario({ navigate, toggleSidebar, inventory, onResto
 
   const categories = ['Todos', 'Cafe', 'Lacteos', 'Panaderia', 'Otros'];
 
+  const normalize = (str) =>
+    (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const filteredInventory = inventory.filter((item) => {
-    const searchMatch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const categoryMatch = activeCategory === 'Todos' || item.category === activeCategory;
+    const searchMatch = normalize(item.name).includes(normalize(searchQuery));
+    const categoryMatch = activeCategory === 'Todos' || normalize(item.category) === normalize(activeCategory);
     return searchMatch && categoryMatch;
   });
 
@@ -49,7 +54,7 @@ export default function Inventario({ navigate, toggleSidebar, inventory, onResto
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -84,12 +89,12 @@ export default function Inventario({ navigate, toggleSidebar, inventory, onResto
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.listContent, { backgroundColor: theme.cardBg }]}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.listContent, { backgroundColor: theme.cardBg }]}>
         <View style={[styles.tableHeader, { borderBottomColor: theme.border }]}>
           <Text style={[styles.colHeader, { flex: 2, color: theme.textMuted }]}>Ingrediente</Text>
           <Text style={[styles.colHeader, { flex: 1, textAlign: 'center', color: theme.textMuted }]}>Actual</Text>
           <Text style={[styles.colHeader, { flex: 1, textAlign: 'center', color: theme.textMuted }]}>Minimo</Text>
-          <Text style={[styles.colHeader, { flex: 1.3, textAlign: 'right', color: theme.textMuted }]}> </Text>
+          <Text style={[styles.colHeader, { flex: 1.3, textAlign: 'right', color: theme.textMuted }]}>Estado</Text>
         </View>
 
         {filteredInventory.length === 0 ? (
@@ -163,13 +168,21 @@ export default function Inventario({ navigate, toggleSidebar, inventory, onResto
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   searchSection: { paddingHorizontal: 16, paddingTop: 16 },
@@ -177,10 +190,10 @@ const styles = StyleSheet.create({
   tabsWrapper: { paddingVertical: 14 },
   tabsScroll: { paddingHorizontal: 16 },
   tabBtn: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 10 },
-  tabBtnActive: { backgroundColor: '#2D1E16', borderColor: '#2D1E16' },
+  tabBtnActive: { backgroundColor: '#0A1931', borderColor: '#0A1931' },
   tabText: { fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: '#ffffff' },
-  listContent: { borderRadius: 20, marginHorizontal: 16, padding: 16, marginBottom: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
+  listContent: { borderRadius: 20, marginHorizontal: 16, padding: 16, marginBottom: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2, flexGrow: 1 },
   tableHeader: { flexDirection: 'row', borderBottomWidth: 1.5, paddingBottom: 10, marginBottom: 10 },
   colHeader: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
@@ -190,7 +203,7 @@ const styles = StyleSheet.create({
   statusBarContainer: { width: 60, height: 6, backgroundColor: '#e5e5ea', borderRadius: 3, overflow: 'hidden', marginBottom: 4 },
   statusBarFill: { height: '100%', borderRadius: 3 },
   statusLabel: { fontSize: 11, fontWeight: 'bold', marginBottom: 6 },
-  restockBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2D1E16', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, gap: 4 },
+  restockBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A1931', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, gap: 4 },
   restockBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   emptyText: { textAlign: 'center', paddingVertical: 30, fontSize: 14 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
@@ -201,6 +214,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancelBtn: { flex: 1, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   modalCancelText: { fontWeight: '600', fontSize: 15 },
-  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#2D1E16', justifyContent: 'center', alignItems: 'center' },
+  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: '#0A1931', justifyContent: 'center', alignItems: 'center' },
   modalConfirmText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
 });

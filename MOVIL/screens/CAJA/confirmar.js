@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   FlatList,
@@ -21,24 +20,26 @@ export default function Confirmar({
   cambiarPantalla,
 }) {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Confirmar pedido"
-        subtitle={`Mesa ${mesa.numero}`}
+        subtitle={`Mesa ${mesa ? (mesa.numero || mesa.id || '') : 'N/A'}`}
         onBack={() => cambiarPantalla("pedido")}
       />
 
       <FlatList
         data={pedido}
         keyExtractor={(item) => item.id.toString()}
+        style={{ backgroundColor: Colors.background }}
         contentContainerStyle={{ padding: 20, paddingBottom: 220 }}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <View>
-              <Text style={styles.nombre}>{item.nombre}</Text>
-              <Text style={styles.detalle}>
-                {item.cantidad} x ${item.precio.toFixed(2)}
-              </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Icon name="coffee" size={24} color={Colors.primary} style={{ marginRight: 16 }} />
+              <View>
+                <Text style={styles.nombre}>{item.nombre}</Text>
+                <Text style={styles.detalle}>Cantidad: {item.cantidad}</Text>
+              </View>
             </View>
             <Text style={styles.subtotalItem}>
               ${(item.cantidad * item.precio).toFixed(2)}
@@ -63,13 +64,8 @@ export default function Confirmar({
           <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
         </View>
         <PrimaryButton
-          title="Enviar a cocina"
-          onPress={() => cambiarPantalla("inyeccion")}
-        />
-        <PrimaryButton
-          title="Cobrar ahora"
+          title="Proceder al pago"
           onPress={() => cambiarPantalla("pago")}
-          style={{ backgroundColor: Colors.secondary, marginTop: 10 }}
         />
         <PrimaryButton
           title="Cancelar pedido"
@@ -83,12 +79,12 @@ export default function Confirmar({
           textStyle={{ color: Colors.danger }}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
   item: {
     backgroundColor: Colors.white,
     borderRadius: 16,

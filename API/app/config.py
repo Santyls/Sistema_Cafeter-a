@@ -15,5 +15,13 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: list[str] = ["*"]
 
+    # Envio de tickets digitales por correo. Si no hay servidor SMTP disponible,
+    # el ticket se genera igual y la operacion no falla (entorno de desarrollo).
+    SMTP_HOST: str = "mailhog"
+    SMTP_HOST_FALLBACK: str = "localhost"
+    SMTP_PORT: int = 1025
+    SMTP_TIMEOUT: int = 2
+    TICKET_SENDER_EMAIL: str = "no-reply@coffeeflow.com"
+
 
 settings = Settings()

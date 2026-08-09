@@ -119,7 +119,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
                   style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }, !item.read && { borderLeftWidth: 4, borderLeftColor: '#5BC0DE' }]}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: '#8D6E63', fontWeight: 'bold' }}>
+                    <Text style={{ fontSize: 12, color: '#9A7B1C', fontWeight: 'bold' }}>
                       {item.type === 'kitchen' ? 'Cocina' : 'Sistema'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.textMuted }}>{item.time}</Text>
@@ -148,9 +148,6 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
                 <Text style={styles.avatarText}>
                   {currentUser ? currentUser.substring(0, 2).toUpperCase() : 'CO'}
                 </Text>
-                <TouchableOpacity style={styles.avatarCameraBtn}>
-                  <Icon name="camera" size={14} color="#8E8E93" />
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -165,7 +162,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
             </View>
             <View style={styles.formGroup}>
               <Text style={[styles.label, { color: theme.textMuted }]}>Correo electronico</Text>
-              <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editEmail} onChangeText={setEditEmail} keyboardType="email-address" />
+              <TextInput style={[styles.input, styles.inputDisabled]} value={editEmail} editable={false} keyboardType="email-address" />
             </View>
             <View style={styles.formGroup}>
               <Text style={[styles.label, { color: theme.textMuted }]}>Numero de telefono</Text>
@@ -266,7 +263,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#2D1E16',
+    backgroundColor: '#0A1931',
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
   appContainer: { flex: 1 },
@@ -276,7 +273,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
-    backgroundColor: '#2D1E16',
+    backgroundColor: '#0A1931',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -297,21 +294,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardHeaderTitle: { fontSize: 16, fontWeight: 'bold', borderBottomWidth: 1, paddingBottom: 12, marginBottom: 8, textAlign: 'center' },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#8D6E63', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#9A7B1C', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   avatarText: { fontSize: 28, color: '#ffffff', fontWeight: 'bold' },
   avatarCameraBtn: { position: 'absolute', bottom: -2, right: -2, backgroundColor: '#ffffff', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#eee' },
   waiterName: { fontSize: 20, fontWeight: 'bold', marginTop: 4 },
   waiterRole: { fontSize: 14, marginTop: 2 },
   shiftBadge: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, marginTop: 12 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#8D6E63', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#9A7B1C', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 4 },
   receiptRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
   textMuted: {},
   textBold: { fontWeight: 'bold' },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1 },
   settingLabel: { fontSize: 15, fontWeight: '500' },
-  smallBtn: { backgroundColor: '#2D1E16', borderRadius: 12, paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },
+  smallBtn: { backgroundColor: '#0A1931', borderRadius: 12, paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },
   smallBtnText: { color: '#ffffff', fontWeight: '600', fontSize: 13, textAlign: 'center' },
-  btn: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: '#2D1E16', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2, marginTop: 10 },
+  btn: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A1931', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2, marginTop: 10 },
   btnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
   btnOutline: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, marginTop: 10, marginBottom: 40 },
   btnOutlineDanger: { width: '100%', padding: 16, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderColor: '#D9534F', borderWidth: 1, marginTop: 12, marginBottom: 40 },
@@ -319,11 +316,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginLeft: 4 },
   input: { width: '100%', padding: 16, borderRadius: 16, borderWidth: 1, fontSize: 15, backgroundColor: 'rgba(255,255,255,0.95)', color: '#1C1C1E', borderColor: 'rgba(45, 30, 22, 0.08)' },
   inputDisabled: { backgroundColor: 'rgba(45, 30, 22, 0.08)', color: '#8E8E93' },
-  bigNumber: { color: '#2D1E16', fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 },
+  bigNumber: { color: '#0A1931', fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 },
   mutedCenter: { fontSize: 12, textAlign: 'center' },
   chartContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 120, paddingTop: 10 },
   chartCol: { alignItems: 'center' },
-  chartBar: { width: 24, backgroundColor: '#2D1E16', borderRadius: 6 },
+  chartBar: { width: 24, backgroundColor: '#0A1931', borderRadius: 6 },
   chartLabel: { fontSize: 9, marginBottom: 4 },
   chartHour: { fontSize: 10, marginTop: 6 },
 });

@@ -24,6 +24,20 @@ class UsuarioUpdate(BaseModel):
     contrasena: str | None = None
 
 
+class PerfilUpdate(BaseModel):
+    """Campos que un usuario puede editar de su propia cuenta (RF-40/41).
+
+    No incluye 'rol' ni 'activo': cambiarlos sigue siendo exclusivo del administrador.
+    """
+
+    nombre: str | None = None
+    apellido_paterno: str | None = None
+    apellido_materno: str | None = None
+    telefono: str | None = None
+    correo: str | None = None
+    contrasena: str | None = Field(default=None, min_length=6)
+
+
 class UsuarioOut(BaseModel):
     id_usuario: int
     nombre: str

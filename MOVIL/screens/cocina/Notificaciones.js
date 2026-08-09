@@ -7,6 +7,8 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
@@ -16,9 +18,33 @@ export default function Notificaciones({
   notifications,
   onMarkAllNotificationsRead,
   onClearNotifications,
+  onMarkNotificationRead,
+  onSelectOrder,
+  orders,
   darkMode,
 }) {
   const theme = getTheme(darkMode);
+
+  const handleNotifPress = (notif) => {
+    if (!notif.read && onMarkNotificationRead) {
+      onMarkNotificationRead(notif.id);
+    }
+    
+    if (notif.type === 'low_stock') {
+      navigate('stock_bajo');
+      return;
+    }
+    
+    const match = notif.message.match(/#(\d+)/);
+    if (match && orders && onSelectOrder) {
+      const orderIdStr = match[1];
+      const foundOrder = orders.find(o => o.id.toString() === orderIdStr);
+      if (foundOrder) {
+        onSelectOrder(foundOrder.id);
+        navigate('detalle_pedido');
+      }
+    }
+  };
 
   const getNotificationStyle = (type) => {
     switch (type) {
@@ -41,7 +67,7 @@ export default function Notificaciones({
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigate('dashboard')}>
           <Icon name="back" size={22} color="#ffffff" />
@@ -60,13 +86,15 @@ export default function Notificaciones({
           notifications.map((notif) => {
             const nStyle = getNotificationStyle(notif.type);
             return (
-              <View
+              <TouchableOpacity
                 key={notif.id}
                 style={[
                   styles.notifCard,
                   { backgroundColor: nStyle.bg, borderColor: nStyle.border },
                   !notif.read && styles.unreadCard,
                 ]}
+                onPress={() => handleNotifPress(notif)}
+                activeOpacity={0.7}
               >
                 <View style={styles.iconContainer}>
                   <Icon name={nStyle.icon} size={20} color={nStyle.iconColor} />
@@ -78,7 +106,7 @@ export default function Notificaciones({
                   <Text style={styles.timeText}>{notif.time}</Text>
                 </View>
                 {!notif.read && <View style={styles.unreadDot} />}
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
@@ -94,13 +122,21 @@ export default function Notificaciones({
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#ffffff' },
   scrollContent: { padding: 16 },
@@ -111,11 +147,11 @@ const styles = StyleSheet.create({
   iconContainer: { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   content: { flex: 1 },
   messageText: { fontSize: 14, color: '#555555', lineHeight: 20 },
-  unreadText: { fontWeight: 'bold', color: '#2D1E16' },
+  unreadText: { fontWeight: 'bold', color: '#0A1931' },
   timeText: { fontSize: 11, color: '#8E8E93', marginTop: 4 },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#007AFF', position: 'absolute', right: 16, top: 16 },
   footer: { padding: 16, gap: 10 },
-  btn: { backgroundColor: '#2D1E16', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center' },
+  btn: { backgroundColor: '#0A1931', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center' },
   btnText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   clearBtn: { backgroundColor: 'transparent', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#FF3B30' },
   clearBtnText: { color: '#FF3B30', fontSize: 15, fontWeight: '700' },

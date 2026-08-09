@@ -21,9 +21,32 @@ async function api(path, opts = {}) {
 }
 
 function fmt(n) { return '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-function fmtDate(d) { return d ? new Date(d).toLocaleDateString('es-MX') : '-'; }
-function fmtTime(d) { return d ? new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'; }
-function toISO(d) { return d ? new Date(d).toISOString().slice(0, 10) : ''; }
+function toUTC(d) {
+  if (!d) return null;
+  if (typeof d === 'string' && !d.includes('Z') && !d.includes('+') && d.includes('T')) {
+    return d + 'Z';
+  }
+  return d;
+}
+
+function fmtDate(d) { 
+  var utcDate = toUTC(d);
+  return utcDate ? new Date(utcDate).toLocaleDateString('es-MX') : '-'; 
+}
+
+function fmtTime(d) { 
+  var utcDate = toUTC(d);
+  return utcDate ? new Date(utcDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'; 
+}
+function toISO(d) {
+  var utc = toUTC(d);
+  if (!utc) return '';
+  var dateObj = new Date(utc);
+  var yyyy = dateObj.getFullYear();
+  var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+  var dd = ('0' + dateObj.getDate()).slice(-2);
+  return yyyy + '-' + mm + '-' + dd;
+}
 
 function openModal(id) { var el = document.getElementById(id); if (el) el.classList.add('open'); }
 function closeModal(id) { var el = document.getElementById(id); if (el) el.classList.remove('open'); }
@@ -52,8 +75,8 @@ function handleLogout(e) {
 
 function getPeriodStart(period) {
   var now = new Date();
-  if (period === 'Semanal' || period === 'Hoy') {
-    if (period === 'Hoy') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
+  if (period === 'Semanal' || period === 'Hoy' || period === 'Diario') {
+    if (period === 'Hoy' || period === 'Diario') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
     var d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10);
   }
   if (period === 'Mensual') { var d = new Date(now); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); }
@@ -122,7 +145,7 @@ function getExportFiltered() {
 }
 
 function buildFilename(base) {
-  var hoy = new Date().toISOString().slice(0, 10);
+  var hoy = toISO(new Date());
   if (_exportContext.noDates) return base + '_' + hoy;
   var desde = document.getElementById('exportFechaInicio').value;
   var hasta = document.getElementById('exportFechaFin').value;
@@ -315,28 +338,79 @@ function initDashboard() {
     api('/productos').catch(function() { return []; })
   ]).then(function(results) {
     var gastos = results[0] || [], tickets = results[1] || [], pedidos = results[2] || [], productos = results[3] || [];
-    var totalGastos = gastos.reduce(function(s, g) { return s + Number(g.monto || 0); }, 0);
+    
+    // Get local date strings
+    var now = new Date();
+    var yyyy = now.getFullYear();
+    var mm = ('0' + (now.getMonth() + 1)).slice(-2);
+    var dd = ('0' + now.getDate()).slice(-2);
+    
+    var hoyLocal = yyyy + '-' + mm + '-' + dd;
+    var mesLocal = yyyy + '-' + mm;
+
     var tkPagados = tickets.filter(function(t) { return t.estado === 'pagado'; });
-    var totalGanancias = tkPagados.reduce(function(s, t) { return s + Number(t.total || 0); }, 0);
-    var hoy = new Date().toISOString().slice(0, 10);
-    var pedidosHoy = pedidos.filter(function(p) { return (p.fecha_creacion || '').startsWith(hoy); });
 
     var el = function(id) { return document.getElementById(id); };
-    if (el('statGastos')) el('statGastos').textContent = fmt(totalGastos);
-    if (el('statGanancias')) el('statGanancias').textContent = fmt(totalGanancias);
-    if (el('statPedidosHoy')) el('statPedidosHoy').textContent = pedidosHoy.length;
+
+    function updateStats() {
+      var period = el('filtroPeriodo') ? el('filtroPeriodo').value : 'mes';
+      
+      var filteredGastos, filteredTickets, filteredPedidos;
+      var lblGastos, lblGanancias, lblPedidos;
+      
+      if (period === 'hoy') {
+        filteredGastos = gastos.filter(function(g) { return toISO(g.fecha).startsWith(hoyLocal); });
+        filteredTickets = tkPagados.filter(function(t) { return toISO(t.fecha).startsWith(hoyLocal); });
+        filteredPedidos = pedidos.filter(function(p) { return toISO(p.fecha_creacion || p.fecha).startsWith(hoyLocal); });
+        lblGastos = 'Hoy (' + filteredGastos.length + ' reg)';
+        lblGanancias = 'Hoy (' + filteredTickets.length + ' reg)';
+        lblPedidos = 'Hoy (' + hoyLocal + ')';
+      } else {
+        filteredGastos = gastos.filter(function(g) { return toISO(g.fecha).startsWith(mesLocal); });
+        filteredTickets = tkPagados.filter(function(t) { return toISO(t.fecha).startsWith(mesLocal); });
+        filteredPedidos = pedidos.filter(function(p) { return toISO(p.fecha_creacion || p.fecha).startsWith(mesLocal); });
+        lblGastos = 'Este mes (' + filteredGastos.length + ' reg)';
+        lblGanancias = 'Este mes (' + filteredTickets.length + ' reg)';
+        lblPedidos = 'Este mes';
+      }
+      
+      var totalGastos = filteredGastos.reduce(function(s, g) { return s + Number(g.monto || 0); }, 0);
+      var totalGanancias = filteredTickets.reduce(function(s, t) { return s + Number(t.total || 0); }, 0);
+      
+      if (el('statGastos')) {
+        el('statGastos').textContent = fmt(totalGastos);
+        var trendGastos = el('statGastos').nextElementSibling;
+        if (trendGastos) trendGastos.textContent = lblGastos;
+      }
+      if (el('statGanancias')) {
+        el('statGanancias').textContent = fmt(totalGanancias);
+        var trendGanancias = el('statGanancias').nextElementSibling;
+        if (trendGanancias) trendGanancias.textContent = lblGanancias;
+      }
+      if (el('statPedidosHoy')) {
+        el('statPedidosHoy').textContent = filteredPedidos.length;
+        var trendPedidos = el('statPedidosHoy').nextElementSibling;
+        if (trendPedidos) trendPedidos.textContent = lblPedidos;
+      }
+    }
+
+    if (el('filtroPeriodo')) {
+      el('filtroPeriodo').addEventListener('change', updateStats);
+    }
+    updateStats();
+
     if (el('statTopProducto')) el('statTopProducto').textContent = productos.length ? productos[0].nombre : 'Sin datos';
     if (el('statTopProductoSub')) el('statTopProductoSub').textContent = productos.length + ' productos registrados';
 
     var meses = [], gastosPorMes = {}, gananciasPorMes = {};
     for (var i = 5; i >= 0; i--) {
       var d = new Date(); d.setMonth(d.getMonth() - i);
-      var key = d.toISOString().slice(0, 7);
+      var key = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
       meses.push({ key: key, label: d.toLocaleDateString('es-MX', { month: 'short' }) });
       gastosPorMes[key] = 0; gananciasPorMes[key] = 0;
     }
-    gastos.forEach(function(g) { var k = (g.fecha || '').slice(0, 7); if (gastosPorMes[k] !== undefined) gastosPorMes[k] += Number(g.monto || 0); });
-    tkPagados.forEach(function(t) { var k = (t.fecha || '').slice(0, 7); if (gananciasPorMes[k] !== undefined) gananciasPorMes[k] += Number(t.total || 0); });
+    gastos.forEach(function(g) { var k = toISO(g.fecha).slice(0, 7); if (gastosPorMes[k] !== undefined) gastosPorMes[k] += Number(g.monto || 0); });
+    tkPagados.forEach(function(t) { var k = toISO(t.fecha).slice(0, 7); if (gananciasPorMes[k] !== undefined) gananciasPorMes[k] += Number(t.total || 0); });
 
     destroyChart('resumen');
     var ctx1 = el('chartResumen');
@@ -489,6 +563,8 @@ function renderGanancias(data) {
 // ===================== PRODUCTOS (con ventas desde pedidos) =====================
 
 var _productosData = [];
+var _categoriasData = [];
+var _editingProductoId = null;
 
 function initProductos() {
   if (!Auth.check()) return;
@@ -499,9 +575,18 @@ function initProductos() {
     api('/pedidos').catch(function() { return []; })
   ]).then(function(results) {
     var productos = results[0] || [], categorias = results[1] || [], pedidos = results[2] || [];
+    _categoriasData = categorias;
     var catMap = {};
     categorias.forEach(function(c) { catMap[c.id_categoria] = c.nombre; });
     productos.forEach(function(p) { p._categoria = catMap[p.id_categoria] || '-'; p._ventas = 0; p._ingreso = 0; });
+
+    // Populate category select options
+    var catSelect = document.getElementById('prodCategoria');
+    if (catSelect) {
+      catSelect.innerHTML = categorias.map(function(c) {
+        return '<option value="' + c.id_categoria + '">' + c.nombre + '</option>';
+      }).join('');
+    }
 
     var completados = pedidos.filter(function(p) { return p.estado === 'entregado' || p.estado === 'listo'; });
     var detailPromises = completados.slice(0, 50).map(function(p) {
@@ -536,8 +621,10 @@ function renderProductos(data) {
     tbody.innerHTML = sorted.length ? sorted.map(function(p) {
       var avg = data.reduce(function(s, x) { return s + (x._ventas || 0); }, 0) / (data.length || 1);
       var trend = (p._ventas || 0) > avg ? '<span class="badge badge-success">Alta demanda</span>' : (p._ventas || 0) > 0 ? '<span class="badge badge-warning">Normal</span>' : '<span class="badge badge-muted">Sin ventas</span>';
-      return '<tr><td>' + (p.nombre || '-') + '</td><td>' + (p._categoria || '-') + '</td><td>' + fmt(p.precio) + '</td><td>' + (p._ventas || 0) + '</td><td>' + fmt(p._ingreso) + '</td><td>' + trend + '</td></tr>';
-    }).join('') : '<tr><td colspan="6" style="text-align:center;color:#888;">No hay productos registrados</td></tr>';
+      var actions = '<button class="icon-btn" onclick="editProducto(' + p.id_producto + ')">' + IC.edit + '</button> ' +
+                    '<button class="icon-btn danger" onclick="deleteProducto(' + p.id_producto + ', \'' + (p.nombre || '').replace(/'/g, "\\'") + '\')">' + IC.trash + '</button>';
+      return '<tr><td>' + (p.nombre || '-') + '</td><td>' + (p._categoria || '-') + '</td><td>' + fmt(p.precio) + '</td><td>' + (p._ventas || 0) + '</td><td>' + fmt(p._ingreso) + '</td><td>' + trend + '</td><td class="row-actions">' + actions + '</td></tr>';
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:#888;">No hay productos registrados</td></tr>';
   }
 
   var byVentas = data.slice().sort(function(a, b) { return (b._ventas || 0) - (a._ventas || 0); });
@@ -556,6 +643,54 @@ function renderProductos(data) {
     var low5 = byVentas.slice(-5).reverse();
     _charts['prodLow'] = new Chart(ctx2, { type: 'bar', data: { labels: low5.map(function(p) { return p.nombre; }), datasets: [{ label: 'Ventas', data: low5.map(function(p) { return p._ventas || 0; }), backgroundColor: '#c0392b' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
   }
+}
+
+function openProductoModal(data) {
+  _editingProductoId = data ? data.id_producto : null;
+  document.getElementById('modalProductoTitle').textContent = data ? 'Editar producto' : 'Agregar producto';
+  document.getElementById('prodNombre').value = data ? data.nombre || '' : '';
+  document.getElementById('prodDescripcion').value = data ? data.descripcion || '' : '';
+  document.getElementById('prodPrecio').value = data ? data.precio : '';
+  document.getElementById('prodCategoria').value = data ? data.id_categoria : (_categoriasData.length ? _categoriasData[0].id_categoria : '');
+  document.getElementById('prodDisponible').checked = data ? !!data.disponible : true;
+  openModal('modalProducto');
+}
+
+function editProducto(id) {
+  var prod = _productosData.find(function(p) { return p.id_producto === id; });
+  if (prod) openProductoModal(prod);
+}
+
+function saveProducto() {
+  var nombre = document.getElementById('prodNombre').value.trim();
+  var precio = document.getElementById('prodPrecio').value;
+  var idCat = document.getElementById('prodCategoria').value;
+  if (!nombre) { alert('El nombre es requerido'); return; }
+  if (precio === '' || isNaN(Number(precio))) { alert('El precio debe ser un numero valido'); return; }
+  if (Number(precio) < 0) { alert('El precio no puede ser negativo'); return; }
+  if (!idCat) { alert('Selecciona una categoria'); return; }
+
+  var data = {
+    nombre: nombre,
+    descripcion: document.getElementById('prodDescripcion').value.trim(),
+    precio: Number(precio),
+    id_categoria: Number(idCat),
+    disponible: document.getElementById('prodDisponible').checked
+  };
+
+  var promise = _editingProductoId
+    ? api('/productos/' + _editingProductoId, { method: 'PUT', body: JSON.stringify(data) })
+    : api('/productos', { method: 'POST', body: JSON.stringify(data) });
+
+  promise.then(function() {
+    closeModal('modalProducto');
+    initProductos();
+  }).catch(function(err) { alert('Error: ' + err.message); });
+}
+
+function deleteProducto(id, nombre) {
+  if (!confirm('Eliminar el producto "' + nombre + '"?')) return;
+  api('/productos/' + id, { method: 'DELETE' }).then(function() { initProductos(); }).catch(function(err) { alert('Error: ' + err.message); });
 }
 
 // ===================== PEDIDOS (con filtros funcionales) =====================
@@ -846,17 +981,150 @@ function deleteUsuario(id, nombre) {
   api('/usuarios/' + id, { method: 'DELETE' }).then(function() { loadUsuarios(); }).catch(function(err) { alert('Error: ' + err.message); });
 }
 
+// ===================== WEB NOTIFICATIONS POLLING =====================
+
+var _prevNotifIds = new Set();
+
+function initWebNotifications() {
+  var bell = document.getElementById('webNotificationBell');
+  var dropdown = document.getElementById('webNotificationsDropdown');
+  var list = document.getElementById('webNotificationsList');
+  var badge = document.getElementById('webNotificationBadge');
+  var markAllBtn = document.getElementById('markAllReadBtn');
+
+  if (!bell || !dropdown || !list || !badge) return;
+
+  // Toggle dropdown
+  bell.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  document.addEventListener('click', function() {
+    dropdown.classList.remove('open');
+  });
+
+  dropdown.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+
+  function showToast(notif) {
+    var toast = document.createElement('div');
+    toast.className = 'notification-toast';
+    toast.innerHTML = '<div><strong>Nueva Alerta</strong><div style="font-size:13px;margin-top:2px;">' + notif.mensaje + '</div></div>';
+    document.body.appendChild(toast);
+    setTimeout(function() {
+      toast.style.transition = 'opacity 0.5s';
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    }, 4000);
+  }
+
+  function fetchNotifications() {
+    var u = Auth.getUser();
+    if (!u) return;
+    
+    // We can filter by admin user id (id_receptor) or just get all for this user
+    api('/notificaciones?id_receptor=' + u.id_usuario)
+      .then(function(data) {
+        if (!Array.isArray(data)) return;
+
+        var unread = data.filter(function(n) { return n.estado !== 'leida'; });
+        
+        // Badge
+        if (unread.length > 0) {
+          badge.textContent = unread.length;
+          badge.style.display = 'block';
+        } else {
+          badge.style.display = 'none';
+        }
+
+        // Check for new notifications to wiggle and toast
+        var hasNew = false;
+        data.forEach(function(n) {
+          if (!_prevNotifIds.has(n.id_notificacion)) {
+            _prevNotifIds.add(n.id_notificacion);
+            if (n.estado !== 'leida') {
+              hasNew = true;
+              showToast(n);
+            }
+          }
+        });
+
+        if (hasNew) {
+          bell.classList.remove('wiggle');
+          void bell.offsetWidth; // trigger reflow
+          bell.classList.add('wiggle');
+          setTimeout(function() { bell.classList.remove('wiggle'); }, 600);
+        }
+
+        // Render List
+        list.innerHTML = data.length ? data.map(function(n) {
+          var isUnread = n.estado !== 'leida' ? 'unread' : '';
+          var timeStr = n.fecha_envio ? new Date(n.fecha_envio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+          return '<div class="notification-item ' + isUnread + '" data-id="' + n.id_notificacion + '">' +
+            '<div class="title-row">' +
+            '<span class="title">' + (n.tipo || 'Notificación').toUpperCase() + '</span>' +
+            '<span class="time">' + timeStr + '</span>' +
+            '</div>' +
+            '<div class="message">' + n.mensaje + '</div>' +
+            '</div>';
+        }).join('') : '<div style="padding:16px;text-align:center;color:#888;font-size:13px;">No hay notificaciones</div>';
+
+        // Add item click to mark read
+        var items = list.querySelectorAll('.notification-item');
+        items.forEach(function(item) {
+          item.addEventListener('click', function() {
+            var id = this.getAttribute('data-id');
+            api('/notificaciones/' + id + '/leida', { method: 'PATCH' })
+              .then(function() { fetchNotifications(); })
+              .catch(function(e) { console.warn(e); });
+          });
+        });
+      })
+      .catch(function(err) {
+        console.warn('Error fetching notifications:', err);
+      });
+  }
+
+  // Mark all as read
+  markAllBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    var unreadItems = list.querySelectorAll('.notification-item.unread');
+    var promises = [];
+    unreadItems.forEach(function(item) {
+      var id = item.getAttribute('data-id');
+      promises.push(api('/notificaciones/' + id + '/leida', { method: 'PATCH' }));
+    });
+    if (promises.length) {
+      Promise.all(promises).then(function() {
+        fetchNotifications();
+      });
+    }
+  });
+
+  // Initial fetch and poll
+  fetchNotifications();
+  setInterval(fetchNotifications, 10000);
+}
+
 // ===================== INIT =====================
 
 document.addEventListener('DOMContentLoaded', function() {
   var path = window.location.pathname;
   if (path === '/' || path === '/login') initLogin();
   else if (path === '/recuperar') initRecuperar();
-  else if (path === '/dashboard') initDashboard();
-  else if (path === '/gastos') initGastos();
-  else if (path === '/ganancias') initGanancias();
-  else if (path === '/productos') initProductos();
-  else if (path === '/pedidos') initPedidos();
-  else if (path === '/inventario') initInventario();
-  else if (path === '/usuarios') initUsuarios();
+  else {
+    // Pages with topbar & shell
+    if (path === '/dashboard') initDashboard();
+    else if (path === '/gastos') initGastos();
+    else if (path === '/ganancias') initGanancias();
+    else if (path === '/productos') initProductos();
+    else if (path === '/pedidos') initPedidos();
+    else if (path === '/inventario') initInventario();
+    else if (path === '/usuarios') initUsuarios();
+    
+    // Initialize Web Notifications
+    initWebNotifications();
+  }
 });

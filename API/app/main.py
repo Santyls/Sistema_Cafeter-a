@@ -10,7 +10,17 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import models  # noqa: F401  (registra los modelos en el metadata)
 from .config import settings
 from .database import Base, engine
-from .routers import auth, caja, cocina, mesas, notificaciones, pedidos, productos, usuarios
+from .routers import (
+    auth,
+    caja,
+    cocina,
+    mesas,
+    notificaciones,
+    pedidos,
+    productos,
+    reservaciones,
+    usuarios,
+)
 
 
 @asynccontextmanager
@@ -80,6 +90,7 @@ app.include_router(pedidos.router)
 app.include_router(cocina.router)
 app.include_router(caja.router)
 app.include_router(notificaciones.router)
+app.include_router(reservaciones.router)
 
 
 @app.get("/api/health", tags=["Utilidad"])

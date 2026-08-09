@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from ..core.email import construir_html_ticket, enviar_ticket_por_correo
 from ..core.security import roles_required
 from ..database import get_db
 from ..models.caja import Caja, CompraSuministro, CorteCaja, Gasto, Pago, Ticket
@@ -14,6 +15,7 @@ from ..schemas.caja import (
     CompraOut,
     CorteCreate,
     CorteOut,
+    EnviarTicketIn,
     GastoCreate,
     GastoOut,
     PagoCreate,
@@ -22,6 +24,7 @@ from ..schemas.caja import (
     TicketCreate,
     TicketOut,
 )
+from ..schemas.common import MessageOut
 
 router = APIRouter(prefix="/api", tags=["Caja"])
 
@@ -103,6 +106,25 @@ def obtener_ticket(id_ticket: int, claims: dict = Depends(admin_o_cajero), db: S
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     return ticket.to_dict(with_pagos=True)
+
+
+@router.post("/caja/enviar-ticket", response_model=MessageOut)
+def enviar_ticket(
+    data: EnviarTicketIn, claims: dict = Depends(admin_o_cajero)
+):
+    """Envia el comprobante digital al correo del cliente (RF-C11)."""
+    html = construir_html_ticket(
+        folio=data.folio,
+        mesa=data.mesa,
+        total=data.total,
+        metodo_pago=data.metodoPago,
+        items=data.pedido,
+    )
+    entregado = enviar_ticket_por_correo(destinatario=data.email, folio=data.folio, html=html)
+
+    if entregado:
+        return {"message": "Ticket enviado con exito por correo electronico."}
+    return {"message": "Ticket generado. No hay servidor de correo configurado, no se envio."}
 
 
 @router.post("/tickets", response_model=TicketOut, status_code=201)

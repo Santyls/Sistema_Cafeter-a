@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -14,6 +13,7 @@ import Header from "./components/Header";
 import Icon from "../shared/Icon";
 import PrimaryButton from "./components/PrimaryButton";
 
+import { API_BASE_URL } from '../../config/api';
 const ESTADOS = ["Pendiente", "Recibido", "Cancelado"];
 
 const MOCK_SUMINISTROS = [
@@ -22,32 +22,110 @@ const MOCK_SUMINISTROS = [
   { id: 3, proveedor: "Panaderia Artesanal", monto: 1200.0, factura: "FAC-2024-003", estado: "Recibido", fecha: "13/03/2024" },
 ];
 
-export default function Suministros({ cambiarPantalla, toggleSidebar }) {
+export default function Suministros({ cambiarPantalla, toggleSidebar, token, usuarioLogueado, idCajaActiva }) {
   const [proveedor, setProveedor] = useState("");
   const [monto, setMonto] = useState("");
   const [factura, setFactura] = useState("");
   const [estadoSeleccionado, setEstadoSeleccionado] = useState("");
+  const [listaSuministros, setListaSuministros] = useState([]);
 
   const getEstadoColor = (estado) => {
-    switch (estado) {
-      case "Recibido": return Colors.success;
-      case "Pendiente": return Colors.warning;
-      case "Cancelado": return Colors.danger;
-      default: return Colors.textLight;
-    }
+    const est = estado ? estado.toLowerCase() : "";
+    if (est === "recibido" || est === "completo") return Colors.success;
+    if (est === "pendiente") return Colors.warning;
+    if (est === "cancelado") return Colors.danger;
+    return Colors.textLight;
   };
 
   const getEstadoBg = (estado) => {
-    switch (estado) {
-      case "Recibido": return Colors.libre;
-      case "Pendiente": return "#FFF8E1";
-      case "Cancelado": return Colors.ocupada;
-      default: return Colors.background;
-    }
+    const est = estado ? estado.toLowerCase() : "";
+    if (est === "recibido" || est === "completo") return Colors.libre;
+    if (est === "pendiente") return "#FFF8E1";
+    if (est === "cancelado") return Colors.ocupada;
+    return Colors.background;
+  };
+
+  const cargarCompras = () => {
+    fetch(`${API_BASE_URL}/compras-suministro`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Error al obtener compras");
+      return res.json();
+    })
+    .then(data => {
+      // Filter by active caja session if available
+      const filtrados = idCajaActiva 
+        ? data.filter(c => c.id_caja === idCajaActiva)
+        : data;
+      setListaSuministros(filtrados);
+    })
+    .catch(err => {
+      console.warn("Usando mock de suministros:", err);
+      setListaSuministros(MOCK_SUMINISTROS);
+    });
+  };
+
+  React.useEffect(() => {
+    cargarCompras();
+  }, [idCajaActiva]);
+
+  const registrarCompra = () => {
+    const parsedMonto = parseFloat(monto);
+    if (!proveedor || isNaN(parsedMonto) || !factura || !estadoSeleccionado) return;
+
+    fetch(`${API_BASE_URL}/compras-suministro`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id_caja: idCajaActiva || 1,
+        proveedor: proveedor,
+        total: parsedMonto,
+        factura: factura,
+        estado: estadoSeleccionado.toLowerCase(),
+        notas: "Compra de suministros desde App Móvil"
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Error al registrar compra");
+      return res.json();
+    })
+    .then(() => {
+      const { Alert } = require('react-native');
+      Alert.alert("Éxito", "Compra de suministro registrada en la base de datos.");
+      setProveedor("");
+      setMonto("");
+      setFactura("");
+      setEstadoSeleccionado("");
+      cargarCompras();
+    })
+    .catch(err => {
+      const { Alert } = require('react-native');
+      Alert.alert("Error", "No se pudo guardar en la base de datos, guardado localmente.");
+      // Fallback local addition
+      const nuevo = {
+        id: Date.now(),
+        proveedor,
+        monto: parsedMonto,
+        factura,
+        estado: estadoSeleccionado,
+        fecha: new Date().toLocaleDateString("es-MX")
+      };
+      setListaSuministros(prev => [nuevo, ...prev]);
+      setProveedor("");
+      setMonto("");
+      setFactura("");
+      setEstadoSeleccionado("");
+    });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title="Compra de suministros"
         subtitle="Gestion de proveedores"
@@ -55,7 +133,7 @@ export default function Suministros({ cambiarPantalla, toggleSidebar }) {
         rightAction={{ icon: "menu", onPress: toggleSidebar }}
       />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} style={{ backgroundColor: Colors.background }}>
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Nueva compra</Text>
 
@@ -112,20 +190,15 @@ export default function Suministros({ cambiarPantalla, toggleSidebar }) {
 
           <PrimaryButton
             title="Registrar compra"
-            onPress={() => {
-              setProveedor("");
-              setMonto("");
-              setFactura("");
-              setEstadoSeleccionado("");
-            }}
+            onPress={registrarCompra}
             disabled={!proveedor || !monto || !factura || !estadoSeleccionado}
           />
         </View>
 
         <Text style={styles.sectionTitle}>Compras recientes</Text>
 
-        {MOCK_SUMINISTROS.map((item) => (
-          <View key={item.id} style={styles.suministroCard}>
+        {listaSuministros.map((item) => (
+          <View key={item.id || item.id_compra} style={styles.suministroCard}>
             <View style={styles.suministroHeader}>
               <View style={styles.suministroIcon}>
                 <Icon name="cube" size={20} color={Colors.secondary} />
@@ -133,7 +206,7 @@ export default function Suministros({ cambiarPantalla, toggleSidebar }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.suministroProveedor}>{item.proveedor}</Text>
                 <Text style={styles.suministroFactura}>
-                  {item.factura} - {item.fecha}
+                  {item.factura} - {item.fecha || item.fecha_envio || "Hoy"}
                 </Text>
               </View>
               <View
@@ -148,24 +221,24 @@ export default function Suministros({ cambiarPantalla, toggleSidebar }) {
                     { color: getEstadoColor(item.estado) },
                   ]}
                 >
-                  {item.estado}
+                  {item.estado ? (item.estado.charAt(0).toUpperCase() + item.estado.slice(1)) : "Pendiente"}
                 </Text>
               </View>
             </View>
             <View style={styles.suministroFooter}>
               <Text style={styles.suministroMonto}>
-                ${item.monto.toFixed(2)}
+                ${(parseFloat(item.total) || parseFloat(item.monto) || 0).toFixed(2)}
               </Text>
             </View>
           </View>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 20, paddingBottom: 40 },
   formCard: {
     backgroundColor: Colors.white,

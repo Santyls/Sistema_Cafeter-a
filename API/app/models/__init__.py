@@ -6,6 +6,7 @@ from .pedido import Pedido, DetallePedido, PedidoEstadoHistorial
 from .inventario import InventarioMovimiento, AlertaStock
 from .notificacion import Notificacion
 from .caja import Caja, Ticket, Pago, CorteCaja, Gasto, CompraSuministro
+from .reservacion import Reservacion
 
 __all__ = [
     "Usuario",
@@ -26,4 +27,5 @@ __all__ = [
     "CorteCaja",
     "Gasto",
     "CompraSuministro",
+    "Reservacion",
 ]

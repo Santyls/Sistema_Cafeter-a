@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar,
   Modal,
 } from 'react-native';
 import Icon from '../shared/Icon';
@@ -18,14 +20,44 @@ const RANGE_OPTIONS = [
   { id: 'mes', label: 'Este mes', text: '01/07/2026 - 06/07/2026' },
 ];
 
-export default function Historial({ navigate, toggleSidebar, orders, darkMode }) {
+export default function Historial({ navigate, toggleSidebar, orders, onSelectOrder, darkMode }) {
   const theme = getTheme(darkMode);
   const [selectedRange, setSelectedRange] = useState(RANGE_OPTIONS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const historyOrders = orders.filter((o) => o.status === 'listo' || o.status === 'entregado');
+  const historyOrders = orders.filter((o) => {
+    if (o.status !== 'listo' && o.status !== 'entregado' && o.status !== 'entregado_pagado') return false;
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yyyyy = yesterday.getFullYear();
+    const ymm = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const ydd = String(yesterday.getDate()).padStart(2, '0');
+    const yesterdayStr = `${yyyyy}-${ymm}-${ydd}`;
+
+    const orderDate = o.fecha || '';
+
+    if (selectedRange.id === 'hoy') {
+      if (orderDate !== todayStr) return false;
+    } else if (selectedRange.id === 'ayer') {
+      if (orderDate !== yesterdayStr) return false;
+    } else if (selectedRange.id === 'semana') {
+      const d = new Date(orderDate);
+      const diffTime = Math.abs(now - d);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 7) return false;
+    }
+
+    return true;
+  });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={toggleSidebar}>
           <Icon name="menu" size={24} color="#ffffff" />
@@ -52,7 +84,17 @@ export default function Historial({ navigate, toggleSidebar, orders, darkMode })
           </View>
         ) : (
           historyOrders.map((order) => (
-            <View key={order.id} style={[styles.historyCard, { backgroundColor: theme.cardBg }]}>
+            <TouchableOpacity
+              key={order.id}
+              style={[styles.historyCard, { backgroundColor: theme.cardBg }]}
+              onPress={() => {
+                if (onSelectOrder) {
+                  onSelectOrder(order.id);
+                }
+                navigate('detalle_pedido');
+              }}
+              activeOpacity={0.7}
+            >
               <View style={[styles.cardTop, { borderBottomColor: theme.border }]}>
                 <View>
                   <Text style={[styles.orderId, { color: theme.textMain }]}>Pedido #{order.id}</Text>
@@ -67,7 +109,7 @@ export default function Historial({ navigate, toggleSidebar, orders, darkMode })
                 <Text style={[styles.detailText, { color: theme.textMuted }]}>Cocinero: {order.cook || 'Juan'}</Text>
                 <Text style={[styles.detailText, { color: theme.textMuted }]}>Tiempo de preparacion: 15 min</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -88,19 +130,27 @@ export default function Historial({ navigate, toggleSidebar, orders, darkMode })
                 <Text style={[styles.rangeOptionText, { color: theme.textMain }, selectedRange.id === opt.id && styles.rangeOptionActive]}>
                   {opt.label}
                 </Text>
-                {selectedRange.id === opt.id && <Icon name="check" size={16} color="#2D1E16" />}
+                {selectedRange.id === opt.id && <Icon name="check" size={16} color="#0A1931" />}
               </TouchableOpacity>
             ))}
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2D1E16', paddingVertical: 18, paddingHorizontal: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0A1931',
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 18,
+    paddingHorizontal: 16
+  },
   menuBtn: { padding: 4 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
   datePickerSim: { padding: 16, borderBottomWidth: 1 },
@@ -114,7 +164,7 @@ const styles = StyleSheet.create({
   historyCard: { borderRadius: 20, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, paddingBottom: 10, marginBottom: 10 },
   orderId: { fontSize: 16, fontWeight: 'bold' },
-  tableText: { fontSize: 13, color: '#8D6E63', fontWeight: '600', marginTop: 2 },
+  tableText: { fontSize: 13, color: '#9A7B1C', fontWeight: '600', marginTop: 2 },
   statusBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { color: '#34C759', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
   cardDetails: { gap: 4 },

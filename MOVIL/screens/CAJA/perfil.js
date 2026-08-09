@@ -146,12 +146,9 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
             <View style={{ alignItems: "center", marginVertical: 20 }}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>CL</Text>
-                <TouchableOpacity style={styles.avatarCameraBtn}>
-                  <Icon name="camera" size={14} color={Colors.textLight} />
-                </TouchableOpacity>
               </View>
             </View>
-
+ 
             <Text style={styles.sectionTitle}>Datos Personales</Text>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Rol asignado</Text>
@@ -163,7 +160,7 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
             </View>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Correo electronico</Text>
-              <TextInput style={styles.input} value={editEmail} onChangeText={setEditEmail} keyboardType="email-address" />
+              <TextInput style={[styles.input, styles.inputDisabled]} value={editEmail} editable={false} keyboardType="email-address" />
             </View>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Numero de telefono</Text>

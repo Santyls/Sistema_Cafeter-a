@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 10 : 16,
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
     paddingBottom: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
