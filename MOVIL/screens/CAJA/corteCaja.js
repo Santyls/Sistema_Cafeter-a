@@ -7,7 +7,7 @@ import Icon from "../shared/Icon";
 import PrimaryButton from "./components/PrimaryButton";
 
 import { API_BASE_URL } from '../../config/api';
-const MOCK_CORTE = {
+const CORTE_VACIO = {
   fondoInicial: 0.0,
   ventas: { efectivo: 0.0, tarjeta: 0.0, transferencia: 0.0 },
   totalVentas: 0.0,
@@ -29,7 +29,7 @@ export default function CorteCaja({ cambiarPantalla, toggleSidebar, token, usuar
 
   React.useEffect(() => {
     if (!idCajaActiva) {
-      setCorte(MOCK_CORTE);
+      setCorte(CORTE_VACIO);
       setLoading(false);
       return;
     }
@@ -94,7 +94,7 @@ export default function CorteCaja({ cambiarPantalla, toggleSidebar, token, usuar
       })
       .catch(err => {
         console.warn("Error cargando datos reales del corte:", err);
-        setCorte(MOCK_CORTE);
+        setCorte(CORTE_VACIO);
         setLoading(false);
       });
   }, [idCajaActiva]);

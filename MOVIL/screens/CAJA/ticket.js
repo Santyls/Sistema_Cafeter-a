@@ -16,7 +16,13 @@ export default function Ticket({
   metodoPago,
   cambiarPantalla,
   limpiarPedido,
+  usuarioLogueado,
 }) {
+  // El ticket lleva el nombre del cajero que realmente esta cobrando.
+  const nombreCajero = usuarioLogueado
+    ? `${usuarioLogueado.nombre} ${usuarioLogueado.apellido_paterno || ""}`.trim()
+    : "Cajero";
+
   const metodoTexto =
     metodoPago === "efectivo"
       ? "Efectivo"
@@ -63,7 +69,7 @@ export default function Ticket({
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Cajero</Text>
-              <Text style={styles.infoValue}>Carlos Lopez</Text>
+              <Text style={styles.infoValue}>{nombreCajero}</Text>
             </View>
           </View>
 

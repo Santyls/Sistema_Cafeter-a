@@ -53,7 +53,8 @@ export default function App() {
 
   const handleLoginSuccess = ({ token: apiToken, usuario, modulo }) => {
     setToken(apiToken);
-    setSession({ usuario, modulo });
+    // Se guarda el inicio de sesion para calcular la duracion real del turno.
+    setSession({ usuario, modulo, inicioTurno: Date.now() });
   };
 
   // Cerrar sesion regresa al login y limpia los datos de la sesion anterior.
@@ -288,6 +289,8 @@ export default function App() {
     // Usuario autenticado en el login unico; cada modulo lo usa en lugar de
     // pedir credenciales por su cuenta.
     sessionUser: session?.usuario || null,
+    // Marca de tiempo del login, base para la duracion del turno.
+    inicioTurno: session?.inicioTurno || null,
   };
 
   return (

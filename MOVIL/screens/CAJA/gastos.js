@@ -16,12 +16,6 @@ import PrimaryButton from "./components/PrimaryButton";
 import { API_BASE_URL } from '../../config/api';
 const CATEGORIAS = ["Operacion", "Mantenimiento", "Insumos", "Otros"];
 
-const MOCK_GASTOS = [
-  { id: 1, concepto: "Limpieza general", monto: 150.0, categoria: "Operacion", fecha: "15/03/2024 09:00" },
-  { id: 2, concepto: "Reparacion cafetera", monto: 350.0, categoria: "Mantenimiento", fecha: "15/03/2024 10:30" },
-  { id: 3, concepto: "Servilletas y desechables", monto: 85.0, categoria: "Insumos", fecha: "15/03/2024 11:00" },
-];
-
 export default function Gastos({ cambiarPantalla, toggleSidebar, token, usuarioLogueado, idCajaActiva }) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
@@ -46,8 +40,9 @@ export default function Gastos({ cambiarPantalla, toggleSidebar, token, usuarioL
       setListaGastos(filtrados);
     })
     .catch(err => {
-      console.warn("Usando mock de gastos:", err);
-      setListaGastos(MOCK_GASTOS);
+      // Sin datos inventados: si la API falla se muestra la lista vacia.
+      console.warn("No se pudieron cargar los gastos:", err);
+      setListaGastos([]);
     });
   };
 

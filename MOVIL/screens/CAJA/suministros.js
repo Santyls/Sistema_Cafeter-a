@@ -16,12 +16,6 @@ import PrimaryButton from "./components/PrimaryButton";
 import { API_BASE_URL } from '../../config/api';
 const ESTADOS = ["Pendiente", "Recibido", "Cancelado"];
 
-const MOCK_SUMINISTROS = [
-  { id: 1, proveedor: "Cafe Premium SA", monto: 2500.0, factura: "FAC-2024-001", estado: "Recibido", fecha: "15/03/2024" },
-  { id: 2, proveedor: "Lacteos del Norte", monto: 850.0, factura: "FAC-2024-002", estado: "Pendiente", fecha: "14/03/2024" },
-  { id: 3, proveedor: "Panaderia Artesanal", monto: 1200.0, factura: "FAC-2024-003", estado: "Recibido", fecha: "13/03/2024" },
-];
-
 export default function Suministros({ cambiarPantalla, toggleSidebar, token, usuarioLogueado, idCajaActiva }) {
   const [proveedor, setProveedor] = useState("");
   const [monto, setMonto] = useState("");
@@ -63,8 +57,9 @@ export default function Suministros({ cambiarPantalla, toggleSidebar, token, usu
       setListaSuministros(filtrados);
     })
     .catch(err => {
-      console.warn("Usando mock de suministros:", err);
-      setListaSuministros(MOCK_SUMINISTROS);
+      // Sin datos inventados: si la API falla se muestra la lista vacia.
+      console.warn("No se pudieron cargar las compras:", err);
+      setListaSuministros([]);
     });
   };
 

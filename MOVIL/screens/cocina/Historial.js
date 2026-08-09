@@ -13,15 +13,33 @@ import {
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
 
-const RANGE_OPTIONS = [
-  { id: 'hoy', label: 'Hoy', text: 'Hoy - 06/07/2026' },
-  { id: 'ayer', label: 'Ayer', text: 'Ayer - 05/07/2026' },
-  { id: 'semana', label: 'Esta semana', text: '30/06/2026 - 06/07/2026' },
-  { id: 'mes', label: 'Este mes', text: '01/07/2026 - 06/07/2026' },
-];
+// Fecha en dd/mm/aaaa, para las etiquetas del selector de rango.
+const fmt = (fecha) =>
+  `${String(fecha.getDate()).padStart(2, '0')}/${String(fecha.getMonth() + 1).padStart(2, '0')}/${fecha.getFullYear()}`;
+
+// Los rangos se calculan contra la fecha actual, no contra fechas fijas.
+const construirRangos = () => {
+  const hoy = new Date();
+
+  const ayer = new Date(hoy);
+  ayer.setDate(hoy.getDate() - 1);
+
+  const haceUnaSemana = new Date(hoy);
+  haceUnaSemana.setDate(hoy.getDate() - 6);
+
+  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+  return [
+    { id: 'hoy', label: 'Hoy', text: `Hoy - ${fmt(hoy)}` },
+    { id: 'ayer', label: 'Ayer', text: `Ayer - ${fmt(ayer)}` },
+    { id: 'semana', label: 'Esta semana', text: `${fmt(haceUnaSemana)} - ${fmt(hoy)}` },
+    { id: 'mes', label: 'Este mes', text: `${fmt(inicioMes)} - ${fmt(hoy)}` },
+  ];
+};
 
 export default function Historial({ navigate, toggleSidebar, orders, onSelectOrder, darkMode }) {
   const theme = getTheme(darkMode);
+  const RANGE_OPTIONS = React.useMemo(construirRangos, []);
   const [selectedRange, setSelectedRange] = useState(RANGE_OPTIONS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const historyOrders = orders.filter((o) => {
@@ -47,10 +65,13 @@ export default function Historial({ navigate, toggleSidebar, orders, onSelectOrd
     } else if (selectedRange.id === 'ayer') {
       if (orderDate !== yesterdayStr) return false;
     } else if (selectedRange.id === 'semana') {
-      const d = new Date(orderDate);
-      const diffTime = Math.abs(now - d);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays > 7) return false;
+      const desde = new Date(now);
+      desde.setDate(now.getDate() - 6);
+      const desdeStr = `${desde.getFullYear()}-${String(desde.getMonth() + 1).padStart(2, '0')}-${String(desde.getDate()).padStart(2, '0')}`;
+      if (!orderDate || orderDate < desdeStr || orderDate > todayStr) return false;
+    } else if (selectedRange.id === 'mes') {
+      const inicioMesStr = `${yyyy}-${mm}-01`;
+      if (!orderDate || orderDate < inicioMesStr || orderDate > todayStr) return false;
     }
 
     return true;

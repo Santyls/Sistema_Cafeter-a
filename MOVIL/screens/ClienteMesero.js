@@ -21,6 +21,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import { API_BASE_URL } from '../config/api';
+import useTurno from './shared/useTurno';
+import AvisoModal, { useAviso } from './shared/AvisoModal';
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // --- EXPANDED PRODUCT CATALOG ---
@@ -1399,7 +1402,7 @@ const OrderTrackingCard = ({ order, colors, styles, onPress }) => {
 };
 
 export default function ClienteMesero(props) {
-  const { onBack, notifiedReadyOrderIds, setNotifiedReadyOrderIds, token, setToken, sessionUser } = props;
+  const { onBack, notifiedReadyOrderIds, setNotifiedReadyOrderIds, token, setToken, sessionUser, inicioTurno } = props;
 
   // --- TABLES STATE ---
   const [localTables, setLocalTables] = useState([
@@ -1452,14 +1455,6 @@ export default function ClienteMesero(props) {
   const [editPassword2, setEditPassword2] = useState('');
 
   // Waiter shift statistics computed dynamically
-  const getUserBaseline = (userId) => {
-    if (!userId) return { sales: 0, completed: 0 };
-    const idNum = parseInt(userId) || 1;
-    const completed = (idNum * 3) % 8 + 3; // e.g. 3 to 10
-    const sales = completed * 125.5 + (idNum % 5) * 45; // e.g. $376 to $1480
-    return { sales, completed };
-  };
-
   const stats = React.useMemo(() => {
     if (!currentUser) return { sales: 0, activeTables: 0, completed: 0, hourlyStats: [] };
 
@@ -1534,8 +1529,9 @@ export default function ClienteMesero(props) {
   const activeTablesCount = stats.activeTables;
   const setActiveTablesCount = () => {};
 
-  const [clockedIn, setClockedIn] = useState(true);
-  const [shiftTime, setShiftTime] = useState('04:12 hrs');
+  // Duracion real del turno, contada desde el inicio de sesion.
+  const shiftTime = useTurno(inicioTurno);
+  const { aviso, confirmar, cerrarAviso } = useAviso();
 
   // --- SCREEN NAVIGATION STATE ---
   // Se entra directo al mapa de mesas: la autenticacion ocurre en el login unificado.
@@ -2733,7 +2729,7 @@ export default function ClienteMesero(props) {
         {/* --- SCREEN: ASIGNAR MESA (MAPA DE MESAS INTERACTIVO / SPATIAL MAP) --- */}
         {currentScreen === 'mesas' && (
           <FadeInView style={{ flex: 1 }}>
-            {renderHeader('CoffeeFlow • Panel de Mesero', `Bienvenido, ${currentUser?.name || 'Alberto'}`)}
+            {renderHeader('CoffeeFlow • Panel de Mesero', `Bienvenido, ${currentUser?.name || 'Mesero'}`)}
 
             <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
 
@@ -4160,16 +4156,14 @@ export default function ClienteMesero(props) {
               <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border, alignItems: 'center' }]}>
                 <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
                   <Text style={styles.avatarText}>
-                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'AL'}
+                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ME'}
                   </Text>
                 </View>
-                <Text style={[styles.waiterName, { color: colors.textMain }]}>{currentUser?.name || 'Alberto Luna'}</Text>
+                <Text style={[styles.waiterName, { color: colors.textMain }]}>{currentUser?.name || 'Mesero'}</Text>
                 <Text style={[styles.waiterRole, { color: colors.textMuted }]}>{currentUser?.role || 'Mesero'}</Text>
 
-                <View style={[styles.shiftBadge, { backgroundColor: clockedIn ? colors.success + '22' : colors.danger + '22' }]}>
-                  <Text style={[styles.shiftBadgeText, { color: clockedIn ? colors.success : colors.danger }]}>
-                    {clockedIn ? '● Turno Activo' : '● Turno Finalizado'}
-                  </Text>
+                <View style={[styles.shiftBadge, { backgroundColor: colors.success + '22' }]}>
+                  <Text style={[styles.shiftBadgeText, { color: colors.success }]}>● Turno Activo</Text>
                 </View>
               </View>
 
@@ -4178,6 +4172,14 @@ export default function ClienteMesero(props) {
                 <View style={styles.receiptRow}>
                   <Text style={{ color: colors.textMuted }}>Duración de Turno</Text>
                   <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>{shiftTime}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={{ color: colors.textMuted }}>Pedidos entregados hoy</Text>
+                  <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>{completedOrdersCount}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={{ color: colors.textMuted }}>Mesas activas</Text>
+                  <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>{activeTablesCount}</Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -4195,19 +4197,19 @@ export default function ClienteMesero(props) {
                   </TouchableOpacity>
                 </View>
 
+                {/* El turno del mesero dura lo que dura la sesión: cerrarla lo finaliza. */}
                 <TouchableOpacity
-                  style={[styles.btn, { backgroundColor: clockedIn ? colors.danger : colors.success, marginTop: 12 }]}
-                  onPress={() => {
-                    setClockedIn(!clockedIn);
-                    Alert.alert(
-                      clockedIn ? 'Turno Finalizado' : 'Turno Iniciado',
-                      clockedIn ? 'Has cerrado tu jornada.' : 'Jornada iniciada con éxito.'
-                    );
-                  }}
+                  style={[styles.btn, { backgroundColor: colors.danger, marginTop: 12 }]}
+                  onPress={() =>
+                    confirmar(
+                      'Finalizar jornada',
+                      `Llevas ${shiftTime} en turno. Al finalizar se cerrará tu sesión.`,
+                      handleLogout,
+                      'Finalizar'
+                    )
+                  }
                 >
-                  <Text style={styles.btnText}>
-                    {clockedIn ? 'Finalizar Jornada (Clock-Out)' : 'Iniciar Jornada (Clock-In)'}
-                  </Text>
+                  <Text style={styles.btnText}>Finalizar Jornada</Text>
                 </TouchableOpacity>
               </View>
 
@@ -4287,7 +4289,7 @@ export default function ClienteMesero(props) {
               <View style={{ alignItems: 'center', marginVertical: 20 }}>
                 <View style={[styles.avatar, { backgroundColor: colors.secondary, position: 'relative' }]}>
                   <Text style={styles.avatarText}>
-                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'AL'}
+                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ME'}
                   </Text>
                 </View>
               </View>
@@ -4965,6 +4967,7 @@ export default function ClienteMesero(props) {
           </View>
         </Modal>
 
+        <AvisoModal aviso={aviso} onClose={cerrarAviso} />
       </View>
     </SafeAreaView>
   );

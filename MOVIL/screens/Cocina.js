@@ -36,7 +36,11 @@ export default function Cocina(props) {
   // La sesion ya viene del login unificado, por eso se entra directo al dashboard.
   const [screen, setScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(sessionUser?.usuario || null);
+  // Usuario real de la sesion; se actualiza si edita su perfil desde Ajustes.
+  const [usuario, setUsuario] = useState(sessionUser || null);
+  const currentUser = usuario
+    ? `${usuario.nombre} ${usuario.apellido_paterno || ''}`.trim()
+    : null;
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -70,7 +74,7 @@ export default function Cocina(props) {
   // Cerrar sesion se delega al contenedor (App), que limpia la sesion y
   // devuelve al login unificado.
   const handleLogout = () => {
-    setCurrentUser(null);
+    setUsuario(null);
     if (onBack) onBack();
   };
 
@@ -390,7 +394,19 @@ export default function Cocina(props) {
           />
         );
       case 'configuracion':
-        return <Configuracion {...commonProps} onLogout={handleLogout} darkMode={darkMode} setDarkMode={setDarkMode} />;
+        return (
+          <Configuracion
+            {...commonProps}
+            onLogout={handleLogout}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            sessionUser={usuario}
+            inicioTurno={props.inicioTurno}
+            token={token}
+            onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+            onPerfilActualizado={setUsuario}
+          />
+        );
       default:
         return <DashboardCocina {...commonProps} />;
     }

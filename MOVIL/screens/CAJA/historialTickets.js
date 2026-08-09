@@ -19,15 +19,6 @@ const getRelativeDate = (offsetDays) => {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-const MOCK_HISTORIAL = [
-  { id: "T-001", mesa: 3, total: 350.0, metodoPago: "Efectivo", fecha: getRelativeDate(0), hora: "14:30", estado: "Pagado", items: 4 },
-  { id: "T-002", mesa: 7, total: 520.0, metodoPago: "Tarjeta", fecha: getRelativeDate(0), hora: "13:15", estado: "Pagado", items: 6 },
-  { id: "T-003", mesa: 1, total: 185.5, metodoPago: "Efectivo", fecha: getRelativeDate(1), hora: "12:00", estado: "Cancelado", items: 2 },
-  { id: "T-004", mesa: 5, total: 275.0, metodoPago: "Transferencia", fecha: getRelativeDate(1), hora: "11:30", estado: "Pagado", items: 3 },
-  { id: "T-005", mesa: 2, total: 410.0, metodoPago: "Tarjeta", fecha: getRelativeDate(2), hora: "10:45", estado: "Pagado", items: 5 },
-  { id: "T-006", mesa: 8, total: 95.0, metodoPago: "Efectivo", fecha: getRelativeDate(3), hora: "09:30", estado: "Cancelado", items: 1 },
-];
-
 const FILTROS_ESTADO = ["Todos", "Pagado", "Cancelado"];
 const FILTROS_PAGO = ["Todos", "Efectivo", "Tarjeta", "Transferencia"];
 const FILTROS_FECHA = ["Hoy", "Ayer", "Todos"];

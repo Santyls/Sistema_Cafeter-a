@@ -8,33 +8,145 @@ import {
   SafeAreaView,
   Switch,
   TextInput,
-  Alert,
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
 import Icon from '../shared/Icon';
 import getTheme from '../shared/theme';
+import useTurno from '../shared/useTurno';
+import AvisoModal, { useAviso } from '../shared/AvisoModal';
+import { API_BASE_URL } from '../../config/api';
 
-export default function Configuracion({ navigate, toggleSidebar, currentUser, onLogout, darkMode, setDarkMode }) {
+// Los tipos de aviso que genera la cocina, con su etiqueta visible.
+const ETIQUETA_ALERTA = {
+  new: 'Nuevo pedido',
+  ready: 'Pedido listo',
+  low_stock: 'Inventario',
+};
+
+export default function Configuracion({
+  navigate,
+  toggleSidebar,
+  currentUser,
+  onLogout,
+  darkMode,
+  setDarkMode,
+  sessionUser,
+  inicioTurno,
+  orders = [],
+  notifications = [],
+  onMarkAllNotificationsRead,
+  onPerfilActualizado,
+  token,
+}) {
   const theme = getTheme(darkMode);
+  const { aviso, mostrarAviso, confirmar, cerrarAviso } = useAviso();
   const [subScreen, setSubScreen] = useState('main');
-  const [clockedIn, setClockedIn] = useState(true);
-  const [shiftTime] = useState('04:12 hrs');
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [sounds, setSounds] = useState(true);
-  const [editName, setEditName] = useState(currentUser || 'Juan Cocinero');
-  const [editEmail, setEditEmail] = useState('cocina.flow@coffeeflow.com');
-  const [editPhone, setEditPhone] = useState('+52 442 000 0000');
+  const [guardando, setGuardando] = useState(false);
 
-  const [salesTotal] = useState(1480.00);
-  const [completedOrdersCount] = useState(9);
+  // Duracion real del turno, contada desde el inicio de sesion.
+  const shiftTime = useTurno(inicioTurno);
 
-  const notificationHistory = [
-    { id: 1, type: 'kitchen', message: 'Nuevo pedido #1004 recibido - Mesa 5', time: 'Hace 1 min', read: false },
-    { id: 2, type: 'system', message: 'Stock bajo: Cafe en grano (2 kg disponibles)', time: 'Hace 5 min', read: false },
-    { id: 3, type: 'kitchen', message: 'Pedido #1003 marcado como listo', time: 'Hace 15 min', read: true },
-    { id: 4, type: 'system', message: 'Stock bajo: Croissants (4 pzas disponibles)', time: 'Hace 20 min', read: true },
-  ];
+  // Datos reales del cocinero autenticado.
+  const nombreCompleto = sessionUser
+    ? `${sessionUser.nombre} ${sessionUser.apellido_paterno || ''}`.trim()
+    : currentUser || 'Cocinero';
+
+  const [editName, setEditName] = useState(sessionUser?.nombre || '');
+  const [editLastName, setEditLastName] = useState(sessionUser?.apellido_paterno || '');
+  const [editEmail, setEditEmail] = useState(sessionUser?.correo || '');
+  const [editPhone, setEditPhone] = useState(sessionUser?.telefono || '');
+
+  // Produccion real del turno: pedidos que esta cocina dejo listos o entregados hoy.
+  const { salesTotal, completedOrdersCount, tiempoPromedio } = React.useMemo(() => {
+    const hoy = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+    const preparados = orders.filter(
+      (o) =>
+        ['listo', 'entregado', 'entregado_pagado'].includes(o.status) &&
+        (!o.fecha || o.fecha === hoy)
+    );
+    const total = preparados.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+
+    // Tiempo promedio entre que el pedido entra y se marca listo, segun su historial.
+    const duraciones = preparados
+      .map((o) => {
+        const hist = o.history || [];
+        const inicio = hist[0];
+        const listo = hist.find((h) => h.status === 'listo');
+        if (!inicio?.time || !listo?.time) return null;
+        const aMinutos = (t) => {
+          const [hh, mm] = String(t).split(':');
+          const h = parseInt(hh, 10);
+          const m = parseInt(mm, 10);
+          if (Number.isNaN(h) || Number.isNaN(m)) return null;
+          return h * 60 + m;
+        };
+        const a = aMinutos(inicio.time);
+        const b = aMinutos(listo.time);
+        if (a === null || b === null || b < a) return null;
+        return b - a;
+      })
+      .filter((d) => d !== null);
+
+    const promedio = duraciones.length
+      ? Math.round(duraciones.reduce((a, b) => a + b, 0) / duraciones.length)
+      : null;
+
+    return {
+      salesTotal: total,
+      completedOrdersCount: preparados.length,
+      tiempoPromedio: promedio,
+    };
+  }, [orders]);
+
+  // Historial real de avisos recibidos por la cocina.
+  const notificationHistory = notifications;
+  const avisosSinLeer = notifications.filter((n) => !n.read).length;
+
+  // Iniciales del nombre real (dos primeras letras de nombre y apellido).
+  const iniciales = React.useMemo(() => {
+    const partes = nombreCompleto.split(' ').filter(Boolean);
+    if (partes.length === 0) return 'CO';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[1][0]).toUpperCase();
+  }, [nombreCompleto]);
+
+  const guardarPerfil = () => {
+    if (!editName.trim()) {
+      mostrarAviso('Datos incompletos', 'El nombre no puede quedar vacio.');
+      return;
+    }
+
+    setGuardando(true);
+    fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nombre: editName.trim(),
+        apellido_paterno: editLastName.trim(),
+        telefono: editPhone.trim(),
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('No se pudieron guardar los cambios.');
+        return res.json();
+      })
+      .then((usuarioActualizado) => {
+        setGuardando(false);
+        if (onPerfilActualizado) onPerfilActualizado(usuarioActualizado);
+        mostrarAviso('Perfil actualizado', 'Tus datos se guardaron correctamente.');
+        setSubScreen('main');
+      })
+      .catch((error) => {
+        setGuardando(false);
+        mostrarAviso('Error', error.message || 'No se pudo conectar con el servidor.');
+      });
+  };
 
   const renderHeader = (title, subtitle, showBack = false) => (
     <View style={styles.headerContainer}>
@@ -63,41 +175,34 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
           {renderHeader('Mis Estadisticas', 'Rendimiento en el turno', true)}
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
             <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-              <Text style={[styles.cardHeaderTitle, { color: theme.textMain, borderBottomColor: theme.border }]}>Resumen de Ventas Acumuladas</Text>
-              <Text style={styles.bigNumber}>${salesTotal.toFixed(2)} MXN</Text>
+              <Text style={[styles.cardHeaderTitle, { color: theme.textMain, borderBottomColor: theme.border }]}>Produccion del Turno</Text>
+              <Text style={styles.bigNumber}>{completedOrdersCount}</Text>
               <Text style={[styles.mutedCenter, { color: theme.textMuted }]}>
-                Total correspondiente a {completedOrdersCount} comandas finalizadas hoy.
+                {completedOrdersCount === 1 ? 'pedido preparado hoy' : 'pedidos preparados hoy'}
               </Text>
-            </View>
-
-            <Text style={styles.sectionTitle}>Ventas por Hora</Text>
-            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-              <View style={styles.chartContainer}>
-                {[
-                  { hour: '10 AM', val: 120, height: 30 },
-                  { hour: '11 AM', val: 340, height: 60 },
-                  { hour: '12 PM', val: 490, height: 90 },
-                  { hour: '01 PM', val: 280, height: 50 },
-                  { hour: '02 PM', val: 150, height: 35 },
-                ].map(bar => (
-                  <View key={bar.hour} style={styles.chartCol}>
-                    <Text style={[styles.chartLabel, { color: theme.textMuted }]}>${bar.val}</Text>
-                    <View style={[styles.chartBar, { height: bar.height }]} />
-                    <Text style={[styles.chartHour, { color: theme.textMain }]}>{bar.hour}</Text>
-                  </View>
-                ))}
-              </View>
             </View>
 
             <Text style={styles.sectionTitle}>Metricas de Eficiencia</Text>
             <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={styles.receiptRow}>
-                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Ticket Promedio</Text>
-                <Text style={[styles.textBold, { color: theme.textMain }]}>${(salesTotal / (completedOrdersCount || 1)).toFixed(2)} MXN</Text>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Valor de lo preparado</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>${salesTotal.toFixed(2)} MXN</Text>
               </View>
               <View style={styles.receiptRow}>
-                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Tiempo Promedio Servicio</Text>
-                <Text style={[styles.textBold, { color: theme.textMain }]}>14 minutos</Text>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Ticket Promedio</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>
+                  ${(salesTotal / (completedOrdersCount || 1)).toFixed(2)} MXN
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Tiempo Promedio Preparacion</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>
+                  {tiempoPromedio !== null ? `${tiempoPromedio} min` : 'Sin datos aun'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={[styles.textMuted, { color: theme.textMuted }]}>Duracion del turno</Text>
+                <Text style={[styles.textBold, { color: theme.textMain }]}>{shiftTime}</Text>
               </View>
             </View>
           </ScrollView>
@@ -113,24 +218,35 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
           {renderHeader('Centro de Alertas', 'Historial de avisos', true)}
           <View style={styles.contentContainer}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              {notificationHistory.map((item) => (
-                <View
-                  key={item.id}
-                  style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }, !item.read && { borderLeftWidth: 4, borderLeftColor: '#5BC0DE' }]}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: '#9A7B1C', fontWeight: 'bold' }}>
-                      {item.type === 'kitchen' ? 'Cocina' : 'Sistema'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.textMuted }}>{item.time}</Text>
-                  </View>
-                  <Text style={{ color: theme.textMain, fontSize: 13 }}>{item.message}</Text>
+              {notificationHistory.length === 0 ? (
+                <View style={{ alignItems: 'center', marginTop: 60 }}>
+                  <Icon name="bell-outline" size={48} color={theme.textMuted} />
+                  <Text style={{ color: theme.textMuted, fontSize: 15, marginTop: 16 }}>
+                    Sin avisos por ahora.
+                  </Text>
                 </View>
-              ))}
+              ) : (
+                notificationHistory.map((item) => (
+                  <View
+                    key={item.id}
+                    style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }, !item.read && { borderLeftWidth: 4, borderLeftColor: '#5BC0DE' }]}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: '#9A7B1C', fontWeight: 'bold' }}>
+                        {ETIQUETA_ALERTA[item.type] || 'Sistema'}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>{item.time}</Text>
+                    </View>
+                    <Text style={{ color: theme.textMain, fontSize: 13 }}>{item.message}</Text>
+                  </View>
+                ))
+              )}
             </ScrollView>
-            <TouchableOpacity style={styles.btn} onPress={() => Alert.alert('Listo', 'Todas las alertas marcadas como leidas.')}>
-              <Text style={styles.btnText}>Marcar todas como leidas</Text>
-            </TouchableOpacity>
+            {notificationHistory.length > 0 && (
+              <TouchableOpacity style={styles.btn} onPress={onMarkAllNotificationsRead}>
+                <Text style={styles.btnText}>Marcar todas como leidas</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -145,9 +261,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
             <View style={{ alignItems: 'center', marginVertical: 20 }}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {currentUser ? currentUser.substring(0, 2).toUpperCase() : 'CO'}
-                </Text>
+                <Text style={styles.avatarText}>{iniciales}</Text>
               </View>
             </View>
 
@@ -157,8 +271,12 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
               <TextInput style={[styles.input, styles.inputDisabled]} value="Cocinero" editable={false} />
             </View>
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: theme.textMuted }]}>Nombre completo</Text>
+              <Text style={[styles.label, { color: theme.textMuted }]}>Nombre</Text>
               <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editName} onChangeText={setEditName} />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={[styles.label, { color: theme.textMuted }]}>Apellido paterno</Text>
+              <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editLastName} onChangeText={setEditLastName} />
             </View>
             <View style={styles.formGroup}>
               <Text style={[styles.label, { color: theme.textMuted }]}>Correo electronico</Text>
@@ -169,14 +287,15 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
               <TextInput style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.borderStrong, color: theme.textMain }]} value={editPhone} onChangeText={setEditPhone} keyboardType="phone-pad" />
             </View>
 
-            <TouchableOpacity style={styles.btn} onPress={() => { Alert.alert('Guardado', 'Datos actualizados.'); setSubScreen('main'); }}>
-              <Text style={styles.btnText}>Guardar cambios</Text>
+            <TouchableOpacity style={[styles.btn, guardando && { opacity: 0.6 }]} onPress={guardarPerfil} disabled={guardando}>
+              <Text style={styles.btnText}>{guardando ? 'Guardando...' : 'Guardar cambios'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.btnOutlineDanger, { backgroundColor: theme.cardBg }]} onPress={onLogout}>
               <Text style={{ color: '#D9534F', fontWeight: '600', textAlign: 'center' }}>Cerrar Sesion</Text>
             </TouchableOpacity>
           </ScrollView>
+          <AvisoModal aviso={aviso} onClose={cerrarAviso} />
         </View>
       </SafeAreaView>
     );
@@ -190,16 +309,12 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
         <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
           <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border, alignItems: 'center' }]}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {currentUser ? currentUser.substring(0, 2).toUpperCase() : 'CO'}
-              </Text>
+              <Text style={styles.avatarText}>{iniciales}</Text>
             </View>
-            <Text style={[styles.waiterName, { color: theme.textMain }]}>{currentUser || 'Cocinero'}</Text>
+            <Text style={[styles.waiterName, { color: theme.textMain }]}>{nombreCompleto}</Text>
             <Text style={[styles.waiterRole, { color: theme.textMuted }]}>Cocinero</Text>
-            <View style={[styles.shiftBadge, { backgroundColor: clockedIn ? '#4E8D7022' : '#D9534F22' }]}>
-              <Text style={{ color: clockedIn ? '#4E8D70' : '#D9534F', fontWeight: '600', fontSize: 13 }}>
-                {clockedIn ? '● Turno Activo' : '● Turno Finalizado'}
-              </Text>
+            <View style={[styles.shiftBadge, { backgroundColor: '#4E8D7022' }]}>
+              <Text style={{ color: '#4E8D70', fontWeight: '600', fontSize: 13 }}>● Turno Activo</Text>
             </View>
           </View>
 
@@ -208,6 +323,14 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
             <View style={styles.receiptRow}>
               <Text style={[styles.textMuted, { color: theme.textMuted }]}>Duracion de Turno</Text>
               <Text style={[styles.textBold, { color: theme.textMain }]}>{shiftTime}</Text>
+            </View>
+            <View style={styles.receiptRow}>
+              <Text style={[styles.textMuted, { color: theme.textMuted }]}>Pedidos preparados</Text>
+              <Text style={[styles.textBold, { color: theme.textMain }]}>{completedOrdersCount}</Text>
+            </View>
+            <View style={styles.receiptRow}>
+              <Text style={[styles.textMuted, { color: theme.textMuted }]}>Avisos sin leer</Text>
+              <Text style={[styles.textBold, { color: theme.textMain }]}>{avisosSinLeer}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -219,19 +342,19 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
               </TouchableOpacity>
             </View>
 
+            {/* El turno de cocina dura lo que dura la sesion: cerrarla lo finaliza. */}
             <TouchableOpacity
-              style={[styles.btn, { backgroundColor: clockedIn ? '#D9534F' : '#4E8D70', marginTop: 12 }]}
-              onPress={() => {
-                setClockedIn(!clockedIn);
-                Alert.alert(
-                  clockedIn ? 'Turno Finalizado' : 'Turno Iniciado',
-                  clockedIn ? 'Has cerrado tu jornada.' : 'Jornada iniciada con exito.'
-                );
-              }}
+              style={[styles.btn, { backgroundColor: '#D9534F', marginTop: 12 }]}
+              onPress={() =>
+                confirmar(
+                  'Finalizar jornada',
+                  `Llevas ${shiftTime} en turno. Al finalizar se cerrara tu sesion.`,
+                  onLogout,
+                  'Finalizar'
+                )
+              }
             >
-              <Text style={styles.btnText}>
-                {clockedIn ? 'Finalizar Jornada (Clock-Out)' : 'Iniciar Jornada (Clock-In)'}
-              </Text>
+              <Text style={styles.btnText}>Finalizar Jornada</Text>
             </TouchableOpacity>
           </View>
 
@@ -255,6 +378,7 @@ export default function Configuracion({ navigate, toggleSidebar, currentUser, on
             <Text style={{ color: theme.textMain, fontWeight: '600', textAlign: 'center' }}>Editar Datos Personales</Text>
           </TouchableOpacity>
         </ScrollView>
+        <AvisoModal aviso={aviso} onClose={cerrarAviso} />
       </View>
     </SafeAreaView>
   );
@@ -318,9 +442,4 @@ const styles = StyleSheet.create({
   inputDisabled: { backgroundColor: 'rgba(45, 30, 22, 0.08)', color: '#8E8E93' },
   bigNumber: { color: '#0A1931', fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 },
   mutedCenter: { fontSize: 12, textAlign: 'center' },
-  chartContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 120, paddingTop: 10 },
-  chartCol: { alignItems: 'center' },
-  chartBar: { width: 24, backgroundColor: '#0A1931', borderRadius: 6 },
-  chartLabel: { fontSize: 9, marginBottom: 4 },
-  chartHour: { fontSize: 10, marginTop: 6 },
 });

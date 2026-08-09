@@ -11,8 +11,11 @@ import Colors from "./styles/colors";
 import Header from "./components/Header";
 import MesaCard from "./components/MesaCard";
 
-export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggleSidebar }) {
+export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggleSidebar, usuarioLogueado }) {
   const [busqueda, setBusqueda] = useState("");
+
+  // Saludo con el nombre real del cajero que inicio sesion.
+  const nombreCajero = usuarioLogueado ? usuarioLogueado.nombre : "Cajero";
 
   const mesasFiltradas = mesas.filter((m) =>
     `Mesa ${m.numero}`.toLowerCase().includes(busqueda.toLowerCase())
@@ -22,7 +25,7 @@ export default function Inicio({ mesas, cambiarPantalla, seleccionarMesa, toggle
     <View style={styles.container}>
       <Header
         title="CoffeeFlow &bull; Panel de Caja"
-        subtitle="Bienvenido, Cajero"
+        subtitle={`Bienvenido, ${nombreCajero}`}
         rightAction={{ icon: "menu", onPress: toggleSidebar }}
       />
 

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
-  Alert,
   StyleSheet,
   Platform,
   StatusBar as RNStatusBar,
@@ -15,26 +14,143 @@ import {
 
 import Colors from "./styles/colors";
 import Icon from "../shared/Icon";
+import useTurno from "../shared/useTurno";
+import AvisoModal, { useAviso } from "../shared/AvisoModal";
+import { API_BASE_URL } from "../../config/api";
 
-export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
+// Tipos de aviso que llegan a caja, con su etiqueta visible.
+const ETIQUETA_ALERTA = {
+  new: "Nuevo pedido",
+  ready: "Listo para cobro",
+  low_stock: "Inventario",
+};
+
+export default function Perfil({
+  cambiarPantalla,
+  toggleSidebar,
+  onLogout,
+  usuarioLogueado,
+  inicioTurno,
+  notifications = [],
+  onMarkAllNotificationsRead,
+  onPerfilActualizado,
+  token,
+}) {
+  const { aviso, mostrarAviso, confirmar, cerrarAviso } = useAviso();
   const [subScreen, setSubScreen] = useState("main");
-  const [clockedIn, setClockedIn] = useState(true);
-  const [shiftTime] = useState("04:12 hrs");
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [sounds, setSounds] = useState(true);
-  const [editName, setEditName] = useState("Carlos Lopez");
-  const [editEmail, setEditEmail] = useState("carlos.caja@coffeeflow.com");
-  const [editPhone, setEditPhone] = useState("+52 442 000 0000");
+  const [guardando, setGuardando] = useState(false);
 
-  const [salesTotal] = useState(2340.0);
-  const [completedOrdersCount] = useState(14);
+  // Duracion real del turno, contada desde el inicio de sesion.
+  const shiftTime = useTurno(inicioTurno);
 
-  const notificationHistory = [
-    { id: 1, type: "system", message: "Nuevo pedido listo para cobro - Mesa 3", time: "Hace 2 min", read: false },
-    { id: 2, type: "system", message: "Corte parcial realizado exitosamente", time: "Hace 30 min", read: true },
-    { id: 3, type: "system", message: "Nuevo gasto registrado: $150.00", time: "Hace 1 hr", read: true },
-  ];
+  // Datos reales del cajero autenticado.
+  const nombreCompleto = usuarioLogueado
+    ? `${usuarioLogueado.nombre} ${usuarioLogueado.apellido_paterno || ""}`.trim()
+    : "Cajero";
+
+  const [editName, setEditName] = useState(usuarioLogueado?.nombre || "");
+  const [editLastName, setEditLastName] = useState(usuarioLogueado?.apellido_paterno || "");
+  const [editEmail, setEditEmail] = useState(usuarioLogueado?.correo || "");
+  const [editPhone, setEditPhone] = useState(usuarioLogueado?.telefono || "");
+
+  const iniciales = React.useMemo(() => {
+    const partes = nombreCompleto.split(" ").filter(Boolean);
+    if (partes.length === 0) return "CA";
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[1][0]).toUpperCase();
+  }, [nombreCompleto]);
+
+  // Cobros reales del dia, tomados de los tickets pagados que guarda la API.
+  const [tickets, setTickets] = useState([]);
+  const [cargandoTickets, setCargandoTickets] = useState(true);
+
+  React.useEffect(() => {
+    if (!token) return;
+    setCargandoTickets(true);
+    fetch(`${API_BASE_URL}/tickets?with_pagos=true`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("tickets");
+        return res.json();
+      })
+      .then((data) => {
+        setTickets(data || []);
+        setCargandoTickets(false);
+      })
+      .catch(() => setCargandoTickets(false));
+  }, [token]);
+
+  const { salesTotal, completedOrdersCount, ventasPorMetodo } = React.useMemo(() => {
+    const hoy = new Date().toDateString();
+    const cobradosHoy = tickets.filter((t) => {
+      if (t.estado !== "pagado") return false;
+      let fecha = t.fecha || "";
+      if (fecha && !fecha.endsWith("Z") && !fecha.includes("+")) fecha += "Z";
+      return new Date(fecha).toDateString() === hoy;
+    });
+
+    const total = cobradosHoy.reduce((acc, t) => acc + (Number(t.total) || 0), 0);
+
+    const NOMBRE_METODO = {
+      efectivo: "Efectivo",
+      tarjeta: "Tarjeta",
+      transferencia: "Transferencia",
+    };
+    const porMetodo = cobradosHoy.reduce((acc, t) => {
+      const tipo = t.pagos && t.pagos.length > 0 ? t.pagos[0].tipo_pago : null;
+      const metodo = NOMBRE_METODO[tipo] || "Sin registrar";
+      acc[metodo] = (acc[metodo] || 0) + (Number(t.total) || 0);
+      return acc;
+    }, {});
+
+    return {
+      salesTotal: total,
+      completedOrdersCount: cobradosHoy.length,
+      ventasPorMetodo: Object.entries(porMetodo),
+    };
+  }, [tickets]);
+
+  const notificationHistory = notifications;
+  const avisosSinLeer = notifications.filter((n) => !n.read).length;
+
+  const guardarPerfil = () => {
+    if (!editName.trim()) {
+      mostrarAviso("Datos incompletos", "El nombre no puede quedar vacio.");
+      return;
+    }
+
+    setGuardando(true);
+    fetch(`${API_BASE_URL}/auth/me`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nombre: editName.trim(),
+        apellido_paterno: editLastName.trim(),
+        telefono: editPhone.trim(),
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("No se pudieron guardar los cambios.");
+        return res.json();
+      })
+      .then((usuarioActualizado) => {
+        setGuardando(false);
+        if (onPerfilActualizado) onPerfilActualizado(usuarioActualizado);
+        mostrarAviso("Perfil actualizado", "Tus datos se guardaron correctamente.");
+        setSubScreen("main");
+      })
+      .catch((error) => {
+        setGuardando(false);
+        mostrarAviso("Error", error.message || "No se pudo conectar con el servidor.");
+      });
+  };
 
   const renderHeader = (title, subtitle, showBack = false) => (
     <View style={styles.headerContainer}>
@@ -68,30 +184,31 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
           {renderHeader("Mis Estadisticas", "Rendimiento en el turno", true)}
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
             <View style={styles.card}>
-              <Text style={styles.cardHeaderTitle}>Resumen de Ventas Acumuladas</Text>
-              <Text style={styles.bigNumber}>${salesTotal.toFixed(2)} MXN</Text>
+              <Text style={styles.cardHeaderTitle}>Ventas Cobradas Hoy</Text>
+              <Text style={styles.bigNumber}>
+                {cargandoTickets ? "..." : `$${salesTotal.toFixed(2)} MXN`}
+              </Text>
               <Text style={styles.mutedCenter}>
-                Total correspondiente a {completedOrdersCount} tickets procesados hoy.
+                {completedOrdersCount === 1
+                  ? "1 ticket procesado"
+                  : `${completedOrdersCount} tickets procesados`}
               </Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Ventas por Hora</Text>
+            <Text style={styles.sectionTitle}>Ventas por Metodo de Pago</Text>
             <View style={styles.card}>
-              <View style={styles.chartContainer}>
-                {[
-                  { hour: "10 AM", val: 320, height: 40 },
-                  { hour: "11 AM", val: 540, height: 70 },
-                  { hour: "12 PM", val: 690, height: 90 },
-                  { hour: "01 PM", val: 480, height: 60 },
-                  { hour: "02 PM", val: 310, height: 38 },
-                ].map((bar) => (
-                  <View key={bar.hour} style={styles.chartCol}>
-                    <Text style={styles.chartLabel}>${bar.val}</Text>
-                    <View style={[styles.chartBar, { height: bar.height }]} />
-                    <Text style={styles.chartHour}>{bar.hour}</Text>
+              {ventasPorMetodo.length === 0 ? (
+                <Text style={styles.mutedCenter}>
+                  {cargandoTickets ? "Cargando cobros..." : "Aun no hay cobros registrados hoy."}
+                </Text>
+              ) : (
+                ventasPorMetodo.map(([metodo, monto]) => (
+                  <View key={metodo} style={styles.receiptRow}>
+                    <Text style={styles.textMuted}>{metodo}</Text>
+                    <Text style={styles.textBold}>${monto.toFixed(2)} MXN</Text>
                   </View>
-                ))}
-              </View>
+                ))
+              )}
             </View>
 
             <Text style={styles.sectionTitle}>Metricas de Eficiencia</Text>
@@ -101,8 +218,8 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
                 <Text style={styles.textBold}>${(salesTotal / (completedOrdersCount || 1)).toFixed(2)} MXN</Text>
               </View>
               <View style={styles.receiptRow}>
-                <Text style={styles.textMuted}>Tiempo Promedio Cobro</Text>
-                <Text style={styles.textBold}>3 minutos</Text>
+                <Text style={styles.textMuted}>Duracion del turno</Text>
+                <Text style={styles.textBold}>{shiftTime}</Text>
               </View>
             </View>
           </ScrollView>
@@ -118,20 +235,34 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
           {renderHeader("Centro de Alertas", "Historial de avisos", true)}
           <View style={styles.contentContainer}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              {notificationHistory.map((item) => (
-                <View key={item.id} style={[styles.card, !item.read && { borderLeftWidth: 4, borderLeftColor: "#5BC0DE" }]}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: Colors.secondary, fontWeight: "bold" }}>Sistema</Text>
-                    <Text style={{ fontSize: 11, color: Colors.textLight }}>{item.time}</Text>
-                  </View>
-                  <Text style={{ color: Colors.text, fontSize: 13 }}>{item.message}</Text>
+              {notificationHistory.length === 0 ? (
+                <View style={{ alignItems: "center", marginTop: 60 }}>
+                  <Icon name="bell-outline" size={48} color={Colors.textLight} />
+                  <Text style={{ color: Colors.textLight, fontSize: 15, marginTop: 16 }}>
+                    Sin avisos por ahora.
+                  </Text>
                 </View>
-              ))}
+              ) : (
+                notificationHistory.map((item) => (
+                  <View key={item.id} style={[styles.card, !item.read && { borderLeftWidth: 4, borderLeftColor: "#5BC0DE" }]}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: Colors.secondary, fontWeight: "bold" }}>
+                        {ETIQUETA_ALERTA[item.type] || "Sistema"}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: Colors.textLight }}>{item.time}</Text>
+                    </View>
+                    <Text style={{ color: Colors.text, fontSize: 13 }}>{item.message}</Text>
+                  </View>
+                ))
+              )}
             </ScrollView>
-            <TouchableOpacity style={styles.btn} onPress={() => Alert.alert("Listo", "Todas las alertas marcadas como leidas.")}>
-              <Text style={styles.btnText}>Marcar todas como leidas</Text>
-            </TouchableOpacity>
+            {notificationHistory.length > 0 && (
+              <TouchableOpacity style={styles.btn} onPress={onMarkAllNotificationsRead}>
+                <Text style={styles.btnText}>Marcar todas como leidas</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          <AvisoModal aviso={aviso} onClose={cerrarAviso} />
         </View>
       </SafeAreaView>
     );
@@ -145,18 +276,22 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
           <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
             <View style={{ alignItems: "center", marginVertical: 20 }}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>CL</Text>
+                <Text style={styles.avatarText}>{iniciales}</Text>
               </View>
             </View>
- 
+
             <Text style={styles.sectionTitle}>Datos Personales</Text>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Rol asignado</Text>
               <TextInput style={[styles.input, styles.inputDisabled]} value="Cajero" editable={false} />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Nombre completo</Text>
+              <Text style={styles.label}>Nombre</Text>
               <TextInput style={styles.input} value={editName} onChangeText={setEditName} />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Apellido paterno</Text>
+              <TextInput style={styles.input} value={editLastName} onChangeText={setEditLastName} />
             </View>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Correo electronico</Text>
@@ -167,14 +302,15 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
               <TextInput style={styles.input} value={editPhone} onChangeText={setEditPhone} keyboardType="phone-pad" />
             </View>
 
-            <TouchableOpacity style={styles.btn} onPress={() => { Alert.alert("Guardado", "Datos actualizados."); setSubScreen("main"); }}>
-              <Text style={styles.btnText}>Guardar cambios</Text>
+            <TouchableOpacity style={[styles.btn, guardando && { opacity: 0.6 }]} onPress={guardarPerfil} disabled={guardando}>
+              <Text style={styles.btnText}>{guardando ? "Guardando..." : "Guardar cambios"}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.btnOutlineDanger} onPress={handleLogout}>
               <Text style={{ color: Colors.danger, fontWeight: "600", textAlign: "center" }}>Cerrar Sesion</Text>
             </TouchableOpacity>
           </ScrollView>
+          <AvisoModal aviso={aviso} onClose={cerrarAviso} />
         </View>
       </SafeAreaView>
     );
@@ -188,14 +324,12 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
         <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
           <View style={[styles.card, { alignItems: "center" }]}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>CL</Text>
+              <Text style={styles.avatarText}>{iniciales}</Text>
             </View>
-            <Text style={styles.waiterName}>Carlos Lopez</Text>
+            <Text style={styles.waiterName}>{nombreCompleto}</Text>
             <Text style={styles.waiterRole}>Cajero</Text>
-            <View style={[styles.shiftBadge, { backgroundColor: clockedIn ? "#4E8D7022" : "#D9534F22" }]}>
-              <Text style={{ color: clockedIn ? "#4E8D70" : Colors.danger, fontWeight: "600", fontSize: 13 }}>
-                {clockedIn ? "● Turno Activo" : "● Turno Finalizado"}
-              </Text>
+            <View style={[styles.shiftBadge, { backgroundColor: "#4E8D7022" }]}>
+              <Text style={{ color: "#4E8D70", fontWeight: "600", fontSize: 13 }}>● Turno Activo</Text>
             </View>
           </View>
 
@@ -204,6 +338,14 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
             <View style={styles.receiptRow}>
               <Text style={styles.textMuted}>Duracion de Turno</Text>
               <Text style={styles.textBold}>{shiftTime}</Text>
+            </View>
+            <View style={styles.receiptRow}>
+              <Text style={styles.textMuted}>Tickets cobrados hoy</Text>
+              <Text style={styles.textBold}>{completedOrdersCount}</Text>
+            </View>
+            <View style={styles.receiptRow}>
+              <Text style={styles.textMuted}>Avisos sin leer</Text>
+              <Text style={styles.textBold}>{avisosSinLeer}</Text>
             </View>
 
             <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
@@ -215,19 +357,19 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
               </TouchableOpacity>
             </View>
 
+            {/* El turno de caja dura lo que dura la sesion: cerrarla lo finaliza. */}
             <TouchableOpacity
-              style={[styles.btn, { backgroundColor: clockedIn ? Colors.danger : "#4E8D70", marginTop: 12 }]}
-              onPress={() => {
-                setClockedIn(!clockedIn);
-                Alert.alert(
-                  clockedIn ? "Turno Finalizado" : "Turno Iniciado",
-                  clockedIn ? "Has cerrado tu jornada." : "Jornada iniciada con exito."
-                );
-              }}
+              style={[styles.btn, { backgroundColor: Colors.danger, marginTop: 12 }]}
+              onPress={() =>
+                confirmar(
+                  "Finalizar jornada",
+                  `Llevas ${shiftTime} en turno. Al finalizar se cerrara tu sesion.`,
+                  handleLogout,
+                  "Finalizar"
+                )
+              }
             >
-              <Text style={styles.btnText}>
-                {clockedIn ? "Finalizar Jornada (Clock-Out)" : "Iniciar Jornada (Clock-In)"}
-              </Text>
+              <Text style={styles.btnText}>Finalizar Jornada</Text>
             </TouchableOpacity>
           </View>
 
@@ -251,6 +393,7 @@ export default function Perfil({ cambiarPantalla, toggleSidebar, onLogout }) {
             <Text style={{ color: Colors.primary, fontWeight: "600", textAlign: "center" }}>Editar Datos Personales</Text>
           </TouchableOpacity>
         </ScrollView>
+        <AvisoModal aviso={aviso} onClose={cerrarAviso} />
       </View>
     </SafeAreaView>
   );
@@ -316,9 +459,4 @@ const styles = StyleSheet.create({
   inputDisabled: { backgroundColor: Colors.border, color: Colors.textLight },
   bigNumber: { color: Colors.primary, fontSize: 32, fontWeight: "bold", textAlign: "center", marginVertical: 12 },
   mutedCenter: { color: Colors.textLight, fontSize: 12, textAlign: "center" },
-  chartContainer: { flexDirection: "row", justifyContent: "space-around", alignItems: "flex-end", height: 120, paddingTop: 10 },
-  chartCol: { alignItems: "center" },
-  chartBar: { width: 24, backgroundColor: Colors.primary, borderRadius: 6 },
-  chartLabel: { fontSize: 9, color: Colors.textLight, marginBottom: 4 },
-  chartHour: { fontSize: 10, color: Colors.text, marginTop: 6 },
 });

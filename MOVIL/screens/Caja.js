@@ -67,6 +67,12 @@ export default function Caja(props) {
     setPantalla(p);
   };
 
+  const marcarAvisosLeidos = () => {
+    if (props.setNotifications) {
+      props.setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
+
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const seleccionarMesa = (mesa) => {
@@ -350,6 +356,7 @@ export default function Caja(props) {
             cambiarPantalla={cambiarPantalla}
             seleccionarMesa={seleccionarMesa}
             toggleSidebar={toggleSidebar}
+            usuarioLogueado={usuarioLogueado}
           />
         );
       case "pedido":
@@ -434,6 +441,7 @@ export default function Caja(props) {
             metodoPago={metodoPago}
             cambiarPantalla={cambiarPantalla}
             limpiarPedido={limpiarPedido}
+            usuarioLogueado={usuarioLogueado}
           />
         );
       case "pedidoListo":
@@ -492,6 +500,10 @@ export default function Caja(props) {
             onLogout={handleLogout}
             token={token}
             usuarioLogueado={usuarioLogueado}
+            inicioTurno={props.inicioTurno}
+            notifications={props.notifications || []}
+            onMarkAllNotificationsRead={marcarAvisosLeidos}
+            onPerfilActualizado={setUsuarioLogueado}
           />
         );
       default:
