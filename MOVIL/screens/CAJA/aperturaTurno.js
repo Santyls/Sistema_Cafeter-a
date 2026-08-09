@@ -13,7 +13,12 @@ import PrimaryButton from "./components/PrimaryButton";
 import Icon from "../shared/Icon";
 
 import { API_BASE_URL } from '../../config/api';
-export default function AperturaTurno({ cambiarPantalla, token, onTurnoAbierto }) {
+export default function AperturaTurno({ cambiarPantalla, token, onTurnoAbierto, usuarioLogueado }) {
+  // Nombre real del cajero que inicio sesion en el login unificado.
+  const nombreCajero = usuarioLogueado
+    ? `${usuarioLogueado.nombre} ${usuarioLogueado.apellido_paterno || ''}`.trim()
+    : 'Cajero';
+
   const [fondoInicial, setFondoInicial] = useState("");
 
   const fecha = new Date().toLocaleDateString("es-MX", {
@@ -37,7 +42,7 @@ export default function AperturaTurno({ cambiarPantalla, token, onTurnoAbierto }
             <Icon name="person" size={20} color={Colors.secondary} />
             <View style={styles.infoText}>
               <Text style={styles.infoLabel}>Cajero</Text>
-              <Text style={styles.infoValue}>Carlos Lopez</Text>
+              <Text style={styles.infoValue}>{nombreCajero}</Text>
             </View>
           </View>
           <View style={styles.divider} />

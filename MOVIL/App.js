@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, PanResponder } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 
+import LoginUnificado from './screens/LoginUnificado';
 import ClienteMesero from './screens/ClienteMesero';
 import Cocina from './screens/Cocina';
 import Caja from './screens/Caja';
@@ -39,7 +39,8 @@ const INITIAL_TABLES = [
 ];
 
 export default function App() {
-  const [module, setModule] = useState(null);
+  // Sesion unica: el modulo se decide por el rol devuelto por la API.
+  const [session, setSession] = useState(null);
   const [tables, setTables] = useState(INITIAL_TABLES);
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [inventory, setInventory] = useState(INITIAL_INVENTORY);
@@ -48,24 +49,22 @@ export default function App() {
   const [tableCarts, setTableCarts] = useState({});
   const [token, setToken] = useState(null);
 
-  const volverAlMenu = () => setModule(null);
+  const module = session?.modulo || null;
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Only trigger swipe back gesture if a module is active
-        return (
-          gestureState.dx > 85 &&
-          Math.abs(gestureState.dy) < 40
-        );
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dx > 85) {
-          volverAlMenu();
-        }
-      },
-    })
-  ).current;
+  const handleLoginSuccess = ({ token: apiToken, usuario, modulo }) => {
+    setToken(apiToken);
+    setSession({ usuario, modulo });
+  };
+
+  // Cerrar sesion regresa al login y limpia los datos de la sesion anterior.
+  const cerrarSesion = () => {
+    setSession(null);
+    setToken(null);
+    setOrders(INITIAL_ORDERS);
+    setNotifications(INITIAL_NOTIFICATIONS);
+    setTableCarts({});
+    setNotifiedReadyOrderIds([]);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -285,72 +284,20 @@ export default function App() {
     notifiedReadyOrderIds,
     setNotifiedReadyOrderIds,
     token,
-    setToken
+    setToken,
+    // Usuario autenticado en el login unico; cada modulo lo usa en lugar de
+    // pedir credenciales por su cuenta.
+    sessionUser: session?.usuario || null,
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A1931' }} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: '#0A1931' }}>
       <StatusBar style="light" />
-      {module === 'cliente_mesero' && <ClienteMesero onBack={volverAlMenu} {...sharedProps} />}
-      {module === 'cocina' && <Cocina onBack={volverAlMenu} {...sharedProps} />}
-      {module === 'caja' && <Caja onBack={volverAlMenu} {...sharedProps} />}
-      {!module && (
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
-            <Ionicons name="cafe" size={64} color="#0A1931" />
-            <Text style={styles.title}>CoffeeFlow</Text>
-            <Text style={styles.subtitle}>Selecciona un módulo</Text>
-
-            <View style={styles.buttons}>
-              <TouchableOpacity
-                style={[styles.moduleBtn, { backgroundColor: '#0A1931' }]}
-                onPress={() => setModule('cliente_mesero')}
-              >
-                <Ionicons name="restaurant" size={28} color="#fff" />
-                <Text style={styles.moduleText}>Cliente / Mesero</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.moduleBtn, { backgroundColor: '#152E52' }]}
-                onPress={() => setModule('cocina')}
-              >
-                <Ionicons name="flame" size={28} color="#fff" />
-                <Text style={styles.moduleText}>Cocina</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.moduleBtn, { backgroundColor: '#9A7B1C' }]}
-                onPress={() => setModule('caja')}
-              >
-                <Ionicons name="cash" size={28} color="#fff" />
-                <Text style={styles.moduleText}>Caja</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      )}
+      {module === 'cliente_mesero' && <ClienteMesero onBack={cerrarSesion} {...sharedProps} />}
+      {module === 'cocina' && <Cocina onBack={cerrarSesion} {...sharedProps} />}
+      {module === 'caja' && <Caja onBack={cerrarSesion} {...sharedProps} />}
+      {!module && <LoginUnificado onLoginSuccess={handleLoginSuccess} />}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#0A1931' },
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FCFAF7', padding: 28 },
-  title: { fontSize: 30, fontWeight: '800', color: '#0A1931', marginTop: 8 },
-  subtitle: { fontSize: 15, color: '#9A7B1C', marginTop: 4, marginBottom: 36 },
-  buttons: { width: '100%', gap: 16 },
-  moduleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    paddingVertical: 22,
-    paddingHorizontal: 24,
-    borderRadius: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  moduleText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-});

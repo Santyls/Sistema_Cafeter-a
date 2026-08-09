@@ -1399,7 +1399,7 @@ const OrderTrackingCard = ({ order, colors, styles, onPress }) => {
 };
 
 export default function ClienteMesero(props) {
-  const { onBack, notifiedReadyOrderIds, setNotifiedReadyOrderIds, token, setToken } = props;
+  const { onBack, notifiedReadyOrderIds, setNotifiedReadyOrderIds, token, setToken, sessionUser } = props;
 
   // --- TABLES STATE ---
   const [localTables, setLocalTables] = useState([
@@ -1425,20 +1425,29 @@ export default function ClienteMesero(props) {
   const setOrders = props.setOrders || setLocalOrders;
 
   // --- AUTH / PROFILE STATE ---
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  // El usuario ya viene autenticado desde el login unificado.
+  const [currentUser, setCurrentUser] = useState(
+    sessionUser
+      ? {
+          id: sessionUser.id_usuario,
+          name: sessionUser.nombre,
+          lastNameP: sessionUser.apellido_paterno || '',
+          lastNameM: sessionUser.apellido_materno || '',
+          email: sessionUser.correo,
+          phone: sessionUser.telefono || '',
+          role: sessionUser.rol === 'admin' ? 'Administrador' : 'Mesero',
+        }
+      : null
+  );
   const [isSendingOrder, setIsSendingOrder] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
   // Waiter profile fields
-  const [editName, setEditName] = useState('Alberto');
-  const [editLastNameP, setEditLastNameP] = useState('Luna');
-  const [editLastNameM, setEditLastNameM] = useState('');
-  const [editEmail, setEditEmail] = useState('alberto.luna@coffeeflow.com');
-  const [editPhone, setEditPhone] = useState('+52 442 000 0000');
+  const [editName, setEditName] = useState(sessionUser?.nombre || '');
+  const [editLastNameP, setEditLastNameP] = useState(sessionUser?.apellido_paterno || '');
+  const [editLastNameM, setEditLastNameM] = useState(sessionUser?.apellido_materno || '');
+  const [editEmail, setEditEmail] = useState(sessionUser?.correo || '');
+  const [editPhone, setEditPhone] = useState(sessionUser?.telefono || '');
   const [editPassword, setEditPassword] = useState('');
   const [editPassword2, setEditPassword2] = useState('');
 
@@ -1529,7 +1538,8 @@ export default function ClienteMesero(props) {
   const [shiftTime, setShiftTime] = useState('04:12 hrs');
 
   // --- SCREEN NAVIGATION STATE ---
-  const [currentScreen, setCurrentScreen] = useState('login'); // login, recovery, mesas, menu, customization, summary, tracking, details, close_account, config, edit_profile, statistics, notifications_history
+  // Se entra directo al mapa de mesas: la autenticacion ocurre en el login unificado.
+  const [currentScreen, setCurrentScreen] = useState('mesas'); // mesas, menu, customization, summary, tracking, details, close_account, config, edit_profile, statistics, notifications_history
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
@@ -2090,93 +2100,6 @@ export default function ClienteMesero(props) {
 
   // --- ACTIONS HANDLERS ---
 
-  const handleLogin = () => {
-    const emailLower = loginEmail.trim().toLowerCase();
-    
-    if (!emailLower || !loginPassword) {
-      Alert.alert('Campos Incompletos', 'Por favor ingresa tu correo y contraseña.');
-      return;
-    }
-
-    setIsLoggingIn(true);
-    fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        usuario: emailLower,
-        contrasena: loginPassword,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then((err) => {
-            throw new Error(err.error || 'Credenciales incorrectas');
-          });
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setIsLoggingIn(false);
-        const user = data.usuario;
-        if (user.rol !== 'mesero' && user.rol !== 'admin') {
-          Alert.alert('Acceso Denegado', 'Tu rol no tiene acceso a este módulo de Mesero.');
-          return;
-        }
-        const loggedUser = {
-          id: user.id_usuario,
-          name: user.nombre,
-          lastNameP: user.apellido_paterno || '',
-          lastNameM: user.apellido_materno || '',
-          email: user.correo,
-          phone: user.telefono || '',
-          role: user.rol === 'admin' ? 'Administrador' : 'Mesero'
-        };
-        setCurrentUser(loggedUser);
-        if (setToken) setToken(data.access_token);
-        setEditName(loggedUser.name);
-        setEditLastNameP(loggedUser.lastNameP);
-        setEditLastNameM(loggedUser.lastNameM);
-        setEditEmail(loggedUser.email);
-        setEditPhone(loggedUser.phone);
-        setEditPassword('');
-        setEditPassword2('');
-        setCurrentScreen('mesas');
-        setTimeout(() => {
-          triggerAlertNotification(`Turno de ${loggedUser.name} iniciado.`);
-        }, 500);
-      })
-      .catch((error) => {
-        setIsLoggingIn(false);
-        Alert.alert('Error de Inicio de Sesión', error.message || 'No se pudo conectar con el servidor.');
-      });
-  };
-
-  const handleRecovery = () => {
-    if (!recoveryEmail) {
-      Alert.alert('Error', 'Ingresa tu correo electrónico.');
-      return;
-    }
-    fetch(`${API_BASE_URL}/auth/recuperar-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ correo: recoveryEmail.trim() }),
-    })
-      .then((res) => {
-        Alert.alert(
-          'Código Enviado',
-          `Si el correo "${recoveryEmail}" está registrado, se enviarán instrucciones de recuperación.`,
-          [{ text: 'Aceptar', onPress: () => setCurrentScreen('login') }]
-        );
-      })
-      .catch((error) => {
-        Alert.alert('Error de conexión', 'No se pudo contactar con el servidor.');
-      });
-  };
-
   const getProductQtyInCart = (productId) => {
     const cart = tableCarts[activeTableId] || [];
     const items = cart.filter(item => item.product.id === productId);
@@ -2610,12 +2533,12 @@ export default function ClienteMesero(props) {
       });
   };
 
+  // Cerrar sesion se delega al contenedor (App), que limpia la sesion y
+  // devuelve al login unificado.
   const handleLogout = () => {
     setCurrentUser(null);
-    setLoginEmail('');
-    setLoginPassword('');
     toggleSidebar(false);
-    setCurrentScreen('login');
+    if (onBack) onBack();
   };
 
   // --- FILTERS LOGIC ---
@@ -2723,8 +2646,7 @@ export default function ClienteMesero(props) {
           <View style={styles.headerTitleGroup}>
             {showBack ? (
               <TouchableOpacity style={styles.backButton} onPress={() => {
-                if (currentScreen === 'recovery') setCurrentScreen('login');
-                else if (currentScreen === 'menu') setCurrentScreen('mesas');
+                if (currentScreen === 'menu') setCurrentScreen('mesas');
                 else if (currentScreen === 'customization') setCurrentScreen('menu');
                 else if (currentScreen === 'summary') setCurrentScreen('menu');
                 else if (currentScreen === 'edit_profile') setCurrentScreen('config');
@@ -2808,97 +2730,6 @@ export default function ClienteMesero(props) {
         ) : null}
 
         {/* --- SCREEN: LOGIN --- */}
-        {currentScreen === 'login' && (
-          <FadeInView style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.authScroll}>
-              <View style={[styles.logoContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                <Ionicons name="cafe" size={40} color={colors.primaryText} />
-              </View>
-              <Text style={[styles.appTitleText, { color: colors.primaryText }]}>CoffeeFlow Pro</Text>
-              <Text style={[styles.appSubtitleText, { color: colors.textMuted }]}>Modulo de Pedidos & Surtido</Text>
-
-              <View style={styles.formCard}>
-                <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: colors.textMuted }]}>ID de Mesero / Correo</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.cardBg, color: colors.textMain, borderColor: colors.border }]}
-                    placeholder="Ej. alberto.luna"
-                    placeholderTextColor={colors.textMuted}
-                    value={loginEmail}
-                    onChangeText={setLoginEmail}
-                    autoCapitalize="none"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: colors.textMuted }]}>Contraseña de Acceso</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.cardBg, color: colors.textMain, borderColor: colors.border }]}
-                    placeholder="Cualquier contraseña"
-                    placeholderTextColor={colors.textMuted}
-                    secureTextEntry
-                    value={loginPassword}
-                    onChangeText={setLoginPassword}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.btn, { backgroundColor: colors.primary }]}
-                  onPress={handleLogin}
-                  disabled={isLoggingIn}
-                >
-                  {isLoggingIn ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.btnText}>Iniciar Sesión</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.linksContainer} onPress={() => setCurrentScreen('recovery')}>
-                  <Text style={[styles.linksText, { color: colors.secondary }]}>¿Olvidaste tu contraseña?</Text>
-                </TouchableOpacity>
-
-                {onBack && (
-                  <TouchableOpacity style={styles.linksContainer} onPress={onBack}>
-                    <Text style={[styles.linksText, { color: colors.textMuted }]}>Volver al menu de modulos</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </ScrollView>
-          </FadeInView>
-        )}
-
-        {/* --- SCREEN: RECOVERY --- */}
-        {currentScreen === 'recovery' && (
-          <FadeInView style={{ flex: 1 }}>
-            {renderHeader('Recuperar', 'Recuperación de credenciales', true)}
-            <View style={styles.contentContainer}>
-              <View style={styles.formCard}>
-                <Text style={[styles.infoParagraph, { color: colors.textMuted }]}>
-                  Introduce tu correo registrado para enviarte un token temporal.
-                </Text>
-
-                <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: colors.textMuted }]}>Correo electrónico registrado</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.cardBg, color: colors.textMain, borderColor: colors.border }]}
-                    placeholder="Ej. alberto.luna@coffeeflow.com"
-                    placeholderTextColor={colors.textMuted}
-                    value={recoveryEmail}
-                    onChangeText={setRecoveryEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-
-                <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={handleRecovery}>
-                  <Text style={styles.btnText}>Enviar código temporal</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </FadeInView>
-        )}
-
         {/* --- SCREEN: ASIGNAR MESA (MAPA DE MESAS INTERACTIVO / SPATIAL MAP) --- */}
         {currentScreen === 'mesas' && (
           <FadeInView style={{ flex: 1 }}>

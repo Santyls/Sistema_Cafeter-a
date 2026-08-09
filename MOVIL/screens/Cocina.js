@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import FadeInView from './shared/FadeInView';
 
-import LoginCocina from './cocina/LoginCocina';
-import RecuperarContrasena from './cocina/RecuperarContrasena';
 import DashboardCocina from './cocina/DashboardCocina';
 import ListaPedidos from './cocina/ListaPedidos';
 import DetallePedido from './cocina/DetallePedido';
@@ -34,10 +32,11 @@ const INITIAL_INVENTORY = [
 const INITIAL_NOTIFICATIONS = [];
 
 export default function Cocina(props) {
-  const { onBack, token, setToken } = props;
-  const [screen, setScreen] = useState('login');
+  const { onBack, token, setToken, sessionUser } = props;
+  // La sesion ya viene del login unificado, por eso se entra directo al dashboard.
+  const [screen, setScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(sessionUser?.usuario || null);
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -68,15 +67,10 @@ export default function Cocina(props) {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  const handleLogin = (username, password, apiToken) => {
-    setCurrentUser(username || 'cocinero1');
-    if (setToken) setToken(apiToken);
-    setScreen('dashboard');
-  };
-
+  // Cerrar sesion se delega al contenedor (App), que limpia la sesion y
+  // devuelve al login unificado.
   const handleLogout = () => {
     setCurrentUser(null);
-    setScreen('login');
     if (onBack) onBack();
   };
 
@@ -338,10 +332,6 @@ export default function Cocina(props) {
 
   const renderScreen = () => {
     switch (screen) {
-      case 'login':
-        return <LoginCocina navigate={navigate} onLogin={handleLogin} onBack={onBack} />;
-      case 'recuperar':
-        return <RecuperarContrasena navigate={navigate} />;
       case 'dashboard':
         return <DashboardCocina {...commonProps} />;
       case 'pedidos':
@@ -411,15 +401,13 @@ export default function Cocina(props) {
       <FadeInView key={screen} style={{ flex: 1 }} translateY={10}>
         {renderScreen()}
       </FadeInView>
-      {screen !== 'login' && screen !== 'recuperar' && (
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          currentScreen={screen}
-          navigate={navigate}
-          onLogout={handleLogout}
-        />
-      )}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentScreen={screen}
+        navigate={navigate}
+        onLogout={handleLogout}
+      />
     </View>
   );
 }

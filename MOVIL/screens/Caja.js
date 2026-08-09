@@ -6,7 +6,6 @@ import FadeInView from "./shared/FadeInView";
 import { MESAS } from "./CAJA/data/mesas";
 import { PRODUCTOS } from "./CAJA/data/productos";
 
-import Login from "./CAJA/login";
 import AperturaTurno from "./CAJA/aperturaTurno";
 import Inicio from "./CAJA/inicio";
 import Pedido from "./CAJA/pedido";
@@ -27,8 +26,9 @@ import SidebarCaja from "./CAJA/components/SidebarCaja";
 import { API_BASE_URL } from '../config/api';
 export default function Caja(props) {
   const { onBack, token, setToken } = props;
-  const [pantalla, setPantalla] = useState("login");
-  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+  // La sesion ya viene del login unificado; el turno arranca en apertura de caja.
+  const [pantalla, setPantalla] = useState("aperturaTurno");
+  const [usuarioLogueado, setUsuarioLogueado] = useState(props.sessionUser || null);
   const [idCajaActiva, setIdCajaActiva] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mesas = (props.tables || []).map(t => ({
@@ -320,9 +320,11 @@ export default function Caja(props) {
     setMontoRecibido("");
   };
 
+  // Cerrar sesion se delega al contenedor (App), que limpia la sesion y
+  // devuelve al login unificado.
   const handleLogout = () => {
     limpiarPedido();
-    setPantalla("login");
+    if (onBack) onBack();
   };
 
   const subtotal = pedido.reduce((s, p) => s + p.precio * p.cantidad, 0);
@@ -332,22 +334,12 @@ export default function Caja(props) {
 
   const renderPantalla = () => {
     switch (pantalla) {
-      case "login":
-        return (
-          <Login
-            cambiarPantalla={cambiarPantalla}
-            onBack={onBack}
-            onLoginSuccess={(tok, usr) => {
-              setToken(tok);
-              setUsuarioLogueado(usr);
-            }}
-          />
-        );
       case "aperturaTurno":
         return (
           <AperturaTurno
             cambiarPantalla={cambiarPantalla}
             token={token}
+            usuarioLogueado={usuarioLogueado}
             onTurnoAbierto={(idCaja) => setIdCajaActiva(idCaja)}
           />
         );
@@ -503,7 +495,14 @@ export default function Caja(props) {
           />
         );
       default:
-        return <Login cambiarPantalla={cambiarPantalla} onLoginSuccess={(tok, usr) => { setToken(tok); setUsuarioLogueado(usr); }} />;
+        return (
+          <AperturaTurno
+            cambiarPantalla={cambiarPantalla}
+            token={token}
+            usuarioLogueado={usuarioLogueado}
+            onTurnoAbierto={(idCaja) => setIdCajaActiva(idCaja)}
+          />
+        );
     }
   };
 
@@ -513,7 +512,7 @@ export default function Caja(props) {
       <FadeInView key={pantalla} style={{ flex: 1 }} translateY={10}>
         {renderPantalla()}
       </FadeInView>
-      {pantalla !== "login" && pantalla !== "aperturaTurno" && (
+      {pantalla !== "aperturaTurno" && (
         <SidebarCaja
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
