@@ -43,8 +43,13 @@ export default function CobrarScreen({ navigation }) {
   const { datos, cargando, error, recargar } = useCarga(cargarTodo, null, []);
 
   // La caja abierta del propio cajero: sin ella no se puede emitir ningun ticket.
+  // Se exige el estado explicitamente: si por lo que sea llegara una caja cerrada,
+  // es preferible pedir apertura de turno que dejar cobrar contra un turno cerrado.
   const cajaAbierta = useMemo(
-    () => (datos?.cajas || []).find((c) => c.id_usuario === user?.id_usuario) || null,
+    () =>
+      (datos?.cajas || []).find(
+        (c) => c.id_usuario === user?.id_usuario && c.estado === 'abierto'
+      ) || null,
     [datos, user]
   );
 

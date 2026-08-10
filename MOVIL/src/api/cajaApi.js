@@ -1,7 +1,19 @@
 import { httpClient } from './httpClient';
 
+/** Convierte {estado:'abierto'} en "?estado=abierto", omitiendo lo que venga vacio. */
+function query(params = {}) {
+  const partes = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  ).toString();
+  return partes ? `?${partes}` : '';
+}
+
 export const cajaApi = {
-  listar: () => httpClient.get('/caja'),
+  // Los parametros SI se mandan: antes se ignoraban y la pantalla de caja recibia
+  // todos los turnos, incluidos los cerrados. Tomaba el primero del cajero (el mas
+  // reciente, normalmente ya cerrado), creia que habia turno abierto y al cobrar
+  // mandaba el id de una caja cerrada, que la API rechazaba.
+  listar: (params) => httpClient.get(`/caja${query(params)}`),
 
   obtener: (id) => httpClient.get(`/caja/${id}`),
 
@@ -10,12 +22,7 @@ export const cajaApi = {
 
   cerrar: (id, montoFinal) => httpClient.patch(`/caja/${id}/cerrar`, { monto_final: montoFinal }),
 
-  tickets: (params = {}) => {
-    const query = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
-    ).toString();
-    return httpClient.get(`/tickets${query ? `?${query}` : ''}`);
-  },
+  tickets: (params) => httpClient.get(`/tickets${query(params)}`),
 
   crearTicket: (ticket) => httpClient.post('/tickets', ticket),
 

@@ -30,7 +30,10 @@ export default function CorteScreen({ navigation }) {
   const { datos, cargando, error, recargar } = useCarga(cargarTodo, null, []);
 
   const caja = useMemo(
-    () => (datos?.cajas || []).find((c) => c.id_usuario === user?.id_usuario) || null,
+    () =>
+      (datos?.cajas || []).find(
+        (c) => c.id_usuario === user?.id_usuario && c.estado === 'abierto'
+      ) || null,
     [datos, user]
   );
 
