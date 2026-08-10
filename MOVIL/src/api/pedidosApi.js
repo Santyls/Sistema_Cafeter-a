@@ -14,8 +14,14 @@ export const pedidosApi = {
 
   actualizar: (id, cambios) => httpClient.put(`/pedidos/${id}`, cambios),
 
-  /** Caja valida el pedido y lo inyecta a cocina (descuenta inventario). */
-  inyectar: (id) => httpClient.post(`/pedidos/${id}/inyectar`),
+  /** Caja valida el pedido y lo manda a cocina. */
+  mandarACocina: (id) => httpClient.post(`/pedidos/${id}/inyectar`),
+
+  /** El mesero avisa que el cliente pidio la cuenta; hasta entonces caja no cobra. */
+  solicitarCuenta: (id) => httpClient.post(`/pedidos/${id}/solicitar-cuenta`),
+
+  /** Revisa si hay ingredientes suficientes antes de mandar el pedido. */
+  revisarDisponibilidad: (detalles) => httpClient.post('/pedidos/disponibilidad', { detalles }),
 
   cambiarEstado: (id, estado, comentario) =>
     httpClient.patch(`/pedidos/${id}/estado`, { estado, comentario }),

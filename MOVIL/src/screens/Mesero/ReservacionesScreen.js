@@ -1,19 +1,21 @@
 import { useCallback, useState } from 'react';
 import { View, Text, RefreshControl, StyleSheet } from 'react-native';
-import { CalendarClock, Plus, XCircle } from 'lucide-react-native';
+import { CalendarClock, Plus, XCircle, Users } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { catalogoApi } from '../../api/catalogoApi';
 import { ApiError } from '../../api/httpClient';
 import useCarga from '../../hooks/useCarga';
 import { fechaCorta, hora } from '../../utils/format';
-import { isEmpty, isValidEmail } from '../../utils/validators';
+import { isEmpty, isValidTelefono } from '../../utils/validators';
 import { confirmar, mostrarMensaje } from '../../utils/alerts';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import TextField from '../../components/common/TextField';
 import Select from '../../components/common/Select';
+import SelectorFechaHora from '../../components/common/SelectorFechaHora';
 import FloatingModal from '../../components/common/FloatingModal';
 
 export default function ReservacionesScreen() {
@@ -21,9 +23,9 @@ export default function ReservacionesScreen() {
 
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
-  const [correo, setCorreo] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [personas, setPersonas] = useState('');
-  const [fecha, setFecha] = useState('');
+  const [fechaHora, setFechaHora] = useState(null);
   const [mesa, setMesa] = useState('');
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
@@ -36,14 +38,26 @@ export default function ReservacionesScreen() {
   const { datos, cargando, error, recargar } = useCarga(cargarTodo, null, []);
 
   const reservaciones = datos?.reservaciones || [];
-  const opcionesMesa = (datos?.mesas || []).map((m) => `Mesa ${m.numero_mesa}`);
+  const mesas = datos?.mesas || [];
+  const opcionesMesa = mesas.map((m) => `Mesa ${m.numero_mesa} (${m.capacidad} lugares)`);
+
+  const limpiar = () => {
+    setNombre('');
+    setTelefono('');
+    setPersonas('');
+    setFechaHora(null);
+    setMesa('');
+    setErrors({});
+  };
 
   const crear = async () => {
     const nextErrors = {};
     if (isEmpty(nombre)) nextErrors.nombre = 'El nombre del cliente es obligatorio.';
-    if (!isEmpty(correo) && !isValidEmail(correo)) nextErrors.correo = 'Correo no valido.';
-    if (isEmpty(fecha)) nextErrors.fecha = 'Indica la fecha y hora (AAAA-MM-DD HH:MM).';
+    if (isEmpty(telefono)) nextErrors.telefono = 'El telefono es obligatorio.';
+    else if (!isValidTelefono(telefono)) nextErrors.telefono = 'El telefono debe tener 10 digitos.';
+    if (!fechaHora) nextErrors.fechaHora = 'Selecciona la fecha y la hora.';
     if (isEmpty(mesa)) nextErrors.mesa = 'Selecciona una mesa.';
+
     const numPersonas = Number(personas);
     if (!Number.isInteger(numPersonas) || numPersonas <= 0) {
       nextErrors.personas = 'Indica cuantas personas son.';
@@ -52,25 +66,22 @@ export default function ReservacionesScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const numeroMesa = Number(String(mesa).replace('Mesa ', ''));
-    const mesaElegida = (datos?.mesas || []).find((m) => m.numero_mesa === numeroMesa);
+    const numeroMesa = Number(String(mesa).replace('Mesa ', '').split(' ')[0]);
+    const mesaElegida = mesas.find((m) => m.numero_mesa === numeroMesa);
 
     setGuardando(true);
     try {
       await catalogoApi.crearReservacion({
         nombre_cliente: nombre.trim(),
-        correo_cliente: correo.trim() || null,
+        telefono: telefono.replace(/[\s-]/g, ''),
         numero_personas: numPersonas,
-        fecha_reservacion: fecha.trim(),
-        id_mesa: mesaElegida?.id_mesa,
+        id_mesa: mesaElegida.id_mesa,
+        fecha_hora: fechaHora.toISOString(),
       });
       setAbierto(false);
-      setNombre('');
-      setCorreo('');
-      setPersonas('');
-      setFecha('');
-      setMesa('');
+      limpiar();
       await recargar();
+      mostrarMensaje('Reservacion registrada', 'La mesa quedara apartada para esa hora.');
     } catch (e) {
       mostrarMensaje(
         'No se pudo reservar',
@@ -84,7 +95,7 @@ export default function ReservacionesScreen() {
   const cancelar = (reservacion) => {
     confirmar(
       'Cancelar reservacion',
-      `Se cancelara la reservacion de ${reservacion.nombre_cliente}.`,
+      `Se cancelara la reservacion de ${reservacion.nombre_cliente} y la mesa quedara libre.`,
       async () => {
         try {
           await catalogoApi.cancelarReservacion(reservacion.id_reservacion);
@@ -104,14 +115,18 @@ export default function ReservacionesScreen() {
   return (
     <ScreenContainer
       title="Reservaciones"
-      subtitle={`${reservaciones.length} registradas`}
+      subtitle={`${reservaciones.length} proximas`}
       refreshControl={
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
       }
     >
       <View style={{ marginBottom: spacing.md }}>
-        <Button title="Nueva reservacion" variant="outline" icon={Plus} onPress={() => setAbierto(true)} />
+        <Button title="Reservar mesa" icon={Plus} onPress={() => setAbierto(true)} />
       </View>
+
+      <Text style={[typography.tiny, { color: colors.textSecondary, marginBottom: spacing.sm }]}>
+        Una mesa reservada deja de aceptar pedidos 90 minutos antes de la hora apartada.
+      </Text>
 
       <AsyncContent
         cargando={cargando && !datos}
@@ -120,20 +135,26 @@ export default function ReservacionesScreen() {
         vacio={reservaciones.length === 0}
         emptyIcon={CalendarClock}
         emptyTitle="Sin reservaciones"
-        emptySubtitle="Las reservaciones que registres apareceran aqui."
+        emptySubtitle="Las mesas apartadas apareceran aqui."
       >
         {reservaciones.map((r) => (
           <Card key={r.id_reservacion} style={{ marginBottom: spacing.md }}>
             <View style={styles.topRow}>
               <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>{r.nombre_cliente}</Text>
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                {r.numero_personas} {r.numero_personas === 1 ? 'persona' : 'personas'}
+              <Badge label={`Mesa ${r.mesa_numero}`} tone="accent" soft />
+            </View>
+
+            <Text style={[typography.body, { color: colors.text, marginTop: 6 }]}>
+              {fechaCorta(r.fecha_hora)} · {hora(r.fecha_hora)}
+            </Text>
+
+            <View style={[styles.topRow, { marginTop: 4 }]}>
+              <Users size={13} color={colors.textSecondary} />
+              <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
+                {r.numero_personas} {r.numero_personas === 1 ? 'persona' : 'personas'} · {r.telefono}
               </Text>
             </View>
-            <Text style={[typography.small, { color: colors.textSecondary, marginTop: 4 }]}>
-              {fechaCorta(r.fecha_reservacion)} · {hora(r.fecha_reservacion)}
-              {r.mesa_numero ? ` · Mesa ${r.mesa_numero}` : ''}
-            </Text>
+
             <View style={{ marginTop: spacing.sm }}>
               <Button title="Cancelar" variant="outline" icon={XCircle} onPress={() => cancelar(r)} />
             </View>
@@ -141,7 +162,14 @@ export default function ReservacionesScreen() {
         ))}
       </AsyncContent>
 
-      <FloatingModal visible={abierto} onClose={() => setAbierto(false)} title="Nueva reservacion">
+      <FloatingModal
+        visible={abierto}
+        onClose={() => {
+          setAbierto(false);
+          limpiar();
+        }}
+        title="Reservar mesa"
+      >
         <TextField
           label="Nombre del cliente"
           value={nombre}
@@ -152,16 +180,15 @@ export default function ReservacionesScreen() {
           error={errors.nombre}
         />
         <TextField
-          label="Correo (opcional)"
-          placeholder="cliente@correo.com"
-          value={correo}
+          label="Telefono"
+          placeholder="4421234567"
+          value={telefono}
           onChangeText={(v) => {
-            setCorreo(v);
-            setErrors((p) => ({ ...p, correo: undefined }));
+            setTelefono(v);
+            setErrors((p) => ({ ...p, telefono: undefined }));
           }}
-          error={errors.correo}
-          keyboardType="email-address"
-          autoCapitalize="none"
+          error={errors.telefono}
+          keyboardType="phone-pad"
         />
         <TextField
           label="Numero de personas"
@@ -174,16 +201,14 @@ export default function ReservacionesScreen() {
           error={errors.personas}
           keyboardType="numeric"
         />
-        <TextField
+        <SelectorFechaHora
           label="Fecha y hora"
-          placeholder="2026-08-15 14:30"
-          value={fecha}
-          onChangeText={(v) => {
-            setFecha(v);
-            setErrors((p) => ({ ...p, fecha: undefined }));
+          value={fechaHora}
+          onChange={(v) => {
+            setFechaHora(v);
+            setErrors((p) => ({ ...p, fechaHora: undefined }));
           }}
-          error={errors.fecha}
-          helper="Formato AAAA-MM-DD HH:MM"
+          error={errors.fechaHora}
         />
         <Select
           label="Mesa"

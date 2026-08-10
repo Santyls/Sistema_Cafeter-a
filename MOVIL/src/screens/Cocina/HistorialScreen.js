@@ -5,7 +5,14 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
 import useCarga from '../../hooks/useCarga';
 import { hora, moneda, fechaCorta } from '../../utils/format';
-import { etiquetaEstado, tonoEstado, ESTADOS_CERRADOS } from '../../constants/pedidos';
+import {
+  etiquetaEstado,
+  tonoEstado,
+  origenDePedido,
+  ESTADOS_CERRADOS,
+  dentroDeVentanaVisible,
+  DIAS_VISIBLES_FINALIZADOS,
+} from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
@@ -38,27 +45,48 @@ const OPCIONES = [
   { value: 'mes', label: 'Mes' },
 ];
 
+const RESULTADOS = [
+  { value: 'entregado', label: 'Entregados' },
+  { value: 'cancelado', label: 'Cancelados' },
+];
+
 export default function HistorialScreen({ navigation }) {
   const { colors, spacing, typography } = useAppTheme();
   const [rango, setRango] = useState('hoy');
+  const [resultado, setResultado] = useState('entregado');
 
   const { datos: pedidos, cargando, error, recargar } = useCarga(pedidosApi.listar, []);
 
   const { desde, hasta } = useMemo(() => rangoDe(rango), [rango]);
 
+  // Solo lo cerrado y dentro de la ventana visible: el registro completo vive en la
+  // base de datos para las estadisticas del panel web.
+  const cerrados = useMemo(
+    () =>
+      (pedidos || [])
+        .filter((p) => ESTADOS_CERRADOS.includes(p.estado))
+        .filter((p) => dentroDeVentanaVisible(p.fecha_creacion)),
+    [pedidos]
+  );
+
   const filtrados = useMemo(() => {
     const desdeStr = desde.toLocaleDateString('sv-SE');
     const hastaStr = hasta.toLocaleDateString('sv-SE');
 
-    return (pedidos || [])
-      .filter((p) => ESTADOS_CERRADOS.includes(p.estado))
+    return cerrados
+      .filter((p) => p.estado === resultado)
       .filter((p) => {
         if (!p.fecha_creacion) return false;
         const fecha = new Date(p.fecha_creacion).toLocaleDateString('sv-SE');
         return fecha >= desdeStr && fecha <= hastaStr;
       })
       .sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
-  }, [pedidos, desde, hasta]);
+  }, [cerrados, resultado, desde, hasta]);
+
+  const opcionesResultado = RESULTADOS.map((r) => ({
+    ...r,
+    count: cerrados.filter((p) => p.estado === r.value).length,
+  }));
 
   const etiquetaRango =
     rango === 'hoy'
@@ -75,9 +103,17 @@ export default function HistorialScreen({ navigation }) {
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
       }
     >
+      <View style={{ marginBottom: spacing.xs }}>
+        <FilterTabs options={opcionesResultado} value={resultado} onChange={setResultado} />
+      </View>
       <View style={{ marginBottom: spacing.sm }}>
         <FilterTabs options={OPCIONES} value={rango} onChange={setRango} />
       </View>
+
+      <Text style={[typography.tiny, { color: colors.textSecondary, marginBottom: spacing.sm }]}>
+        Los pedidos de mas de {DIAS_VISIBLES_FINALIZADOS} dias dejan de aparecer en cocina. El
+        registro se conserva para las estadisticas del panel web.
+      </Text>
 
       <AsyncContent
         cargando={cargando && !pedidos}
@@ -85,7 +121,7 @@ export default function HistorialScreen({ navigation }) {
         onReintentar={recargar}
         vacio={filtrados.length === 0}
         emptyIcon={History}
-        emptyTitle="Sin pedidos en este rango"
+        emptyTitle={resultado === 'cancelado' ? 'Sin cancelados' : 'Sin entregados'}
         emptySubtitle="Prueba con otro rango de fechas."
       >
         {filtrados.map((pedido) => (
@@ -96,7 +132,7 @@ export default function HistorialScreen({ navigation }) {
             <Card style={{ marginBottom: spacing.md }}>
               <View style={styles.topRow}>
                 <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  Mesa {pedido.mesa_numero} · #{pedido.id_pedido}
+                  {origenDePedido(pedido)} · #{pedido.id_pedido}
                 </Text>
                 <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
               </View>

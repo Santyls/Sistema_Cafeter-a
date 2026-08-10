@@ -4,9 +4,10 @@ import { LayoutGrid, ClipboardList, CalendarClock, Settings } from 'lucide-react
 import { useAppTheme } from '../theme/ThemeContext';
 import { CarritoProvider } from '../context/CarritoContext';
 import MesasScreen from '../screens/Mesero/MesasScreen';
+import NuevoPedidoScreen from '../screens/Mesero/NuevoPedidoScreen';
 import MenuScreen from '../screens/Mesero/MenuScreen';
-import ResumenPedidoScreen from '../screens/Mesero/ResumenPedidoScreen';
 import SeguimientoScreen from '../screens/Mesero/SeguimientoScreen';
+import DetalleSeguimientoScreen from '../screens/Mesero/DetalleSeguimientoScreen';
 import ReservacionesScreen from '../screens/Mesero/ReservacionesScreen';
 import ResumenMesero from '../screens/Mesero/ResumenMesero';
 import NotificacionesScreen from '../screens/shared/NotificacionesScreen';
@@ -23,21 +24,31 @@ const ICONOS = {
   Ajustes: Settings,
 };
 
-// Tomar un pedido es un flujo de tres pasos (mesa -> menu -> resumen), por eso va en
-// un stack: se avanza y se regresa sin perder lo capturado.
+// Levantar un pedido es un flujo de ida y vuelta (mesas -> nuevo pedido -> menu -> de
+// regreso al pedido), por eso va en un stack: se avanza y se regresa sin perder lo
+// capturado.
 function MesasStack() {
   return (
     <Stack.Navigator screenOptions={opcionesDeStack}>
       <Stack.Screen name="MapaMesas" component={MesasScreen} />
+      <Stack.Screen name="NuevoPedido" component={NuevoPedidoScreen} />
       <Stack.Screen name="Menu" component={MenuScreen} />
-      <Stack.Screen name="ResumenPedido" component={ResumenPedidoScreen} />
       <Stack.Screen name="Notificaciones" component={NotificacionesScreen} />
     </Stack.Navigator>
   );
 }
 
+function PedidosStack() {
+  return (
+    <Stack.Navigator screenOptions={opcionesDeStack}>
+      <Stack.Screen name="ListaSeguimiento" component={SeguimientoScreen} />
+      <Stack.Screen name="DetalleSeguimiento" component={DetalleSeguimientoScreen} />
+    </Stack.Navigator>
+  );
+}
+
 const MesasTab = desmontarAlSalir(MesasStack);
-const PedidosTab = desmontarAlSalir(SeguimientoScreen);
+const PedidosTab = desmontarAlSalir(PedidosStack);
 const ReservasTab = desmontarAlSalir(ReservacionesScreen);
 const AjustesTab = desmontarAlSalir(() => <AjustesScreen PanelResumen={ResumenMesero} />);
 

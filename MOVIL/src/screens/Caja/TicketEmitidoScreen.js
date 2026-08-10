@@ -70,7 +70,7 @@ export default function TicketEmitidoScreen({ route, navigation }) {
 
       <Card style={{ marginBottom: spacing.md }}>
         <Dato label="Folio" valor={folio} />
-        <Dato label="Mesa" valor={String(mesa)} />
+        <Dato label="Origen" valor={mesa ? `Mesa ${mesa}` : 'Para llevar'} />
         <Dato label="Fecha" valor={`${fechaCorta(ahora)} · ${hora(ahora)}`} />
         <Dato
           label="Cajero"

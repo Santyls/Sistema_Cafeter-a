@@ -6,6 +6,7 @@ import { catalogoApi } from '../../api/catalogoApi';
 import { useCarrito } from '../../context/CarritoContext';
 import useCarga from '../../hooks/useCarga';
 import { moneda } from '../../utils/format';
+import { confirmar as confirmarAccion, mostrarMensaje } from '../../utils/alerts';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
@@ -15,7 +16,7 @@ import FilterTabs from '../../components/common/FilterTabs';
 import FloatingModal from '../../components/common/FloatingModal';
 
 export default function MenuScreen({ route, navigation }) {
-  const { idMesa, numeroMesa } = route.params;
+  const { claveCarrito, titulo } = route.params;
   const { colors, spacing, typography } = useAppTheme();
   const { agregar, piezasDe, totalDe } = useCarrito();
 
@@ -54,7 +55,7 @@ export default function MenuScreen({ route, navigation }) {
       .filter((p) => !texto || p.nombre.toLowerCase().includes(texto));
   }, [datos, categoria, busqueda]);
 
-  const piezas = piezasDe(idMesa);
+  const piezas = piezasDe(claveCarrito);
 
   const abrir = (producto) => {
     setSeleccionado(producto);
@@ -62,14 +63,30 @@ export default function MenuScreen({ route, navigation }) {
     setCantidad(1);
   };
 
-  const confirmar = () => {
-    agregar(idMesa, seleccionado, cantidad, nota.trim());
-    setSeleccionado(null);
+  // Se confirma antes de agregar y se avisa despues, pero la pantalla se queda en la
+  // lista: casi siempre hay que capturar varios productos seguidos.
+  const pedirConfirmacion = () => {
+    const producto = seleccionado;
+    const cant = cantidad;
+    const observaciones = nota.trim();
+
+    confirmarAccion(
+      'Agregar al pedido',
+      `${cant}x ${producto.nombre} por ${moneda(Number(producto.precio) * cant)}${
+        observaciones ? `\nNota: ${observaciones}` : ''
+      }`,
+      () => {
+        agregar(claveCarrito, producto, cant, observaciones);
+        setSeleccionado(null);
+        mostrarMensaje('Producto agregado', `${cant}x ${producto.nombre} se agrego al pedido.`);
+      },
+      'Agregar'
+    );
   };
 
   return (
     <ScreenContainer
-      title={`Mesa ${numeroMesa}`}
+      title={titulo}
       subtitle="Elige los productos del pedido"
       refreshControl={
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
@@ -77,7 +94,7 @@ export default function MenuScreen({ route, navigation }) {
     >
       <Pressable onPress={() => navigation.goBack()} style={[styles.volver, { marginBottom: spacing.md }]}>
         <ChevronLeft size={18} color={colors.accent} />
-        <Text style={[typography.button, { color: colors.accent }]}>Volver a mesas</Text>
+        <Text style={[typography.button, { color: colors.accent }]}>Volver al pedido</Text>
       </Pressable>
 
       <TextField placeholder="Buscar producto..." value={busqueda} onChangeText={setBusqueda} />
@@ -123,10 +140,10 @@ export default function MenuScreen({ route, navigation }) {
         <View style={{ marginTop: spacing.sm }}>
           <Button
             title={`Ver pedido · ${piezas} ${piezas === 1 ? 'producto' : 'productos'} · ${moneda(
-              totalDe(idMesa)
+              totalDe(claveCarrito)
             )}`}
             icon={ShoppingCart}
-            onPress={() => navigation.navigate('ResumenPedido', { idMesa, numeroMesa })}
+            onPress={() => navigation.goBack()}
           />
         </View>
       ) : null}
@@ -175,7 +192,7 @@ export default function MenuScreen({ route, navigation }) {
             <Button
               title={`Agregar ${moneda(Number(seleccionado.precio) * cantidad)}`}
               icon={Plus}
-              onPress={confirmar}
+              onPress={pedirConfirmacion}
             />
           </>
         ) : null}

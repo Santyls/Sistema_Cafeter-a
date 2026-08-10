@@ -9,7 +9,7 @@ import useCarga from '../../hooks/useCarga';
 import { moneda, hora } from '../../utils/format';
 import { isValidMonto } from '../../utils/validators';
 import { confirmar, mostrarMensaje } from '../../utils/alerts';
-import { etiquetaEstado, tonoEstado } from '../../constants/pedidos';
+import { etiquetaEstado, tonoEstado, origenDePedido } from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
@@ -38,34 +38,35 @@ export default function DetalleCobroScreen({ route, navigation }) {
   const total = Number(pedido?.total) || 0;
   const cambio = metodo === 'efectivo' ? Math.max(0, (Number(recibido) || 0) - total) : 0;
 
-  const inyectar = () => {
+  const mandarACocina = () => {
     confirmar(
-      'Validar e inyectar',
-      `El pedido #${id} pasara a cocina y se descontara el inventario correspondiente.`,
+      'Validar y mandar a cocina',
+      `Se revisara que haya ingredientes suficientes y el pedido #${id} pasara a cocina.`,
       async () => {
         setProcesando(true);
         try {
-          await pedidosApi.inyectar(id);
-          mostrarMensaje('Pedido inyectado', 'Cocina ya fue notificada del pedido.');
+          await pedidosApi.mandarACocina(id);
+          mostrarMensaje('Pedido en cocina', 'Cocina ya fue notificada del pedido.');
           navigation.goBack();
         } catch (e) {
           mostrarMensaje(
-            'No se pudo inyectar',
+            'No se pudo mandar a cocina',
             e instanceof ApiError ? e.message : 'Intenta de nuevo mas tarde.'
           );
         } finally {
           setProcesando(false);
         }
       },
-      'Inyectar'
+      'Mandar a cocina'
     );
   };
 
-  const cobrar = async () => {
+  const iniciarCobro = () => {
     if (!idCaja) {
       mostrarMensaje('Sin caja abierta', 'Abre tu caja antes de emitir un ticket.');
       return;
     }
+
     if (metodo === 'efectivo') {
       if (!isValidMonto(recibido)) {
         setErrorRecibido('Ingresa el monto recibido.');
@@ -75,8 +76,27 @@ export default function DetalleCobroScreen({ route, navigation }) {
         setErrorRecibido(`El monto recibido no cubre el total (${moneda(total)}).`);
         return;
       }
+      cobrar();
+      return;
     }
 
+    // Tarjeta y transferencia no estan integradas al sistema: el cobro se hace en la
+    // terminal fisica y aqui solo se registra una vez que ya ocurrio. Registrarlo antes
+    // dejaria ventas cobradas en el sistema que nunca entraron al banco.
+    const texto =
+      metodo === 'tarjeta'
+        ? `Cobra ${moneda(total)} en la terminal bancaria que esta en la caja. Todavia no se pueden capturar tarjetas desde la app.`
+        : `Pide la transferencia por ${moneda(total)} y verifica que haya llegado a la cuenta de la cafeteria.`;
+
+    confirmar(
+      metodo === 'tarjeta' ? 'Cobro con tarjeta' : 'Cobro por transferencia',
+      `${texto}\n\nConfirma solo cuando el pago ya este hecho: se registrara como cobrado.`,
+      cobrar,
+      'El pago ya se hizo'
+    );
+  };
+
+  const cobrar = async () => {
     setProcesando(true);
     try {
       const ticket = await cajaApi.crearTicket({ id_pedido: id, id_caja: idCaja, total });
@@ -86,8 +106,11 @@ export default function DetalleCobroScreen({ route, navigation }) {
         tipo_pago: metodo,
         cambio,
       });
-      // El pedido se cierra solo cuando el cobro quedo registrado, nunca antes.
-      await pedidosApi.cambiarEstado(id, 'entregado_pagado', `Cobrado en ${metodo}`);
+      // Si el mesero aun no lo marcaba como entregado, se cierra al cobrar: en un pedido
+      // para llevar el cobro y la entrega ocurren en el mismo momento.
+      if (pedido.estado === 'listo') {
+        await pedidosApi.cambiarEstado(id, 'entregado', `Entregado y cobrado en ${metodo}`);
+      }
 
       navigation.replace('TicketEmitido', {
         folio: ticket.folio,
@@ -111,10 +134,7 @@ export default function DetalleCobroScreen({ route, navigation }) {
   const esPorValidar = pedido?.estado === 'pendiente';
 
   return (
-    <ScreenContainer
-      title={`Pedido #${id}`}
-      subtitle={pedido ? `Mesa ${pedido.mesa_numero}` : ' '}
-    >
+    <ScreenContainer title={`Pedido #${id}`} subtitle={pedido ? origenDePedido(pedido) : ' '}>
       <Pressable onPress={() => navigation.goBack()} style={[styles.volver, { marginBottom: spacing.md }]}>
         <ChevronLeft size={18} color={colors.accent} />
         <Text style={[typography.button, { color: colors.accent }]}>Volver</Text>
@@ -165,13 +185,13 @@ export default function DetalleCobroScreen({ route, navigation }) {
             {esPorValidar ? (
               <>
                 <Text style={[typography.small, { color: colors.textSecondary, marginBottom: spacing.md }]}>
-                  Al inyectar, cocina recibe el pedido y se descuentan los ingredientes segun la
-                  receta de cada producto.
+                  Se revisa que haya ingredientes suficientes y cocina recibe el pedido. El
+                  inventario se descuenta cuando cocina lo marca listo.
                 </Text>
                 <Button
-                  title="Validar e inyectar a cocina"
+                  title="Validar y mandar a cocina"
                   icon={ChefHat}
-                  onPress={inyectar}
+                  onPress={mandarACocina}
                   loading={procesando}
                   disabled={procesando}
                 />
@@ -236,7 +256,7 @@ export default function DetalleCobroScreen({ route, navigation }) {
 
                 <Button
                   title={`Cobrar ${moneda(total)}`}
-                  onPress={cobrar}
+                  onPress={iniciarCobro}
                   loading={procesando}
                   disabled={procesando}
                 />

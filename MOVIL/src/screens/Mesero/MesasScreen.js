@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
-import { LayoutGrid, Bell, Users } from 'lucide-react-native';
+import { LayoutGrid, Bell, Users, Plus } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { catalogoApi } from '../../api/catalogoApi';
 import { pedidosApi } from '../../api/pedidosApi';
@@ -10,6 +10,7 @@ import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import FilterTabs from '../../components/common/FilterTabs';
 
 // Los estados son los que guarda la API (ver ESTADOS_MESA en models/mesa.py).
@@ -78,6 +79,14 @@ export default function MesasScreen({ navigation }) {
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
       }
     >
+      <View style={{ marginBottom: spacing.md }}>
+        <Button
+          title="Crear pedido"
+          icon={Plus}
+          onPress={() => navigation.navigate('NuevoPedido', {})}
+        />
+      </View>
+
       <View style={{ marginBottom: spacing.sm }}>
         <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
       </View>
@@ -104,7 +113,10 @@ export default function MesasScreen({ navigation }) {
                 key={mesa.id_mesa}
                 style={styles.celda}
                 onPress={() =>
-                  navigation.navigate('Menu', { idMesa: mesa.id_mesa, numeroMesa: mesa.numero_mesa })
+                  navigation.navigate('NuevoPedido', {
+                    idMesa: mesa.id_mesa,
+                    numeroMesa: mesa.numero_mesa,
+                  })
                 }
               >
                 <Card>

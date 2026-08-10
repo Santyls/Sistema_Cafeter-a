@@ -10,7 +10,7 @@ import useCarga from '../../hooks/useCarga';
 import { moneda, hora } from '../../utils/format';
 import { isValidMonto } from '../../utils/validators';
 import { mostrarMensaje } from '../../utils/alerts';
-import { etiquetaEstado, tonoEstado } from '../../constants/pedidos';
+import { etiquetaEstado, tonoEstado, origenDePedido } from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
@@ -52,8 +52,13 @@ export default function CobrarScreen({ navigation }) {
     [datos]
   );
 
+  // Solo se cobra lo que el mesero ya reporto como cuenta pedida: una mesa que sigue
+  // consumiendo no debe aparecer aqui.
   const porCobrar = useMemo(
-    () => (datos?.pedidos || []).filter((p) => ['listo', 'entregado'].includes(p.estado)),
+    () =>
+      (datos?.pedidos || []).filter(
+        (p) => ['listo', 'entregado'].includes(p.estado) && p.cuenta_solicitada && !p.pagado
+      ),
     [datos]
   );
 
@@ -144,7 +149,7 @@ export default function CobrarScreen({ navigation }) {
         emptySubtitle={
           filtro === 'por_inyectar'
             ? 'Cuando un mesero capture un pedido aparecera aqui para validarlo.'
-            : 'Los pedidos aparecen aqui cuando cocina los marca listos.'
+            : 'Los pedidos aparecen aqui cuando el mesero avisa que el cliente pidio la cuenta.'
         }
       >
         {lista.map((pedido) => (
@@ -157,7 +162,7 @@ export default function CobrarScreen({ navigation }) {
             <Card style={{ marginBottom: spacing.md }}>
               <View style={styles.topRow}>
                 <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  Mesa {pedido.mesa_numero} · #{pedido.id_pedido}
+                  {origenDePedido(pedido)} · #{pedido.id_pedido}
                 </Text>
                 <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
               </View>
@@ -168,7 +173,7 @@ export default function CobrarScreen({ navigation }) {
                 <Text style={[typography.h3, { color: colors.text }]}>{moneda(pedido.total)}</Text>
               </View>
               <Text style={[typography.small, { color: colors.accent, marginTop: 6 }]}>
-                {filtro === 'por_inyectar' ? 'Validar e inyectar a cocina' : 'Cobrar y emitir ticket'}
+                {filtro === 'por_inyectar' ? 'Validar y mandar a cocina' : 'Cobrar y emitir ticket'}
               </Text>
             </Card>
           </Pressable>

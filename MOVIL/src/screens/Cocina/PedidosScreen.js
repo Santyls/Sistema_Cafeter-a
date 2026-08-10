@@ -5,7 +5,12 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
 import useCarga from '../../hooks/useCarga';
 import { hora } from '../../utils/format';
-import { etiquetaEstado, tonoEstado, ESTADOS_ACTIVOS_COCINA } from '../../constants/pedidos';
+import {
+  etiquetaEstado,
+  tonoEstado,
+  origenDePedido,
+  ESTADOS_ACTIVOS_COCINA,
+} from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
@@ -13,15 +18,15 @@ import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
 
 const FILTROS = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'pendiente', label: 'Pendientes' },
+  { value: 'en_cocina', label: 'Por tomar' },
   { value: 'en_preparacion', label: 'En preparacion' },
   { value: 'listo', label: 'Listos' },
+  { value: 'todos', label: 'Todos' },
 ];
 
 export default function PedidosScreen({ navigation }) {
   const { colors, spacing, typography } = useAppTheme();
-  const [filtro, setFiltro] = useState('todos');
+  const [filtro, setFiltro] = useState('en_cocina');
 
   const { datos: pedidos, cargando, error, recargar } = useCarga(pedidosApi.listar, []);
 
@@ -70,8 +75,8 @@ export default function PedidosScreen({ navigation }) {
         emptyIcon={ChefHat}
         emptyTitle="Sin pedidos por preparar"
         emptySubtitle={
-          filtro === 'todos'
-            ? 'Cuando caja inyecte un pedido aparecera aqui.'
+          filtro === 'en_cocina'
+            ? 'Cuando caja valide un pedido aparecera aqui para tomarlo.'
             : 'No hay pedidos con ese filtro.'
         }
       >
@@ -83,7 +88,7 @@ export default function PedidosScreen({ navigation }) {
             <Card style={{ marginBottom: spacing.md }}>
               <View style={styles.topRow}>
                 <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  Mesa {pedido.mesa_numero} · #{pedido.id_pedido}
+                  {origenDePedido(pedido)} · #{pedido.id_pedido}
                 </Text>
                 <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} />
               </View>
