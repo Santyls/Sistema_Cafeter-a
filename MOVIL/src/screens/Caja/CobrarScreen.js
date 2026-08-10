@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Receipt, Bell, Wallet, Send } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -12,15 +12,15 @@ import { isValidMonto } from '../../utils/validators';
 import { mostrarMensaje } from '../../utils/alerts';
 import { etiquetaEstado, tonoEstado, origenDePedido } from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import TextField from '../../components/common/TextField';
 import FilterTabs from '../../components/common/FilterTabs';
 
-// Caja trabaja dos cosas distintas: pedidos recien capturados que hay que validar e
-// inyectar a cocina, y pedidos ya servidos que hay que cobrar.
+// Caja trabaja dos cosas distintas: pedidos recien capturados que hay que validar y
+// mandar a cocina, y pedidos ya servidos que hay que cobrar.
 const FILTROS = [
   { value: 'por_inyectar', label: 'Por validar' },
   { value: 'por_cobrar', label: 'Por cobrar' },
@@ -123,7 +123,7 @@ export default function CobrarScreen({ navigation }) {
   }
 
   return (
-    <ScreenContainer
+    <PantallaLista
       title="Caja"
       subtitle={cajaAbierta ? `Fondo inicial ${moneda(cajaAbierta.fondo_inicial)}` : ' '}
       headerRight={
@@ -131,57 +131,60 @@ export default function CobrarScreen({ navigation }) {
           <Bell size={22} color={colors.text} />
         </Pressable>
       }
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
+      datos={lista}
+      keyExtractor={(p) => String(p.id_pedido)}
+      renderItem={({ item }) => (
+        <FilaCobro
+          pedido={item}
+          accion={filtro === 'por_inyectar' ? 'Validar y mandar a cocina' : 'Cobrar y emitir ticket'}
+          onPress={(id) =>
+            navigation.navigate('DetalleCobro', { id, idCaja: cajaAbierta?.id_caja })
+          }
+        />
+      )}
+      encabezado={
+        <View style={{ marginBottom: spacing.sm }}>
+          <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
+        </View>
       }
-    >
-      <View style={{ marginBottom: spacing.sm }}>
-        <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
-      </View>
-
-      <AsyncContent
-        cargando={cargando && !datos}
-        error={error}
-        onReintentar={recargar}
-        vacio={lista.length === 0}
-        emptyIcon={Receipt}
-        emptyTitle={filtro === 'por_inyectar' ? 'Nada por validar' : 'Nada por cobrar'}
-        emptySubtitle={
-          filtro === 'por_inyectar'
-            ? 'Cuando un mesero capture un pedido aparecera aqui para validarlo.'
-            : 'Los pedidos aparecen aqui cuando el mesero avisa que el cliente pidio la cuenta.'
-        }
-      >
-        {lista.map((pedido) => (
-          <Pressable
-            key={pedido.id_pedido}
-            onPress={() =>
-              navigation.navigate('DetalleCobro', { id: pedido.id_pedido, idCaja: cajaAbierta?.id_caja })
-            }
-          >
-            <Card style={{ marginBottom: spacing.md }}>
-              <View style={styles.topRow}>
-                <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  {origenDePedido(pedido)} · #{pedido.id_pedido}
-                </Text>
-                <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
-              </View>
-              <View style={styles.metaRow}>
-                <Text style={[typography.small, { color: colors.textSecondary, flex: 1 }]}>
-                  {pedido.usuario_nombre || 'Sin mesero'} · {hora(pedido.fecha_creacion)}
-                </Text>
-                <Text style={[typography.h3, { color: colors.text }]}>{moneda(pedido.total)}</Text>
-              </View>
-              <Text style={[typography.small, { color: colors.accent, marginTop: 6 }]}>
-                {filtro === 'por_inyectar' ? 'Validar y mandar a cocina' : 'Cobrar y emitir ticket'}
-              </Text>
-            </Card>
-          </Pressable>
-        ))}
-      </AsyncContent>
-    </ScreenContainer>
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={Receipt}
+      emptyTitle={filtro === 'por_inyectar' ? 'Nada por validar' : 'Nada por cobrar'}
+      emptySubtitle={
+        filtro === 'por_inyectar'
+          ? 'Cuando un mesero capture un pedido aparecera aqui para validarlo.'
+          : 'Los pedidos aparecen aqui cuando el mesero avisa que el cliente pidio la cuenta.'
+      }
+    />
   );
 }
+
+const FilaCobro = memo(function FilaCobro({ pedido, accion, onPress }) {
+  const { colors, spacing, typography } = useAppTheme();
+
+  return (
+    <Pressable onPress={() => onPress(pedido.id_pedido)}>
+      <Card style={{ marginBottom: spacing.md }}>
+        <View style={styles.topRow}>
+          <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
+            {origenDePedido(pedido)} · #{pedido.id_pedido}
+          </Text>
+          <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
+        </View>
+        <View style={styles.metaRow}>
+          <Text style={[typography.small, { color: colors.textSecondary, flex: 1 }]}>
+            {pedido.usuario_nombre || 'Sin mesero'} · {hora(pedido.fecha_creacion)}
+          </Text>
+          <Text style={[typography.h3, { color: colors.text }]}>{moneda(pedido.total)}</Text>
+        </View>
+        <Text style={[typography.small, { color: colors.accent, marginTop: 6 }]}>{accion}</Text>
+      </Card>
+    </Pressable>
+  );
+});
 
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center' },

@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react';
-import { View, Text, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useMemo, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { ReceiptText, Banknote, CreditCard, Smartphone } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { cajaApi } from '../../api/cajaApi';
 import useCarga from '../../hooks/useCarga';
 import { moneda, fechaCorta, hora } from '../../utils/format';
-import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
@@ -32,7 +31,7 @@ const NOMBRE_METODO = {
 const cargarTickets = () => cajaApi.tickets({ with_pagos: true });
 
 export default function TicketsScreen() {
-  const { colors, spacing, typography } = useAppTheme();
+  const { spacing } = useAppTheme();
   const [rango, setRango] = useState('hoy');
 
   const { datos: tickets, cargando, error, recargar } = useCarga(cargarTickets, []);
@@ -60,58 +59,58 @@ export default function TicketsScreen() {
   );
 
   return (
-    <ScreenContainer
+    <PantallaLista
       title="Tickets"
       subtitle={`${filtrados.length} emitidos · ${moneda(total)} cobrado`}
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
+      datos={filtrados}
+      keyExtractor={(t) => String(t.id_ticket)}
+      renderItem={({ item }) => <FilaTicket ticket={item} />}
+      encabezado={
+        <View style={{ marginBottom: spacing.sm }}>
+          <FilterTabs options={RANGOS} value={rango} onChange={setRango} />
+        </View>
       }
-    >
-      <View style={{ marginBottom: spacing.sm }}>
-        <FilterTabs options={RANGOS} value={rango} onChange={setRango} />
-      </View>
-
-      <AsyncContent
-        cargando={cargando && !tickets}
-        error={error}
-        onReintentar={recargar}
-        vacio={filtrados.length === 0}
-        emptyIcon={ReceiptText}
-        emptyTitle="Sin tickets en este rango"
-        emptySubtitle="Los cobros que registres apareceran aqui."
-      >
-        {filtrados.map((ticket) => {
-          const tipo = ticket.pagos?.[0]?.tipo_pago;
-          const Icono = ICONO_METODO[tipo] || ReceiptText;
-          const iso =
-            ticket.fecha && !ticket.fecha.endsWith('Z') && !ticket.fecha.includes('+')
-              ? `${ticket.fecha}Z`
-              : ticket.fecha;
-
-          return (
-            <Card key={ticket.id_ticket} style={{ marginBottom: spacing.md }}>
-              <View style={styles.topRow}>
-                <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>{ticket.folio}</Text>
-                <Badge
-                  label={ticket.estado === 'pagado' ? 'Pagado' : 'Pendiente'}
-                  tone={ticket.estado === 'pagado' ? 'success' : 'warning'}
-                  soft
-                />
-              </View>
-              <View style={styles.metaRow}>
-                <Icono size={14} color={colors.textSecondary} />
-                <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
-                  {NOMBRE_METODO[tipo] || 'Sin registrar'} · {fechaCorta(iso)} {hora(iso)}
-                </Text>
-                <Text style={[typography.button, { color: colors.text }]}>{moneda(ticket.total)}</Text>
-              </View>
-            </Card>
-          );
-        })}
-      </AsyncContent>
-    </ScreenContainer>
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={ReceiptText}
+      emptyTitle="Sin tickets en este rango"
+      emptySubtitle="Los cobros que registres apareceran aqui."
+    />
   );
 }
+
+const FilaTicket = memo(function FilaTicket({ ticket }) {
+  const { colors, spacing, typography } = useAppTheme();
+
+  const tipo = ticket.pagos?.[0]?.tipo_pago;
+  const Icono = ICONO_METODO[tipo] || ReceiptText;
+  const iso =
+    ticket.fecha && !ticket.fecha.endsWith('Z') && !ticket.fecha.includes('+')
+      ? `${ticket.fecha}Z`
+      : ticket.fecha;
+
+  return (
+    <Card style={{ marginBottom: spacing.md }}>
+      <View style={styles.topRow}>
+        <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>{ticket.folio}</Text>
+        <Badge
+          label={ticket.estado === 'pagado' ? 'Pagado' : 'Pendiente'}
+          tone={ticket.estado === 'pagado' ? 'success' : 'warning'}
+          soft
+        />
+      </View>
+      <View style={styles.metaRow}>
+        <Icono size={14} color={colors.textSecondary} />
+        <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
+          {NOMBRE_METODO[tipo] || 'Sin registrar'} · {fechaCorta(iso)} {hora(iso)}
+        </Text>
+        <Text style={[typography.button, { color: colors.text }]}>{moneda(ticket.total)}</Text>
+      </View>
+    </Card>
+  );
+});
 
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center' },

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { History, Clock } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
@@ -13,8 +13,7 @@ import {
   dentroDeVentanaVisible,
   DIAS_VISIBLES_FINALIZADOS,
 } from '../../constants/pedidos';
-import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
@@ -96,60 +95,66 @@ export default function HistorialScreen({ navigation }) {
       : `${fechaCorta(desde)} - ${fechaCorta(hasta)}`;
 
   return (
-    <ScreenContainer
+    <PantallaLista
       title="Historial"
       subtitle={etiquetaRango}
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
+      encabezado={
+        <>
+          <View style={{ marginBottom: spacing.xs }}>
+            <FilterTabs options={opcionesResultado} value={resultado} onChange={setResultado} />
+          </View>
+          <View style={{ marginBottom: spacing.sm }}>
+            <FilterTabs options={OPCIONES} value={rango} onChange={setRango} />
+          </View>
+
+          <Text style={[typography.tiny, { color: colors.textSecondary, marginBottom: spacing.sm }]}>
+            Los pedidos de mas de {DIAS_VISIBLES_FINALIZADOS} dias dejan de aparecer en cocina. El
+            registro se conserva para las estadisticas del panel web.
+          </Text>
+        </>
       }
-    >
-      <View style={{ marginBottom: spacing.xs }}>
-        <FilterTabs options={opcionesResultado} value={resultado} onChange={setResultado} />
-      </View>
-      <View style={{ marginBottom: spacing.sm }}>
-        <FilterTabs options={OPCIONES} value={rango} onChange={setRango} />
-      </View>
-
-      <Text style={[typography.tiny, { color: colors.textSecondary, marginBottom: spacing.sm }]}>
-        Los pedidos de mas de {DIAS_VISIBLES_FINALIZADOS} dias dejan de aparecer en cocina. El
-        registro se conserva para las estadisticas del panel web.
-      </Text>
-
-      <AsyncContent
-        cargando={cargando && !pedidos}
-        error={error}
-        onReintentar={recargar}
-        vacio={filtrados.length === 0}
-        emptyIcon={History}
-        emptyTitle={resultado === 'cancelado' ? 'Sin cancelados' : 'Sin entregados'}
-        emptySubtitle="Prueba con otro rango de fechas."
-      >
-        {filtrados.map((pedido) => (
-          <Pressable
-            key={pedido.id_pedido}
-            onPress={() => navigation.navigate('DetallePedido', { id: pedido.id_pedido })}
-          >
-            <Card style={{ marginBottom: spacing.md }}>
-              <View style={styles.topRow}>
-                <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  {origenDePedido(pedido)} · #{pedido.id_pedido}
-                </Text>
-                <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
-              </View>
-              <View style={styles.metaRow}>
-                <Clock size={14} color={colors.textSecondary} />
-                <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
-                  {fechaCorta(pedido.fecha_creacion)} · {hora(pedido.fecha_creacion)}
-                </Text>
-                <Text style={[typography.button, { color: colors.text }]}>{moneda(pedido.total)}</Text>
-              </View>
-            </Card>
-          </Pressable>
-        ))}
-      </AsyncContent>
-    </ScreenContainer>
+      datos={filtrados}
+      keyExtractor={(p) => String(p.id_pedido)}
+      renderItem={({ item }) => (
+        <FilaHistorial
+          pedido={item}
+          onPress={(id) => navigation.navigate('DetallePedido', { id })}
+        />
+      )}
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={History}
+      emptyTitle={resultado === 'cancelado' ? 'Sin cancelados' : 'Sin entregados'}
+      emptySubtitle="Prueba con otro rango de fechas."
+    />
   );
 }
+
+const FilaHistorial = memo(function FilaHistorial({ pedido, onPress }) {
+  const { colors, spacing, typography } = useAppTheme();
+
+  return (
+    <Pressable onPress={() => onPress(pedido.id_pedido)}>
+      <Card style={{ marginBottom: spacing.md }}>
+        <View style={styles.topRow}>
+          <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
+            {origenDePedido(pedido)} · #{pedido.id_pedido}
+          </Text>
+          <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} soft />
+        </View>
+        <View style={styles.metaRow}>
+          <Clock size={14} color={colors.textSecondary} />
+          <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
+            {fechaCorta(pedido.fecha_creacion)} · {hora(pedido.fecha_creacion)}
+          </Text>
+          <Text style={[typography.button, { color: colors.text }]}>{moneda(pedido.total)}</Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
+});
 
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center' },

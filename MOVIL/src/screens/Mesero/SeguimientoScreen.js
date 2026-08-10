@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { ClipboardList, Clock, ShoppingBag, LayoutGrid } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
@@ -14,8 +14,7 @@ import {
   dentroDeVentanaVisible,
   DIAS_VISIBLES_FINALIZADOS,
 } from '../../constants/pedidos';
-import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
@@ -68,14 +67,8 @@ export default function SeguimientoScreen({ navigation }) {
         : activos.filter((p) => p.estado === f.value).length,
   }));
 
-  return (
-    <ScreenContainer
-      title="Pedidos"
-      subtitle="Toca un pedido para ver su detalle"
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
-      }
-    >
+  const encabezado = (
+    <>
       <View style={{ marginBottom: spacing.sm }}>
         <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
       </View>
@@ -86,65 +79,71 @@ export default function SeguimientoScreen({ navigation }) {
           aqui. El registro se conserva para las estadisticas del panel web.
         </Text>
       ) : null}
+    </>
+  );
 
-      <AsyncContent
-        cargando={cargando && !pedidos}
-        error={error}
-        onReintentar={recargar}
-        vacio={filtrados.length === 0}
-        emptyIcon={ClipboardList}
-        emptyTitle={filtro === 'finalizados' ? 'Sin pedidos finalizados' : 'Sin pedidos aqui'}
-        emptySubtitle={
-          filtro === 'finalizados'
-            ? 'Aqui apareceran los pedidos entregados y cancelados del ultimo mes.'
-            : 'Los pedidos que envies a caja apareceran aqui.'
-        }
-      >
-        {filtrados.map((pedido) => {
-          const esParaLlevar = pedido.tipo_pedido === 'para_llevar';
-          const Icono = esParaLlevar ? ShoppingBag : LayoutGrid;
-
-          return (
-            <Pressable
-              key={pedido.id_pedido}
-              onPress={() => navigation.navigate('DetalleSeguimiento', { id: pedido.id_pedido })}
-            >
-              <Card style={{ marginBottom: spacing.md }}>
-                <View style={styles.topRow}>
-                  <Icono size={16} color={colors.textSecondary} />
-                  <Text style={[typography.h3, { color: colors.text, flex: 1, marginLeft: 6 }]}>
-                    {origenDePedido(pedido)} · #{pedido.id_pedido}
-                  </Text>
-                  <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} />
-                </View>
-
-                <View style={styles.metaRow}>
-                  <Clock size={14} color={colors.textSecondary} />
-                  <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
-                    {hora(pedido.fecha_creacion)}
-                  </Text>
-                  <Text style={[typography.button, { color: colors.text }]}>
-                    {moneda(pedido.total)}
-                  </Text>
-                </View>
-
-                {pedido.pagado ? (
-                  <Text style={[typography.tiny, { color: colors.success, marginTop: 4 }]}>
-                    Cobrado
-                  </Text>
-                ) : pedido.cuenta_solicitada ? (
-                  <Text style={[typography.tiny, { color: colors.warning, marginTop: 4 }]}>
-                    Cuenta solicitada, esperando cobro en caja
-                  </Text>
-                ) : null}
-              </Card>
-            </Pressable>
-          );
-        })}
-      </AsyncContent>
-    </ScreenContainer>
+  return (
+    <PantallaLista
+      title="Pedidos"
+      subtitle="Toca un pedido para ver su detalle"
+      datos={filtrados}
+      keyExtractor={(p) => String(p.id_pedido)}
+      renderItem={({ item }) => (
+        <FilaSeguimiento
+          pedido={item}
+          onPress={(id) => navigation.navigate('DetalleSeguimiento', { id })}
+        />
+      )}
+      encabezado={encabezado}
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={ClipboardList}
+      emptyTitle={filtro === 'finalizados' ? 'Sin pedidos finalizados' : 'Sin pedidos aqui'}
+      emptySubtitle={
+        filtro === 'finalizados'
+          ? 'Aqui apareceran los pedidos entregados y cancelados del ultimo mes.'
+          : 'Los pedidos que envies a caja apareceran aqui.'
+      }
+    />
   );
 }
+
+const FilaSeguimiento = memo(function FilaSeguimiento({ pedido, onPress }) {
+  const { colors, spacing, typography } = useAppTheme();
+  const Icono = pedido.tipo_pedido === 'para_llevar' ? ShoppingBag : LayoutGrid;
+
+  return (
+    <Pressable onPress={() => onPress(pedido.id_pedido)}>
+      <Card style={{ marginBottom: spacing.md }}>
+        <View style={styles.topRow}>
+          <Icono size={16} color={colors.textSecondary} />
+          <Text style={[typography.h3, { color: colors.text, flex: 1, marginLeft: 6 }]}>
+            {origenDePedido(pedido)} · #{pedido.id_pedido}
+          </Text>
+          <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} />
+        </View>
+
+        <View style={styles.metaRow}>
+          <Clock size={14} color={colors.textSecondary} />
+          <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4, flex: 1 }]}>
+            {hora(pedido.fecha_creacion)}
+          </Text>
+          <Text style={[typography.button, { color: colors.text }]}>{moneda(pedido.total)}</Text>
+        </View>
+
+        {pedido.pagado ? (
+          <Text style={[typography.tiny, { color: colors.success, marginTop: 4 }]}>Cobrado</Text>
+        ) : pedido.cuenta_solicitada ? (
+          <Text style={[typography.tiny, { color: colors.warning, marginTop: 4 }]}>
+            Cuenta solicitada, esperando cobro en caja
+          </Text>
+        ) : null}
+      </Card>
+    </Pressable>
+  );
+});
 
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center' },

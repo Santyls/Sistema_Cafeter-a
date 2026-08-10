@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Bell, ChefHat, Clock } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
@@ -11,8 +11,7 @@ import {
   origenDePedido,
   ESTADOS_ACTIVOS_COCINA,
 } from '../../constants/pedidos';
-import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
@@ -25,7 +24,7 @@ const FILTROS = [
 ];
 
 export default function PedidosScreen({ navigation }) {
-  const { colors, spacing, typography } = useAppTheme();
+  const { colors, spacing } = useAppTheme();
   const [filtro, setFiltro] = useState('en_cocina');
 
   const { datos: pedidos, cargando, error, recargar } = useCarga(pedidosApi.listar, []);
@@ -51,7 +50,7 @@ export default function PedidosScreen({ navigation }) {
   );
 
   return (
-    <ScreenContainer
+    <PantallaLista
       title="Pedidos"
       subtitle="Comandas activas en cocina"
       headerRight={
@@ -59,59 +58,63 @@ export default function PedidosScreen({ navigation }) {
           <Bell size={22} color={colors.text} />
         </Pressable>
       }
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
+      datos={filtrados}
+      keyExtractor={(p) => String(p.id_pedido)}
+      renderItem={({ item }) => (
+        <FilaPedido
+          pedido={item}
+          onPress={(id) => navigation.navigate('DetallePedido', { id })}
+        />
+      )}
+      encabezado={
+        <View style={{ marginBottom: spacing.sm }}>
+          <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
+        </View>
       }
-    >
-      <View style={{ marginBottom: spacing.sm }}>
-        <FilterTabs options={opciones} value={filtro} onChange={setFiltro} />
-      </View>
-
-      <AsyncContent
-        cargando={cargando && !pedidos}
-        error={error}
-        onReintentar={recargar}
-        vacio={filtrados.length === 0}
-        emptyIcon={ChefHat}
-        emptyTitle="Sin pedidos por preparar"
-        emptySubtitle={
-          filtro === 'en_cocina'
-            ? 'Cuando caja valide un pedido aparecera aqui para tomarlo.'
-            : 'No hay pedidos con ese filtro.'
-        }
-      >
-        {filtrados.map((pedido) => (
-          <Pressable
-            key={pedido.id_pedido}
-            onPress={() => navigation.navigate('DetallePedido', { id: pedido.id_pedido })}
-          >
-            <Card style={{ marginBottom: spacing.md }}>
-              <View style={styles.topRow}>
-                <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
-                  {origenDePedido(pedido)} · #{pedido.id_pedido}
-                </Text>
-                <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} />
-              </View>
-
-              <View style={styles.metaRow}>
-                <Clock size={14} color={colors.textSecondary} />
-                <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4 }]}>
-                  Hora pedido: {hora(pedido.fecha_creacion)}
-                </Text>
-              </View>
-
-              {pedido.observaciones ? (
-                <Text style={[typography.small, { color: colors.accent, marginTop: 4 }]} numberOfLines={2}>
-                  Nota: {pedido.observaciones}
-                </Text>
-              ) : null}
-            </Card>
-          </Pressable>
-        ))}
-      </AsyncContent>
-    </ScreenContainer>
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={ChefHat}
+      emptyTitle="Sin pedidos por preparar"
+      emptySubtitle={
+        filtro === 'en_cocina'
+          ? 'Cuando caja valide un pedido aparecera aqui para tomarlo.'
+          : 'No hay pedidos con ese filtro.'
+      }
+    />
   );
 }
+
+const FilaPedido = memo(function FilaPedido({ pedido, onPress }) {
+  const { colors, spacing, typography } = useAppTheme();
+
+  return (
+    <Pressable onPress={() => onPress(pedido.id_pedido)}>
+      <Card style={{ marginBottom: spacing.md }}>
+        <View style={styles.topRow}>
+          <Text style={[typography.h3, { color: colors.text, flex: 1 }]}>
+            {origenDePedido(pedido)} · #{pedido.id_pedido}
+          </Text>
+          <Badge label={etiquetaEstado(pedido.estado)} tone={tonoEstado(pedido.estado)} />
+        </View>
+
+        <View style={styles.metaRow}>
+          <Clock size={14} color={colors.textSecondary} />
+          <Text style={[typography.small, { color: colors.textSecondary, marginLeft: 4 }]}>
+            Hora pedido: {hora(pedido.fecha_creacion)}
+          </Text>
+        </View>
+
+        {pedido.observaciones ? (
+          <Text style={[typography.small, { color: colors.accent, marginTop: 4 }]} numberOfLines={2}>
+            Nota: {pedido.observaciones}
+          </Text>
+        ) : null}
+      </Card>
+    </Pressable>
+  );
+});
 
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center' },

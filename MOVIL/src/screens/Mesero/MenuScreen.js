@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { ChevronLeft, Coffee, Plus, ShoppingCart } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { catalogoApi } from '../../api/catalogoApi';
@@ -7,13 +7,43 @@ import { useCarrito } from '../../context/CarritoContext';
 import useCarga from '../../hooks/useCarga';
 import { moneda } from '../../utils/format';
 import { confirmar as confirmarAccion, mostrarMensaje } from '../../utils/alerts';
-import ScreenContainer from '../../components/common/ScreenContainer';
-import AsyncContent from '../../components/common/AsyncContent';
+import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import TextField from '../../components/common/TextField';
 import FilterTabs from '../../components/common/FilterTabs';
 import FloatingModal from '../../components/common/FloatingModal';
+
+/**
+ * Fila del menu. Va memoizada porque el buscador cambia de estado en cada tecla: sin
+ * esto, escribir "cafe" redibujaba las 132 tarjetas cuatro veces seguidas.
+ */
+const FilaProducto = memo(function FilaProducto({ producto, onPress }) {
+  const { colors, spacing, typography } = useAppTheme();
+
+  return (
+    <Pressable onPress={() => onPress(producto)}>
+      <Card style={{ marginBottom: spacing.md }}>
+        <View style={styles.topRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.h3, { color: colors.text }]}>{producto.nombre}</Text>
+            {producto.descripcion ? (
+              <Text
+                style={[typography.small, { color: colors.textSecondary, marginTop: 2 }]}
+                numberOfLines={2}
+              >
+                {producto.descripcion}
+              </Text>
+            ) : null}
+          </View>
+          <Text style={[typography.h3, { color: colors.accent, marginLeft: 12 }]}>
+            {moneda(producto.precio)}
+          </Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
+});
 
 export default function MenuScreen({ route, navigation }) {
   const { claveCarrito, titulo } = route.params;
@@ -84,14 +114,8 @@ export default function MenuScreen({ route, navigation }) {
     );
   };
 
-  return (
-    <ScreenContainer
-      title={titulo}
-      subtitle="Elige los productos del pedido"
-      refreshControl={
-        <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
-      }
-    >
+  const encabezado = (
+    <>
       <Pressable onPress={() => navigation.goBack()} style={[styles.volver, { marginBottom: spacing.md }]}>
         <ChevronLeft size={18} color={colors.accent} />
         <Text style={[typography.button, { color: colors.accent }]}>Volver al pedido</Text>
@@ -102,42 +126,26 @@ export default function MenuScreen({ route, navigation }) {
       <View style={{ marginBottom: spacing.sm }}>
         <FilterTabs options={opciones} value={categoria} onChange={setCategoria} />
       </View>
+    </>
+  );
 
-      <AsyncContent
-        cargando={cargando && !datos}
-        error={error}
-        onReintentar={recargar}
-        vacio={filtrados.length === 0}
-        emptyIcon={Coffee}
-        emptyTitle="Sin productos"
-        emptySubtitle="Prueba con otra categoria o cambia la busqueda."
-      >
-        {filtrados.map((producto) => (
-          <Pressable key={producto.id_producto} onPress={() => abrir(producto)}>
-            <Card style={{ marginBottom: spacing.md }}>
-              <View style={styles.topRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.h3, { color: colors.text }]}>{producto.nombre}</Text>
-                  {producto.descripcion ? (
-                    <Text
-                      style={[typography.small, { color: colors.textSecondary, marginTop: 2 }]}
-                      numberOfLines={2}
-                    >
-                      {producto.descripcion}
-                    </Text>
-                  ) : null}
-                </View>
-                <Text style={[typography.h3, { color: colors.accent, marginLeft: 12 }]}>
-                  {moneda(producto.precio)}
-                </Text>
-              </View>
-            </Card>
-          </Pressable>
-        ))}
-      </AsyncContent>
-
-      {piezas > 0 ? (
-        <View style={{ marginTop: spacing.sm }}>
+  return (
+    <PantallaLista
+      title={titulo}
+      subtitle="Elige los productos del pedido"
+      datos={filtrados}
+      keyExtractor={(p) => String(p.id_producto)}
+      renderItem={({ item }) => <FilaProducto producto={item} onPress={abrir} />}
+      encabezado={encabezado}
+      cargando={cargando}
+      error={error}
+      onReintentar={recargar}
+      onRefresh={recargar}
+      emptyIcon={Coffee}
+      emptyTitle="Sin productos"
+      emptySubtitle="Prueba con otra categoria o cambia la busqueda."
+      pie={
+        piezas > 0 ? (
           <Button
             title={`Ver pedido · ${piezas} ${piezas === 1 ? 'producto' : 'productos'} · ${moneda(
               totalDe(claveCarrito)
@@ -145,9 +153,9 @@ export default function MenuScreen({ route, navigation }) {
             icon={ShoppingCart}
             onPress={() => navigation.goBack()}
           />
-        </View>
-      ) : null}
-
+        ) : null
+      }
+    >
       <FloatingModal
         visible={!!seleccionado}
         onClose={() => setSeleccionado(null)}
@@ -197,7 +205,7 @@ export default function MenuScreen({ route, navigation }) {
           </>
         ) : null}
       </FloatingModal>
-    </ScreenContainer>
+    </PantallaLista>
   );
 }
 
