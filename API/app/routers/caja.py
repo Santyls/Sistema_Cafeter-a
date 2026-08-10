@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..core.email import construir_html_ticket, enviar_ticket_por_correo
+from ..core.mesas import liberar_mesa_si_corresponde
 from ..core.security import roles_required
 from ..database import get_db
 from ..models.caja import Caja, CompraSuministro, CorteCaja, Gasto, Pago, Ticket
@@ -207,6 +208,14 @@ def registrar_pago(data: PagoCreate, claims: dict = Depends(admin_o_cajero), db:
 
     if total_pagado_previo + float(data.monto) >= float(ticket.total):
         ticket.estado = "pagado"
+        db.flush()
+
+        # Con la cuenta saldada la mesa queda libre. Se hace aqui y no al entregar
+        # porque el cliente sigue ocupando la mesa hasta que paga.
+        if ticket.id_pedido:
+            pedido = db.get(Pedido, ticket.id_pedido)
+            if pedido:
+                liberar_mesa_si_corresponde(db, pedido)
 
     db.commit()
     return pago.to_dict()

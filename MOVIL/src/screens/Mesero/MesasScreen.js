@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
-import { LayoutGrid, Bell, Users, Plus } from 'lucide-react-native';
+import { LayoutGrid, Users, Plus } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { catalogoApi } from '../../api/catalogoApi';
 import { pedidosApi } from '../../api/pedidosApi';
@@ -8,6 +8,7 @@ import useCarga from '../../hooks/useCarga';
 import { moneda } from '../../utils/format';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import AsyncContent from '../../components/common/AsyncContent';
+import CampanaAvisos from '../../components/common/CampanaAvisos';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -70,11 +71,7 @@ export default function MesasScreen({ navigation }) {
     <ScreenContainer
       title="Mesas"
       subtitle="Toca una mesa para tomar su pedido"
-      headerRight={
-        <Pressable onPress={() => navigation.navigate('Notificaciones')} hitSlop={8}>
-          <Bell size={22} color={colors.text} />
-        </Pressable>
-      }
+      headerRight={<CampanaAvisos onPress={() => navigation.navigate('Notificaciones')} />}
       refreshControl={
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
       }

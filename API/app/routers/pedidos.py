@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from ..core.mesas import liberar_mesa_si_corresponde
 from ..core.security import get_claims, roles_required
 from ..database import get_db
 from ..models.caja import Ticket
@@ -203,26 +204,6 @@ def _reponer_inventario(db: Session, pedido: Pedido, id_usuario: int):
                     observaciones=f"Reposicion por cancelacion del pedido {pedido.numero_pedido}",
                 )
             )
-
-
-def _liberar_mesa_si_corresponde(db: Session, pedido: Pedido):
-    """Libera la mesa solo si no le quedan otros pedidos activos (evita liberar mesas con cuentas abiertas)."""
-    if not pedido.id_mesa:
-        return  # pedido para llevar: no hay mesa que liberar
-
-    otros_activos = (
-        db.query(Pedido)
-        .filter(
-            Pedido.id_mesa == pedido.id_mesa,
-            Pedido.id_pedido != pedido.id_pedido,
-            Pedido.estado.in_(ESTADOS_ACTIVOS),
-        )
-        .count()
-    )
-    if otros_activos == 0:
-        mesa = db.get(Mesa, pedido.id_mesa)
-        if mesa:
-            mesa.estado = "disponible"
 
 
 def _notificar_rol(db: Session, rol: str, tipo: str, mensaje: str, id_pedido: int | None = None):
@@ -603,8 +584,10 @@ def cambiar_estado_pedido(
     if data.estado == "cancelado" and estado_anterior == "listo":
         _reponer_inventario(db, pedido, id_usuario)
 
-    if data.estado in ("entregado", "cancelado"):
-        _liberar_mesa_si_corresponde(db, pedido)
+    # Entregar NO libera la mesa: el cliente sigue sentado con su cuenta abierta. La
+    # mesa se libera cuando se cobra (ver registrar_pago) o cuando se cancela.
+    if data.estado == "cancelado":
+        liberar_mesa_si_corresponde(db, pedido)
 
     db.commit()
     return pedido.to_dict(with_detalles=True)
@@ -642,7 +625,7 @@ def cancelar_pedido(id_pedido: int, claims: dict = Depends(get_claims), db: Sess
         )
     )
 
-    _liberar_mesa_si_corresponde(db, pedido)
+    liberar_mesa_si_corresponde(db, pedido)
 
     db.commit()
     return {"message": "Pedido cancelado"}

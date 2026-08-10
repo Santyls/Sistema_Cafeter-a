@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Receipt, Bell, Wallet, Send } from 'lucide-react-native';
+import { Receipt, Wallet } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { cajaApi } from '../../api/cajaApi';
@@ -13,6 +13,7 @@ import { mostrarMensaje } from '../../utils/alerts';
 import { etiquetaEstado, tonoEstado, origenDePedido } from '../../constants/pedidos';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import PantallaLista from '../../components/common/PantallaLista';
+import CampanaAvisos from '../../components/common/CampanaAvisos';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -126,11 +127,7 @@ export default function CobrarScreen({ navigation }) {
     <PantallaLista
       title="Caja"
       subtitle={cajaAbierta ? `Fondo inicial ${moneda(cajaAbierta.fondo_inicial)}` : ' '}
-      headerRight={
-        <Pressable onPress={() => navigation.navigate('Notificaciones')} hitSlop={8}>
-          <Bell size={22} color={colors.text} />
-        </Pressable>
-      }
+      headerRight={<CampanaAvisos onPress={() => navigation.navigate('Notificaciones')} />}
       datos={lista}
       keyExtractor={(p) => String(p.id_pedido)}
       renderItem={({ item }) => (

@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Bell, ChefHat, Clock } from 'lucide-react-native';
+import { ChefHat, Clock } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { pedidosApi } from '../../api/pedidosApi';
 import useCarga from '../../hooks/useCarga';
@@ -12,6 +12,7 @@ import {
   ESTADOS_ACTIVOS_COCINA,
 } from '../../constants/pedidos';
 import PantallaLista from '../../components/common/PantallaLista';
+import CampanaAvisos from '../../components/common/CampanaAvisos';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import FilterTabs from '../../components/common/FilterTabs';
@@ -24,7 +25,7 @@ const FILTROS = [
 ];
 
 export default function PedidosScreen({ navigation }) {
-  const { colors, spacing } = useAppTheme();
+  const { spacing } = useAppTheme();
   const [filtro, setFiltro] = useState('en_cocina');
 
   const { datos: pedidos, cargando, error, recargar } = useCarga(pedidosApi.listar, []);
@@ -53,11 +54,7 @@ export default function PedidosScreen({ navigation }) {
     <PantallaLista
       title="Pedidos"
       subtitle="Comandas activas en cocina"
-      headerRight={
-        <Pressable onPress={() => navigation.navigate('Notificaciones')} hitSlop={8}>
-          <Bell size={22} color={colors.text} />
-        </Pressable>
-      }
+      headerRight={<CampanaAvisos onPress={() => navigation.navigate('Notificaciones')} />}
       datos={filtrados}
       keyExtractor={(p) => String(p.id_pedido)}
       renderItem={({ item }) => (
