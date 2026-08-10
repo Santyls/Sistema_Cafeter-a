@@ -1,13 +1,34 @@
+import { useEffect } from 'react';
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 
+/**
+ * IMPORTANTE: nunca debe haber dos de estos abiertos a la vez. En Android/iOS el
+ * segundo queda detras del primero y, si la pantalla se desmonta con ambos abiertos,
+ * la app se congela. Los avisos y confirmaciones NO usan este componente en
+ * dispositivo justamente por eso (ver utils/alerts.js), y Select y SelectorFechaHora
+ * se despliegan en linea en vez de abrir su propio modal.
+ */
 export default function FloatingModal({ visible, onClose, title, children, scroll = true }) {
   const { colors, radius, spacing, typography } = useAppTheme();
   const Content = scroll ? ScrollView : View;
+  const enfocada = useIsFocused();
+
+  // Si el usuario cambia de pestana con el modal abierto, se cierra: un modal cuya
+  // pantalla se desmonta deja la app bloqueada.
+  useEffect(() => {
+    if (!enfocada && visible) onClose?.();
+  }, [enfocada, visible, onClose]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible && enfocada}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={onClose}>
         <Pressable
           style={[

@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { CalendarClock } from 'lucide-react-native';
+import { CalendarClock, ChevronUp } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
-import FloatingModal from './FloatingModal';
-import Button from './Button';
 
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 const MESES = [
@@ -37,6 +35,9 @@ function generarHoras() {
 /**
  * Selector de fecha y hora sin teclado: se elige de una lista de dias y horarios.
  * Escribir "2026-08-15 14:30" a mano era incomodo y se prestaba a errores de formato.
+ *
+ * Se despliega en linea y no en un <Modal>, porque se usa dentro del modal de
+ * reservaciones y dos modales a la vez rompen la app en Android/iOS.
  */
 export default function SelectorFechaHora({ label, value, onChange, error, diasDisponibles = 14 }) {
   const { colors, radius, spacing, typography } = useAppTheme();
@@ -73,11 +74,11 @@ export default function SelectorFechaHora({ label, value, onChange, error, diasD
       ) : null}
 
       <Pressable
-        onPress={() => setAbierto(true)}
+        onPress={() => setAbierto((v) => !v)}
         style={[
           styles.campo,
           {
-            borderColor: error ? colors.danger : colors.border,
+            borderColor: error ? colors.danger : abierto ? colors.accent : colors.border,
             borderRadius: radius.md,
             backgroundColor: colors.surface,
           },
@@ -86,19 +87,30 @@ export default function SelectorFechaHora({ label, value, onChange, error, diasD
         <Text style={[typography.body, { color: value ? colors.text : colors.textSecondary, flex: 1 }]}>
           {textoValor}
         </Text>
-        <CalendarClock size={18} color={colors.textSecondary} />
+        {abierto ? (
+          <ChevronUp size={18} color={colors.accent} />
+        ) : (
+          <CalendarClock size={18} color={colors.textSecondary} />
+        )}
       </Pressable>
 
       {error ? (
         <Text style={[typography.tiny, { color: colors.danger, marginTop: spacing.xs }]}>{error}</Text>
       ) : null}
 
-      <FloatingModal
-        visible={abierto}
-        onClose={() => setAbierto(false)}
-        title="Fecha y hora"
-        scroll={false}
-      >
+      {abierto ? (
+        <View
+          style={[
+            styles.panel,
+            {
+              borderColor: colors.border,
+              borderRadius: radius.md,
+              backgroundColor: colors.surface,
+              marginTop: spacing.xs,
+              padding: spacing.md,
+            },
+          ]}
+        >
         <Text style={[typography.small, { color: colors.textSecondary, marginBottom: spacing.xs }]}>
           Dia
         </Text>
@@ -189,10 +201,8 @@ export default function SelectorFechaHora({ label, value, onChange, error, diasD
           </View>
         </ScrollView>
 
-        <View style={{ marginTop: spacing.md }}>
-          <Button title="Cerrar" variant="outline" onPress={() => setAbierto(false)} />
         </View>
-      </FloatingModal>
+      ) : null}
     </View>
   );
 }
@@ -205,6 +215,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  panel: { borderWidth: 1 },
   dia: {
     alignItems: 'center',
     paddingVertical: 10,

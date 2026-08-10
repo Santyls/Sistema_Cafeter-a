@@ -1,9 +1,16 @@
 import { useState } from 'react';
-import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
-import FloatingModal from './FloatingModal';
 
+/**
+ * Selector que se despliega en el mismo lugar, no en un modal.
+ *
+ * Antes abria un <Modal>, pero casi siempre se usa DENTRO de otro modal (registrar un
+ * gasto, reservar una mesa) y dos <Modal> a la vez rompen la app en Android/iOS: el de
+ * arriba queda detras y salir de la pantalla la congela. Desplegarse en linea evita el
+ * problema por completo.
+ */
 export default function Select({
   label,
   value,
@@ -13,7 +20,7 @@ export default function Select({
   error,
 }) {
   const { colors, radius, spacing, typography } = useAppTheme();
-  const [open, setOpen] = useState(false);
+  const [abierto, setAbierto] = useState(false);
 
   return (
     <View style={{ marginBottom: spacing.md }}>
@@ -22,12 +29,13 @@ export default function Select({
           {label}
         </Text>
       ) : null}
+
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => setAbierto((v) => !v)}
         style={[
-          styles.field,
+          styles.campo,
           {
-            borderColor: error ? colors.danger : colors.border,
+            borderColor: error ? colors.danger : abierto ? colors.accent : colors.border,
             borderRadius: radius.md,
             backgroundColor: colors.surface,
           },
@@ -36,55 +44,71 @@ export default function Select({
         <Text style={[typography.body, { color: value ? colors.text : colors.textSecondary, flex: 1 }]}>
           {value || placeholder}
         </Text>
-        <ChevronDown size={18} color={colors.textSecondary} />
+        {abierto ? (
+          <ChevronUp size={18} color={colors.accent} />
+        ) : (
+          <ChevronDown size={18} color={colors.textSecondary} />
+        )}
       </Pressable>
+
+      {abierto ? (
+        <View
+          style={[
+            styles.opciones,
+            {
+              borderColor: colors.border,
+              borderRadius: radius.md,
+              backgroundColor: colors.surface,
+              marginTop: spacing.xs,
+            },
+          ]}
+        >
+          {options.map((opcion, i) => {
+            const elegida = opcion === value;
+            return (
+              <Pressable
+                key={String(opcion)}
+                onPress={() => {
+                  onSelect(opcion);
+                  setAbierto(false);
+                }}
+                style={[
+                  styles.opcion,
+                  i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                ]}
+              >
+                <Text
+                  style={[typography.body, { color: elegida ? colors.accent : colors.text, flex: 1 }]}
+                >
+                  {opcion}
+                </Text>
+                {elegida ? <Check size={18} color={colors.accent} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
       {error ? (
         <Text style={[typography.tiny, { color: colors.danger, marginTop: spacing.xs }]}>{error}</Text>
       ) : null}
-
-      <FloatingModal
-        visible={open}
-        onClose={() => setOpen(false)}
-        title={label || 'Selecciona'}
-        scroll={false}
-      >
-        <FlatList
-          data={options}
-          keyExtractor={(item) => String(item)}
-          style={{ maxHeight: 320 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                onSelect(item);
-                setOpen(false);
-              }}
-              style={[styles.option, { borderBottomColor: colors.divider }]}
-            >
-              <Text style={[typography.body, { color: item === value ? colors.accent : colors.text }]}>
-                {item}
-              </Text>
-              {item === value ? <Check size={18} color={colors.accent} /> : null}
-            </Pressable>
-          )}
-        />
-      </FloatingModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  field: {
+  campo: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  option: {
+  opciones: { borderWidth: 1, overflow: 'hidden' },
+  opcion: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
   },
 });
