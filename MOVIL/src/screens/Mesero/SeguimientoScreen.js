@@ -24,7 +24,7 @@ const FILTROS = [
   // encontraba lo que acababa de mandar.
   { value: 'pendiente', label: 'En caja' },
   { value: 'en_cocina', label: 'En cocina' },
-  { value: 'en_preparacion', label: 'En preparacion' },
+  { value: 'en_preparacion', label: 'En preparación' },
   { value: 'listo', label: 'Listos para entregar' },
   { value: 'activos', label: 'Todos' },
   { value: 'finalizados', label: 'Finalizados' },
@@ -100,11 +100,11 @@ export default function SeguimientoScreen({ navigation }) {
       onReintentar={recargar}
       onRefresh={recargar}
       emptyIcon={ClipboardList}
-      emptyTitle={filtro === 'finalizados' ? 'Sin pedidos finalizados' : 'Sin pedidos aqui'}
+      emptyTitle={filtro === 'finalizados' ? 'Sin pedidos finalizados' : 'Sin pedidos aquí'}
       emptySubtitle={
         filtro === 'finalizados'
-          ? 'Aqui apareceran los pedidos entregados y cancelados del ultimo mes.'
-          : 'Los pedidos que envies a caja apareceran aqui.'
+          ? 'Aquí apareceran los pedidos entregados y cancelados del último mes.'
+          : 'Los pedidos que envies a caja apareceran aquí.'
       }
     />
   );

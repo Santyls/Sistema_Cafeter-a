@@ -12,7 +12,7 @@ export class ApiError extends Error {
 
 // AuthContext se registra aqui al montar. httpClient no puede importar el contexto de
 // React directamente (crearia un ciclo), asi que usa este callback para avisar "la
-// sesion ya no sirve" — sin esto el usuario se queda en una pantalla autenticada
+// sesión ya no sirve" — sin esto el usuario se queda en una pantalla autenticada
 // viendo errores en vez de volver al login.
 let onSessionExpired = null;
 export function setSessionExpiredHandler(fn) {
@@ -30,7 +30,7 @@ function mensajeDeError(cuerpo) {
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) {
     const partes = detail.map((e) => e?.msg || JSON.stringify(e));
-    return partes.length ? partes.join(' ') : 'Datos invalidos.';
+    return partes.length ? partes.join(' ') : 'Datos inválidos.';
   }
   return null;
 }

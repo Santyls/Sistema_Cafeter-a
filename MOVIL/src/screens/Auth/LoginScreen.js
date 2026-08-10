@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Coffee } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { isEmpty, isValidEmail } from '../../utils/validators';
@@ -10,7 +9,7 @@ import TextField from '../../components/common/TextField';
 import Button from '../../components/common/Button';
 
 export default function LoginScreen() {
-  const { colors, radius, spacing, typography } = useAppTheme();
+  const { colors, spacing, typography } = useAppTheme();
   const { login } = useAuth();
 
   const [correo, setCorreo] = useState('');
@@ -23,8 +22,8 @@ export default function LoginScreen() {
     // Capa 1: validacion local, antes de gastar red.
     const nextErrors = {};
     if (isEmpty(correo)) nextErrors.correo = 'El correo es obligatorio.';
-    else if (!isValidEmail(correo)) nextErrors.correo = 'Ingresa un correo electronico valido.';
-    if (isEmpty(contrasena)) nextErrors.contrasena = 'La contrasena es obligatoria.';
+    else if (!isValidEmail(correo)) nextErrors.correo = 'Ingresa un correo electrónico válido.';
+    if (isEmpty(contrasena)) nextErrors.contrasena = 'La contraseña es obligatoria.';
 
     setErrors(nextErrors);
     setFormError('');
@@ -41,8 +40,8 @@ export default function LoginScreen() {
 
   const handleOlvido = () => {
     mostrarMensaje(
-      'Restablecer contrasena',
-      'Contacta al administrador de TI para restablecer tu contrasena.'
+      'Restablecer contraseña',
+      'Contacta al administrador de TI para restablecer tu contraseña.'
     );
   };
 
@@ -58,17 +57,10 @@ export default function LoginScreen() {
         >
           <View style={styles.form}>
             <View style={styles.logoWrap}>
-              <View
-                style={[
-                  styles.logo,
-                  { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg },
-                ]}
-              >
-                <Coffee size={40} color={colors.accent} />
-              </View>
+              <Image source={require('../../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </View>
 
-            <Text style={[typography.h1, { color: colors.text, textAlign: 'center', marginTop: spacing.md }]}>
+            <Text style={[typography.h1, { color: colors.text, textAlign: 'center', marginTop: spacing.sm }]}>
               CoffeeFlow Pro
             </Text>
             <Text
@@ -82,11 +74,11 @@ export default function LoginScreen() {
                 },
               ]}
             >
-              Sistema de Gestion de Cafeteria
+              Sistema de Gestión de Cafetería
             </Text>
 
             <TextField
-              label="Correo electronico"
+              label="Correo electrónico"
               placeholder="correo@cafeteria.com"
               value={correo}
               onChangeText={setCorreo}
@@ -95,8 +87,8 @@ export default function LoginScreen() {
               autoCapitalize="none"
             />
             <TextField
-              label="Contrasena"
-              placeholder="Ingrese su contrasena"
+              label="Contraseña"
+              placeholder="Ingrese su contraseña"
               value={contrasena}
               onChangeText={setContrasena}
               error={errors.contrasena}
@@ -107,7 +99,7 @@ export default function LoginScreen() {
 
             <Pressable style={{ alignSelf: 'flex-end', marginBottom: spacing.md }} onPress={handleOlvido}>
               <Text style={[typography.button, { color: colors.accent }]}>
-                ¿Olvidaste tu contrasena?
+                ¿Olvidaste tu contraseña?
               </Text>
             </Pressable>
 
@@ -118,7 +110,7 @@ export default function LoginScreen() {
             ) : null}
 
             <Button
-              title="Iniciar sesion"
+              title="Iniciar sesión"
               onPress={handleSubmit}
               loading={cargando}
               disabled={cargando}
@@ -134,11 +126,6 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center' },
   form: { width: '100%', maxWidth: 420, alignSelf: 'center' },
   logoWrap: { alignItems: 'center' },
-  logo: {
-    width: 88,
-    height: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
+  // El logo trae su propio circulo, asi que va suelto y no dentro de una tarjeta.
+  logo: { width: 140, height: 140 },
 });

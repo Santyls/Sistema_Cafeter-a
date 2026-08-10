@@ -76,7 +76,7 @@ export default function TicketsScreen() {
       onRefresh={recargar}
       emptyIcon={ReceiptText}
       emptyTitle="Sin tickets en este rango"
-      emptySubtitle="Los cobros que registres apareceran aqui."
+      emptySubtitle="Los cobros que registres apareceran aquí."
     />
   );
 }

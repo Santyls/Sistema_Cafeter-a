@@ -99,7 +99,7 @@ export default function SuministrosScreen({ route, navigation }) {
         vacio={delTurno.length === 0}
         emptyIcon={Truck}
         emptyTitle="Sin compras registradas"
-        emptySubtitle="Aqui se registran las compras a proveedores del turno."
+        emptySubtitle="Aquí se registran las compras a proveedores del turno."
       >
         {delTurno.map((compra) => (
           <Card key={compra.id_compra} style={{ marginBottom: spacing.md }}>

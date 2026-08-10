@@ -75,7 +75,7 @@ export default function NotificacionesScreen({ navigation }) {
         vacio={(notificaciones || []).length === 0}
         emptyIcon={BellOff}
         emptyTitle="Sin notificaciones"
-        emptySubtitle="Aqui apareceran los avisos que te manden los demas modulos."
+        emptySubtitle="Aquí apareceran los avisos que te manden los demas modulos."
       >
         <>
           {(notificaciones || []).map((n) => {

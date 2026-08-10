@@ -5,7 +5,7 @@
 export const ESTADOS = {
   pendiente: { label: 'En caja', tone: 'warning', paso: 0 },
   en_cocina: { label: 'En cocina', tone: 'accent', paso: 1 },
-  en_preparacion: { label: 'En preparacion', tone: 'accent', paso: 2 },
+  en_preparacion: { label: 'En preparación', tone: 'accent', paso: 2 },
   listo: { label: 'Listo para entregar', tone: 'success', paso: 3 },
   entregado: { label: 'Entregado', tone: 'success', paso: 4 },
   cancelado: { label: 'Cancelado', tone: 'danger', paso: -1 },

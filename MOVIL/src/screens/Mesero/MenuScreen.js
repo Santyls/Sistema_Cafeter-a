@@ -144,7 +144,7 @@ export default function MenuScreen({ route, navigation }) {
       onRefresh={recargar}
       emptyIcon={Coffee}
       emptyTitle="Sin productos"
-      emptySubtitle="Prueba con otra categoria o cambia la busqueda."
+      emptySubtitle="Prueba con otra categoría o cambia la busqueda."
       pie={
         piezas > 0 ? (
           <Button

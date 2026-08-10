@@ -19,7 +19,7 @@ import FilterTabs from '../../components/common/FilterTabs';
 
 const FILTROS = [
   { value: 'en_cocina', label: 'Por tomar' },
-  { value: 'en_preparacion', label: 'En preparacion' },
+  { value: 'en_preparacion', label: 'En preparación' },
   { value: 'listo', label: 'Listos' },
   { value: 'todos', label: 'Todos' },
 ];
@@ -76,7 +76,7 @@ export default function PedidosScreen({ navigation }) {
       emptyTitle="Sin pedidos por preparar"
       emptySubtitle={
         filtro === 'en_cocina'
-          ? 'Cuando caja valide un pedido aparecera aqui para tomarlo.'
+          ? 'Cuando caja valide un pedido aparecera aquí para tomarlo.'
           : 'No hay pedidos con ese filtro.'
       }
     />

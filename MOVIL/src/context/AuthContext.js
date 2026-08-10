@@ -17,7 +17,7 @@ export const MODULO_POR_ROL = {
 
 // Una cuenta sin modulo movil (admin) recibe el mismo mensaje que unas credenciales
 // invalidas, para no revelar que la cuenta existe ni cual es su rol.
-const MENSAJE_CREDENCIALES = 'Correo o contrasena incorrectos.';
+const MENSAJE_CREDENCIALES = 'Correo o contraseña incorrectos.';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
       setUser((prev) => {
         if (!prev) return prev;
         tokenStorage.clearToken();
-        mostrarMensaje('Sesion expirada', 'Por seguridad, vuelve a iniciar sesion.');
+        mostrarMensaje('Sesión expirada', 'Por seguridad, vuelve a iniciar sesión.');
         return null;
       });
     });
@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (correo, contrasena) => {
     if (isEmpty(correo) || isEmpty(contrasena)) {
-      return { success: false, error: 'Ingresa tu correo y contrasena.' };
+      return { success: false, error: 'Ingresa tu correo y contraseña.' };
     }
 
     try {
@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
       }
       return {
         success: false,
-        error: error instanceof ApiError ? error.message : 'No fue posible iniciar sesion.',
+        error: error instanceof ApiError ? error.message : 'No fue posible iniciar sesión.',
       };
     }
   }, []);

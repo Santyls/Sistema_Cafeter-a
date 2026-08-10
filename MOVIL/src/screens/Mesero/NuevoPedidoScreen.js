@@ -129,7 +129,7 @@ export default function NuevoPedidoScreen({ route, navigation }) {
       setObservaciones('');
       mostrarMensaje(
         'Pedido enviado',
-        'Caja lo validara y lo mandara a cocina. Puedes seguirlo desde la pestana Pedidos.'
+        'Caja lo validara y lo mandara a cocina. Puedes seguirlo desde la pestaña Pedidos.'
       );
       navigation.navigate('MapaMesas');
     } catch (e) {
@@ -232,7 +232,7 @@ export default function NuevoPedidoScreen({ route, navigation }) {
           {items.length === 0 ? (
             <EmptyState
               icon={ShoppingBag}
-              title="Todavia no hay productos"
+              title="Todavía no hay productos"
               subtitle="Agrega lo que pidio el cliente para poder enviar el pedido."
             />
           ) : (

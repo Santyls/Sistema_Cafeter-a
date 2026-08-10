@@ -152,8 +152,8 @@ export default function CobrarScreen({ navigation }) {
       emptyTitle={filtro === 'por_inyectar' ? 'Nada por validar' : 'Nada por cobrar'}
       emptySubtitle={
         filtro === 'por_inyectar'
-          ? 'Cuando un mesero capture un pedido aparecera aqui para validarlo.'
-          : 'Los pedidos aparecen aqui cuando el mesero avisa que el cliente pidio la cuenta.'
+          ? 'Cuando un mesero capture un pedido aparecera aquí para validarlo.'
+          : 'Los pedidos aparecen aquí cuando el mesero avisa que el cliente pidio la cuenta.'
       }
     />
   );

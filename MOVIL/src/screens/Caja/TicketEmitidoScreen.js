@@ -32,7 +32,7 @@ export default function TicketEmitidoScreen({ route, navigation }) {
 
   const enviarPorCorreo = async () => {
     if (!isValidEmail(correo)) {
-      setErrorCorreo('Ingresa un correo electronico valido.');
+      setErrorCorreo('Ingresa un correo electrónico válido.');
       return;
     }
 

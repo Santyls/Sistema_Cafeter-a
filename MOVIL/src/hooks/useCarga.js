@@ -25,7 +25,7 @@ export default function useCarga(cargar, valorInicial = null, deps = []) {
       setError(
         e instanceof ApiError
           ? `${e.message} Toca para reintentar.`
-          : 'No fue posible cargar la informacion. Toca para reintentar.'
+          : 'No fue posible cargar la información. Toca para reintentar.'
       );
     } finally {
       setCargando(false);

@@ -41,7 +41,7 @@ export default function AjustesScreen({ PanelResumen }) {
     if (isEmpty(nombre)) nextErrors.nombre = 'El nombre es obligatorio.';
     if (isEmpty(apellido)) nextErrors.apellido = 'El apellido es obligatorio.';
     if (!isEmpty(telefono) && !isValidTelefono(telefono)) {
-      nextErrors.telefono = 'El telefono debe tener 10 digitos.';
+      nextErrors.telefono = 'El teléfono debe tener 10 digitos.';
     }
 
     setErrors(nextErrors);
@@ -70,7 +70,7 @@ export default function AjustesScreen({ PanelResumen }) {
   const cerrarSesion = () => {
     confirmar(
       'Finalizar jornada',
-      `Llevas ${turno} en turno. Al finalizar se cerrara tu sesion.`,
+      `Llevas ${turno} en turno. Al finalizar se cerrara tu sesión.`,
       logout,
       'Finalizar',
       true
@@ -120,7 +120,7 @@ export default function AjustesScreen({ PanelResumen }) {
               error={errors.apellido}
             />
             <TextField
-              label="Telefono"
+              label="Teléfono"
               value={telefono}
               onChangeText={setTelefono}
               error={errors.telefono}
@@ -128,7 +128,7 @@ export default function AjustesScreen({ PanelResumen }) {
               helper="10 digitos, sin espacios"
             />
             <TextField
-              label="Correo electronico"
+              label="Correo electrónico"
               value={user?.correo || ''}
               editable={false}
               helper="El correo solo lo puede cambiar el administrador."
@@ -159,7 +159,7 @@ export default function AjustesScreen({ PanelResumen }) {
         ) : (
           <>
             <Dato label="Correo" valor={user?.correo} />
-            <Dato label="Telefono" valor={user?.telefono || 'Sin registrar'} />
+            <Dato label="Teléfono" valor={user?.telefono || 'Sin registrar'} />
             <Dato label="Usuario" valor={user?.usuario} />
             <View style={{ marginTop: spacing.sm }}>
               <Button

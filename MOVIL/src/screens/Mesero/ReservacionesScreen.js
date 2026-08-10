@@ -53,8 +53,8 @@ export default function ReservacionesScreen() {
   const crear = async () => {
     const nextErrors = {};
     if (isEmpty(nombre)) nextErrors.nombre = 'El nombre del cliente es obligatorio.';
-    if (isEmpty(telefono)) nextErrors.telefono = 'El telefono es obligatorio.';
-    else if (!isValidTelefono(telefono)) nextErrors.telefono = 'El telefono debe tener 10 digitos.';
+    if (isEmpty(telefono)) nextErrors.telefono = 'El teléfono es obligatorio.';
+    else if (!isValidTelefono(telefono)) nextErrors.telefono = 'El teléfono debe tener 10 digitos.';
     if (!fechaHora) nextErrors.fechaHora = 'Selecciona la fecha y la hora.';
     if (isEmpty(mesa)) nextErrors.mesa = 'Selecciona una mesa.';
 
@@ -81,7 +81,7 @@ export default function ReservacionesScreen() {
       setAbierto(false);
       limpiar();
       await recargar();
-      mostrarMensaje('Reservacion registrada', 'La mesa quedara apartada para esa hora.');
+      mostrarMensaje('Reservación registrada', 'La mesa quedara apartada para esa hora.');
     } catch (e) {
       mostrarMensaje(
         'No se pudo reservar',
@@ -94,8 +94,8 @@ export default function ReservacionesScreen() {
 
   const cancelar = (reservacion) => {
     confirmar(
-      'Cancelar reservacion',
-      `Se cancelara la reservacion de ${reservacion.nombre_cliente} y la mesa quedara libre.`,
+      'Cancelar reservación',
+      `Se cancelara la reservación de ${reservacion.nombre_cliente} y la mesa quedara libre.`,
       async () => {
         try {
           await catalogoApi.cancelarReservacion(reservacion.id_reservacion);
@@ -115,7 +115,7 @@ export default function ReservacionesScreen() {
   return (
     <ScreenContainer
       title="Reservaciones"
-      subtitle={`${reservaciones.length} proximas`}
+      subtitle={`${reservaciones.length} próximas`}
       refreshControl={
         <RefreshControl refreshing={cargando} onRefresh={recargar} tintColor={colors.accent} colors={[colors.accent]} />
       }
@@ -135,7 +135,7 @@ export default function ReservacionesScreen() {
         vacio={reservaciones.length === 0}
         emptyIcon={CalendarClock}
         emptyTitle="Sin reservaciones"
-        emptySubtitle="Las mesas apartadas apareceran aqui."
+        emptySubtitle="Las mesas apartadas apareceran aquí."
       >
         {reservaciones.map((r) => (
           <Card key={r.id_reservacion} style={{ marginBottom: spacing.md }}>
@@ -180,7 +180,7 @@ export default function ReservacionesScreen() {
           error={errors.nombre}
         />
         <TextField
-          label="Telefono"
+          label="Teléfono"
           placeholder="4421234567"
           value={telefono}
           onChangeText={(v) => {
@@ -191,7 +191,7 @@ export default function ReservacionesScreen() {
           keyboardType="phone-pad"
         />
         <TextField
-          label="Numero de personas"
+          label="Número de personas"
           placeholder="4"
           value={personas}
           onChangeText={(v) => {
@@ -220,7 +220,7 @@ export default function ReservacionesScreen() {
           options={opcionesMesa}
           error={errors.mesa}
         />
-        <Button title="Guardar reservacion" onPress={crear} loading={guardando} disabled={guardando} />
+        <Button title="Guardar reservación" onPress={crear} loading={guardando} disabled={guardando} />
       </FloatingModal>
     </ScreenContainer>
   );

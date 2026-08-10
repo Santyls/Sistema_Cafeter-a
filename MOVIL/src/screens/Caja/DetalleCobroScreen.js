@@ -85,8 +85,8 @@ export default function DetalleCobroScreen({ route, navigation }) {
     // dejaria ventas cobradas en el sistema que nunca entraron al banco.
     const texto =
       metodo === 'tarjeta'
-        ? `Cobra ${moneda(total)} en la terminal bancaria que esta en la caja. Todavia no se pueden capturar tarjetas desde la app.`
-        : `Pide la transferencia por ${moneda(total)} y verifica que haya llegado a la cuenta de la cafeteria.`;
+        ? `Cobra ${moneda(total)} en la terminal bancaria que esta en la caja. Todavía no se pueden capturar tarjetas desde la app.`
+        : `Pide la transferencia por ${moneda(total)} y verifica que haya llegado a la cuenta de la cafetería.`;
 
     confirmar(
       metodo === 'tarjeta' ? 'Cobro con tarjeta' : 'Cobro por transferencia',

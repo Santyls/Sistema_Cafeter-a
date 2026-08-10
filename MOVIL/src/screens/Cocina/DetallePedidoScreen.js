@@ -19,7 +19,7 @@ import TextField from '../../components/common/TextField';
 // Cocina solo puede avanzar el pedido en un sentido; la API valida lo mismo del lado
 // del servidor (maquina de estados), esto es para no ofrecer botones que van a fallar.
 const SIGUIENTE_ESTADO = {
-  en_cocina: { estado: 'en_preparacion', titulo: 'Tomar e iniciar preparacion', icono: Play },
+  en_cocina: { estado: 'en_preparacion', titulo: 'Tomar e iniciar preparación', icono: Play },
   en_preparacion: { estado: 'listo', titulo: 'Marcar como listo', icono: Check },
 };
 
@@ -41,7 +41,7 @@ export default function DetallePedidoScreen({ route, navigation }) {
 
   const cancelarProducto = async () => {
     if (motivo.trim().length < 3) {
-      setErrorMotivo('Escribe el motivo (minimo 3 letras).');
+      setErrorMotivo('Escribe el motivo (mínimo 3 letras).');
       return;
     }
 

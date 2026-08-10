@@ -107,7 +107,7 @@ export default function CorteScreen({ navigation }) {
         vacio={!caja}
         emptyIcon={Calculator}
         emptyTitle="No tienes una caja abierta"
-        emptySubtitle="Abre tu caja desde la pestana Caja para poder hacer el corte."
+        emptySubtitle="Abre tu caja desde la pestaña Caja para poder hacer el corte."
       >
         {resumen ? (
           <>

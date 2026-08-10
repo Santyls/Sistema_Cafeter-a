@@ -43,7 +43,7 @@ export default function GastosScreen({ route, navigation }) {
     const nextErrors = {};
     if (isEmpty(concepto)) nextErrors.concepto = 'Describe el gasto.';
     if (!isValidMonto(monto) || Number(monto) <= 0) nextErrors.monto = 'Ingresa un monto mayor a cero.';
-    if (isEmpty(categoria)) nextErrors.categoria = 'Selecciona una categoria.';
+    if (isEmpty(categoria)) nextErrors.categoria = 'Selecciona una categoría.';
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -141,7 +141,7 @@ export default function GastosScreen({ route, navigation }) {
           keyboardType="numeric"
         />
         <Select
-          label="Categoria"
+          label="Categoría"
           value={categoria}
           onSelect={(v) => {
             setCategoria(v);

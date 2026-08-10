@@ -42,7 +42,7 @@ export default function useAvisosSinLeer({ avisarNuevos = false } = {}) {
           nuevos.length === 1
             ? nuevos[0].mensaje
             : `Tienes ${nuevos.length} avisos nuevos. Revisalos en notificaciones.`;
-        mostrarMensaje('Nueva notificacion', mensaje);
+        mostrarMensaje('Nueva notificación', mensaje);
       }
     } catch {
       // Un fallo de red aqui no debe interrumpir al usuario: se reintenta solo.

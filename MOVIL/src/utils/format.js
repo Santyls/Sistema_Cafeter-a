@@ -35,7 +35,7 @@ export function tiempoRelativo(fecha) {
   if (horas < 24) return `Hace ${horas} h`;
 
   const dias = Math.floor(horas / 24);
-  return dias === 1 ? 'Ayer' : `Hace ${dias} dias`;
+  return dias === 1 ? 'Ayer' : `Hace ${dias} días`;
 }
 
 export function iniciales(nombreCompleto, respaldo = '--') {
