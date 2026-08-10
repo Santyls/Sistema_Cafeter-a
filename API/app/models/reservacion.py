@@ -12,11 +12,12 @@ class Reservacion(Base):
     id_reservacion = Column(Integer, primary_key=True)
     nombre_cliente = Column(String(150), nullable=False)
     telefono = Column(String(30), nullable=False)
+    numero_personas = Column(Integer, default=1, nullable=False)
     id_mesa = Column(Integer, ForeignKey("mesas.id_mesa"), nullable=False)
-    # Se conservan como texto (formato YYYY/MM/DD y HH:MM) para no romper el contrato
-    # que ya consume la app movil.
-    fecha = Column(String(30), nullable=False)
-    hora = Column(String(30), nullable=False)
+    # Antes se guardaba como dos textos (fecha "YYYY/MM/DD" y hora "HH:MM"), lo que hacia
+    # imposible comparar tiempos: no se podia saber que reservaciones estan por llegar
+    # para bloquear la mesa. Ahora es un instante real.
+    fecha_hora = Column(DateTime(timezone=True), nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     mesa = relationship("Mesa")
@@ -26,9 +27,9 @@ class Reservacion(Base):
             "id_reservacion": self.id_reservacion,
             "nombre_cliente": self.nombre_cliente,
             "telefono": self.telefono,
+            "numero_personas": self.numero_personas,
             "id_mesa": self.id_mesa,
             "mesa_numero": self.mesa.numero_mesa if self.mesa else None,
-            "fecha": self.fecha,
-            "hora": self.hora,
+            "fecha_hora": self.fecha_hora.isoformat() if self.fecha_hora else None,
             "fecha_creacion": self.fecha_creacion.isoformat() if self.fecha_creacion else None,
         }

@@ -1,6 +1,6 @@
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -11,11 +11,20 @@ from ..models.caja import Ticket
 from ..models.inventario import AlertaStock, InventarioMovimiento
 from ..models.mesa import Mesa
 from ..models.notificacion import Notificacion
-from ..models.pedido import ESTADOS_PEDIDO, DetallePedido, Pedido, PedidoEstadoHistorial
+from ..models.pedido import (
+    ESTADOS_PEDIDO,
+    TIPOS_PEDIDO,
+    DetallePedido,
+    Pedido,
+    PedidoEstadoHistorial,
+)
 from ..models.producto import Producto
+from ..models.reservacion import Reservacion
 from ..models.usuario import Usuario
 from ..schemas.common import MessageOut
 from ..schemas.pedido import (
+    DisponibilidadIn,
+    DisponibilidadOut,
     EstadoPedidoIn,
     HistorialOut,
     InyeccionIn,
@@ -29,11 +38,12 @@ from ..schemas.pedido import (
 router = APIRouter(prefix="/api/pedidos", tags=["Pedidos"])
 
 ESTADOS_BLOQUEADOS_PARA_EDITAR = ("listo", "entregado", "cancelado")
-ESTADOS_ACTIVOS = ("pendiente", "en_preparacion", "listo")
+ESTADOS_ACTIVOS = ("pendiente", "en_cocina", "en_preparacion", "listo")
 
 # --- Maquina de estados: transiciones permitidas desde cada estado ---
 TRANSICIONES_VALIDAS = {
-    "pendiente": {"en_preparacion", "cancelado"},
+    "pendiente": {"en_cocina", "cancelado"},
+    "en_cocina": {"en_preparacion", "cancelado"},
     "en_preparacion": {"listo", "cancelado"},
     "listo": {"entregado", "cancelado"},
     "entregado": set(),
@@ -42,7 +52,8 @@ TRANSICIONES_VALIDAS = {
 
 # Roles autorizados para llevar un pedido a cada estado destino.
 ROLES_POR_ESTADO_DESTINO = {
-    "en_preparacion": {"admin", "cajero", "cocinero"},
+    "en_cocina": {"admin", "cajero"},
+    "en_preparacion": {"admin", "cocinero"},
     "listo": {"admin", "cocinero"},
     "entregado": {"admin", "mesero", "cajero"},
     "cancelado": {"admin", "mesero", "cajero", "cocinero"},
@@ -50,15 +61,93 @@ ROLES_POR_ESTADO_DESTINO = {
 
 # Desde que estados puede cancelar cada rol (RF-55: el mesero no cancela en preparacion).
 CANCELACION_POR_ROL = {
-    "admin": {"pendiente", "en_preparacion", "listo"},
-    "cajero": {"pendiente", "en_preparacion", "listo"},
-    "cocinero": {"pendiente", "en_preparacion"},
+    "admin": {"pendiente", "en_cocina", "en_preparacion", "listo"},
+    "cajero": {"pendiente", "en_cocina", "en_preparacion", "listo"},
+    "cocinero": {"en_cocina", "en_preparacion"},
     "mesero": {"pendiente"},
 }
 
 
+# Una mesa deja de estar disponible este tiempo antes de su reservacion, para que no
+# se le asigne un pedido que no alcanzaria a consumirse antes de que llegue el cliente.
+MINUTOS_BLOQUEO_RESERVACION = 90
+
+
 def _generar_numero_pedido():
     return f"PED-{uuid.uuid4().hex[:8].upper()}"
+
+
+def _describir_origen(pedido: Pedido, mesa: Mesa | None = None) -> str:
+    """Texto para los mensajes: 'Mesa 4' o 'Para llevar'."""
+    if pedido.tipo_pedido == "para_llevar":
+        return "Para llevar"
+    numero = mesa.numero_mesa if mesa else (pedido.mesa.numero_mesa if pedido.mesa else pedido.id_mesa)
+    return f"Mesa {numero}"
+
+
+def _tiene_reservacion_proxima(db: Session, id_mesa: int) -> bool:
+    """True si la mesa tiene una reservacion dentro de la ventana de bloqueo."""
+    ahora = datetime.now(timezone.utc)
+    limite = ahora + timedelta(minutes=MINUTOS_BLOQUEO_RESERVACION)
+
+    return (
+        db.query(Reservacion)
+        .filter(
+            Reservacion.id_mesa == id_mesa,
+            Reservacion.fecha_hora >= ahora,
+            Reservacion.fecha_hora <= limite,
+        )
+        .count()
+        > 0
+    )
+
+
+def _faltantes_de_inventario(detalles) -> list[dict]:
+    """
+    Ingredientes que no alcanzan para preparar los productos indicados.
+
+    Devuelve una lista con el ingrediente, cuanto se requiere, cuanto hay y cuanto falta,
+    para que la app pueda decir exactamente que no se puede preparar y por que.
+    Los productos sin receta no consumen inventario, asi que nunca aparecen aqui.
+    """
+    requerido_por_ingrediente = defaultdict(float)
+    ingredientes = {}
+    productos_por_ingrediente = defaultdict(set)
+
+    for detalle in detalles:
+        producto = detalle.producto
+        for receta in producto.recetas:
+            requerido = float(receta.cantidad_requerida) * detalle.cantidad
+            requerido_por_ingrediente[receta.id_ingrediente] += requerido
+            ingredientes[receta.id_ingrediente] = receta.ingrediente
+            productos_por_ingrediente[receta.id_ingrediente].add(producto.nombre)
+
+    faltantes = []
+    for id_ing, requerido in requerido_por_ingrediente.items():
+        ingrediente = ingredientes[id_ing]
+        disponible = float(ingrediente.stock_actual or 0)
+        if disponible < requerido:
+            faltantes.append(
+                {
+                    "ingrediente": ingrediente.nombre,
+                    "unidad": ingrediente.unidad_medida,
+                    "requerido": round(requerido, 3),
+                    "disponible": round(disponible, 3),
+                    "falta": round(requerido - disponible, 3),
+                    "productos": sorted(productos_por_ingrediente[id_ing]),
+                }
+            )
+
+    return faltantes
+
+
+def _texto_faltantes(faltantes: list[dict]) -> str:
+    partes = [
+        f"{f['ingrediente']}: faltan {f['falta']:g} {f['unidad']} "
+        f"(se requieren {f['requerido']:g}, hay {f['disponible']:g}) para {', '.join(f['productos'])}"
+        for f in faltantes
+    ]
+    return "; ".join(partes)
 
 
 def _descontar_inventario(db: Session, pedido: Pedido, id_usuario: int):
@@ -118,6 +207,9 @@ def _reponer_inventario(db: Session, pedido: Pedido, id_usuario: int):
 
 def _liberar_mesa_si_corresponde(db: Session, pedido: Pedido):
     """Libera la mesa solo si no le quedan otros pedidos activos (evita liberar mesas con cuentas abiertas)."""
+    if not pedido.id_mesa:
+        return  # pedido para llevar: no hay mesa que liberar
+
     otros_activos = (
         db.query(Pedido)
         .filter(
@@ -185,14 +277,33 @@ def obtener_pedido(id_pedido: int, claims: dict = Depends(get_claims), db: Sessi
 
 @router.post("", response_model=PedidoConDetallesOut, status_code=201)
 def crear_pedido(data: PedidoCreate, claims: dict = Depends(get_claims), db: Session = Depends(get_db)):
-    mesa = db.get(Mesa, data.id_mesa)
-    if not mesa:
-        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+    if data.tipo_pedido not in TIPOS_PEDIDO:
+        raise HTTPException(
+            status_code=400, detail=f"tipo_pedido debe ser uno de: {', '.join(TIPOS_PEDIDO)}"
+        )
+
+    # Un pedido de mesa necesita mesa; uno para llevar no ocupa ninguna.
+    mesa = None
+    if data.tipo_pedido == "mesa":
+        if not data.id_mesa:
+            raise HTTPException(status_code=400, detail="Un pedido de mesa requiere id_mesa")
+        mesa = db.get(Mesa, data.id_mesa)
+        if not mesa:
+            raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        if _tiene_reservacion_proxima(db, mesa.id_mesa):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"La mesa {mesa.numero_mesa} tiene una reservacion en menos de "
+                    f"{MINUTOS_BLOQUEO_RESERVACION} minutos. Elige otra mesa o pedido para llevar."
+                ),
+            )
 
     id_usuario = claims["id"]
     pedido = Pedido(
         numero_pedido=_generar_numero_pedido(),
-        id_mesa=data.id_mesa,
+        id_mesa=mesa.id_mesa if mesa else None,
+        tipo_pedido=data.tipo_pedido,
         id_usuario=id_usuario,
         observaciones=data.observaciones,
         metodo_pago=data.metodo_pago,
@@ -221,7 +332,8 @@ def crear_pedido(data: PedidoCreate, claims: dict = Depends(get_claims), db: Ses
         )
 
     pedido.total = total
-    mesa.estado = "ocupada"
+    if mesa:
+        mesa.estado = "ocupada"
 
     db.add(pedido)
     db.flush()
@@ -230,12 +342,15 @@ def crear_pedido(data: PedidoCreate, claims: dict = Depends(get_claims), db: Ses
             id_pedido=pedido.id_pedido, estado_anterior=None, estado_nuevo="pendiente", id_usuario=id_usuario
         )
     )
-    # Aviso a caja: hay un nuevo pedido pendiente de validar e inyectar (flujo documentado).
+    # Aviso a caja: hay un nuevo pedido pendiente de validar y mandar a cocina.
     _notificar_rol(
         db,
         rol="cajero",
         tipo="pedido_pendiente",
-        mensaje=f"Nuevo pedido {pedido.numero_pedido} (Mesa {mesa.numero_mesa}) pendiente de validacion en caja.",
+        mensaje=(
+            f"Nuevo pedido {pedido.numero_pedido} ({_describir_origen(pedido, mesa)}) "
+            "pendiente de validacion en caja."
+        ),
         id_pedido=pedido.id_pedido,
     )
     db.commit()
@@ -301,8 +416,8 @@ def inyectar_pedido(
     claims: dict = Depends(roles_required("admin", "cajero")),
     db: Session = Depends(get_db),
 ):
-    """Paso de validacion de Caja: verifica inventario suficiente, inyecta la orden a cocina
-    (estado en_preparacion) y notifica a los cocineros."""
+    """Paso de validacion de Caja: verifica inventario suficiente, manda la orden a cocina
+    (estado en_cocina) y notifica a los cocineros."""
     pedido = db.get(Pedido, id_pedido)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
@@ -310,54 +425,101 @@ def inyectar_pedido(
     if pedido.estado != "pendiente":
         raise HTTPException(
             status_code=409,
-            detail=f"Solo se pueden inyectar pedidos en estado 'pendiente' (actual: '{pedido.estado}')",
+            detail=f"Solo se pueden mandar a cocina pedidos en estado 'pendiente' (actual: '{pedido.estado}')",
         )
 
-    # Validacion de inventario: suma lo requerido por todas las recetas del pedido.
-    requerido_por_ingrediente = defaultdict(float)
-    ingredientes = {}
-    for detalle in pedido.detalles:
-        for receta in detalle.producto.recetas:
-            requerido_por_ingrediente[receta.id_ingrediente] += float(receta.cantidad_requerida) * detalle.cantidad
-            ingredientes[receta.id_ingrediente] = receta.ingrediente
-
-    faltantes = []
-    for id_ing, requerido in requerido_por_ingrediente.items():
-        ingrediente = ingredientes[id_ing]
-        if float(ingrediente.stock_actual) < requerido:
-            faltantes.append(
-                f"{ingrediente.nombre} (requerido: {requerido:g} {ingrediente.unidad_medida}, "
-                f"disponible: {float(ingrediente.stock_actual):g} {ingrediente.unidad_medida})"
-            )
-
+    faltantes = _faltantes_de_inventario(pedido.detalles)
     if faltantes:
         raise HTTPException(
             status_code=409,
-            detail="Inventario insuficiente para preparar el pedido: " + "; ".join(faltantes),
+            detail="Inventario insuficiente para preparar el pedido: " + _texto_faltantes(faltantes),
         )
 
     estado_anterior = pedido.estado
-    pedido.estado = "en_preparacion"
+    pedido.estado = "en_cocina"
     pedido.fecha_actualizacion = datetime.now(timezone.utc)
 
     db.add(
         PedidoEstadoHistorial(
             id_pedido=pedido.id_pedido,
             estado_anterior=estado_anterior,
-            estado_nuevo="en_preparacion",
+            estado_nuevo="en_cocina",
             id_usuario=claims["id"],
-            comentario=(data.comentario if data else None) or "Orden validada e inyectada por caja",
+            comentario=(data.comentario if data else None) or "Validado por caja y mandado a cocina",
         )
     )
 
-    mesa = db.get(Mesa, pedido.id_mesa)
     _notificar_rol(
         db,
         rol="cocinero",
-        tipo="nuevo_pedido",
+        tipo="pedido_nuevo",
         mensaje=(
-            f"Pedido {pedido.numero_pedido} (Mesa {mesa.numero_mesa if mesa else pedido.id_mesa}) "
-            "validado por caja: iniciar preparacion."
+            f"Pedido {pedido.numero_pedido} ({_describir_origen(pedido)}) "
+            "validado por caja: listo para tomar."
+        ),
+        id_pedido=pedido.id_pedido,
+    )
+
+    db.commit()
+    return pedido.to_dict(with_detalles=True)
+
+
+@router.post("/disponibilidad", response_model=DisponibilidadOut)
+def revisar_disponibilidad(
+    data: DisponibilidadIn, claims: dict = Depends(get_claims), db: Session = Depends(get_db)
+):
+    """
+    Revisa si hay ingredientes suficientes para una lista de productos, antes de que el
+    mesero mande el pedido. Es una cortesia, no una reserva: el inventario se descuenta
+    hasta que cocina marca el pedido listo, asi que entre medias otro pedido puede
+    consumir lo mismo. Sirve para no prometerle al cliente algo que no se puede preparar.
+    """
+    class _DetalleSimulado:
+        def __init__(self, producto, cantidad):
+            self.producto = producto
+            self.cantidad = cantidad
+
+    detalles = []
+    for item in data.detalles:
+        producto = db.get(Producto, item.id_producto)
+        if not producto:
+            raise HTTPException(status_code=404, detail=f"Producto {item.id_producto} no encontrado")
+        detalles.append(_DetalleSimulado(producto, item.cantidad))
+
+    faltantes = _faltantes_de_inventario(detalles)
+    return {"disponible": not faltantes, "faltantes": faltantes}
+
+
+@router.post("/{id_pedido}/solicitar-cuenta", response_model=PedidoConDetallesOut)
+def solicitar_cuenta(
+    id_pedido: int,
+    claims: dict = Depends(roles_required("admin", "mesero")),
+    db: Session = Depends(get_db),
+):
+    """El mesero avisa que el cliente pidio la cuenta; hasta entonces caja no lo cobra."""
+    pedido = db.get(Pedido, id_pedido)
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    if pedido.estado == "cancelado":
+        raise HTTPException(status_code=409, detail="Un pedido cancelado no se puede cobrar")
+
+    if any(t.estado == "pagado" for t in pedido.tickets):
+        raise HTTPException(status_code=409, detail="Este pedido ya fue cobrado")
+
+    if pedido.cuenta_solicitada:
+        raise HTTPException(status_code=409, detail="La cuenta de este pedido ya fue solicitada")
+
+    pedido.cuenta_solicitada = True
+    pedido.fecha_cuenta_solicitada = datetime.now(timezone.utc)
+
+    _notificar_rol(
+        db,
+        rol="cajero",
+        tipo="cuenta_solicitada",
+        mensaje=(
+            f"{_describir_origen(pedido)} pidio la cuenta del pedido {pedido.numero_pedido} "
+            f"por ${float(pedido.total or 0):.2f}."
         ),
         id_pedido=pedido.id_pedido,
     )
@@ -424,12 +586,15 @@ def cambiar_estado_pedido(
 
     if data.estado == "listo" and estado_anterior != "listo":
         _descontar_inventario(db, pedido, id_usuario)
-        # Notifica al mesero que levanto el pedido que ya esta listo para entregar.
+        # Solo al mesero que levanto el pedido, no a todos: el es quien pasa por el.
         db.add(
             Notificacion(
                 id_pedido=pedido.id_pedido,
                 tipo="pedido_listo",
-                mensaje=f"El pedido {pedido.numero_pedido} esta listo para entregar.",
+                mensaje=(
+                    f"El pedido {pedido.numero_pedido} ({_describir_origen(pedido)}) "
+                    "esta listo para entregar."
+                ),
                 id_receptor=pedido.id_usuario,
             )
         )

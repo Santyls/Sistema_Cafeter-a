@@ -8,6 +8,7 @@ from ..core.email import construir_html_ticket, enviar_ticket_por_correo
 from ..core.security import roles_required
 from ..database import get_db
 from ..models.caja import Caja, CompraSuministro, CorteCaja, Gasto, Pago, Ticket
+from ..models.pedido import Pedido
 from ..schemas.caja import (
     CajaCreate,
     CajaOut,
@@ -132,6 +133,42 @@ def crear_ticket(data: TicketCreate, claims: dict = Depends(admin_o_cajero), db:
     caja = db.get(Caja, data.id_caja)
     if not caja or caja.estado != "abierto":
         raise HTTPException(status_code=400, detail="La caja indicada no existe o no esta abierta")
+
+    if data.id_pedido:
+        pedido = db.get(Pedido, data.id_pedido)
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+        # Sin esta validacion se podia emitir un ticket por el mismo pedido las veces
+        # que se quisiera: el cliente pagaba de mas y el corte contaba la venta repetida.
+        ya_pagado = (
+            db.query(Ticket)
+            .filter(Ticket.id_pedido == pedido.id_pedido, Ticket.estado == "pagado")
+            .first()
+        )
+        if ya_pagado:
+            raise HTTPException(
+                status_code=409,
+                detail=f"El pedido {pedido.numero_pedido} ya fue cobrado (ticket {ya_pagado.folio})",
+            )
+
+        if pedido.estado == "cancelado":
+            raise HTTPException(status_code=409, detail="No se puede cobrar un pedido cancelado")
+
+        if pedido.estado not in ("listo", "entregado"):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"El pedido esta en '{pedido.estado}': solo se cobra cuando cocina ya lo "
+                    "termino o el mesero ya lo entrego."
+                ),
+            )
+
+        if not pedido.cuenta_solicitada:
+            raise HTTPException(
+                status_code=409,
+                detail="El mesero todavia no solicita la cuenta de este pedido",
+            )
 
     ticket = Ticket(
         folio=_generar_folio(),

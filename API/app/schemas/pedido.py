@@ -8,10 +8,35 @@ class DetalleIn(BaseModel):
 
 
 class PedidoCreate(BaseModel):
-    id_mesa: int
+    # id_mesa solo se exige cuando tipo_pedido es "mesa"; un pedido para llevar no ocupa mesa.
+    id_mesa: int | None = None
+    tipo_pedido: str = "mesa"
     detalles: list[DetalleIn] = Field(min_length=1)
     observaciones: str | None = None
     metodo_pago: str | None = None
+
+
+class ProductoCantidadIn(BaseModel):
+    id_producto: int
+    cantidad: int = Field(default=1, ge=1)
+
+
+class DisponibilidadIn(BaseModel):
+    detalles: list[ProductoCantidadIn] = Field(min_length=1)
+
+
+class FaltanteOut(BaseModel):
+    ingrediente: str
+    unidad: str
+    requerido: float
+    disponible: float
+    falta: float
+    productos: list[str]
+
+
+class DisponibilidadOut(BaseModel):
+    disponible: bool
+    faltantes: list[FaltanteOut]
 
 
 class PedidoUpdate(BaseModel):
@@ -53,8 +78,9 @@ class HistorialOut(BaseModel):
 class PedidoOut(BaseModel):
     id_pedido: int
     numero_pedido: str | None
-    id_mesa: int
+    id_mesa: int | None
     mesa_numero: int | None
+    tipo_pedido: str
     id_usuario: int
     usuario_nombre: str | None
     fecha_creacion: str | None
@@ -63,6 +89,9 @@ class PedidoOut(BaseModel):
     total: float | None
     metodo_pago: str | None
     observaciones: str | None
+    cuenta_solicitada: bool
+    fecha_cuenta_solicitada: str | None
+    pagado: bool
 
 
 class PedidoConDetallesOut(PedidoOut):

@@ -1,11 +1,21 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 
 from ..database import Base
 
-ESTADOS_PEDIDO = ("pendiente", "en_preparacion", "listo", "entregado", "cancelado")
+# Ciclo de vida del pedido:
+#   pendiente      el mesero lo levanto, espera validacion de caja
+#   en_cocina      caja lo valido y lo mando a cocina, todavia sin tomar
+#   en_preparacion cocina lo tomo y lo esta preparando
+#   listo          cocina termino (aqui se descuenta el inventario)
+#   entregado      el mesero lo llevo a la mesa o lo entrego para llevar
+#   cancelado      terminal
+# El pago NO es un estado del pedido: vive en el ticket (ver campo `pagado`).
+ESTADOS_PEDIDO = ("pendiente", "en_cocina", "en_preparacion", "listo", "entregado", "cancelado")
+
+TIPOS_PEDIDO = ("mesa", "para_llevar")
 
 
 class Pedido(Base):
@@ -13,7 +23,9 @@ class Pedido(Base):
 
     id_pedido = Column(Integer, primary_key=True)
     numero_pedido = Column(String(20), unique=True)
-    id_mesa = Column(Integer, ForeignKey("mesas.id_mesa"), nullable=False)
+    # Un pedido para llevar no ocupa mesa, por eso id_mesa es opcional.
+    id_mesa = Column(Integer, ForeignKey("mesas.id_mesa"), nullable=True)
+    tipo_pedido = Column(String(20), default="mesa", nullable=False)
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     fecha_actualizacion = Column(
@@ -25,9 +37,14 @@ class Pedido(Base):
     total = Column(Numeric(10, 2), default=0)
     metodo_pago = Column(String(50))
     observaciones = Column(String(255))
+    # El mesero avisa que el cliente ya pidio la cuenta; caja solo cobra estos.
+    cuenta_solicitada = Column(Boolean, default=False, nullable=False)
+    fecha_cuenta_solicitada = Column(DateTime(timezone=True))
 
     mesa = relationship("Mesa")
     usuario = relationship("Usuario")
+    # Solo lectura: sirve para saber si el pedido ya se cobro sin consultar aparte.
+    tickets = relationship("Ticket", lazy="selectin", viewonly=True)
     detalles = relationship("DetallePedido", backref="pedido", lazy=True, cascade="all, delete-orphan")
     historial = relationship(
         "PedidoEstadoHistorial", backref="pedido", lazy=True, cascade="all, delete-orphan",
@@ -40,6 +57,7 @@ class Pedido(Base):
             "numero_pedido": self.numero_pedido,
             "id_mesa": self.id_mesa,
             "mesa_numero": self.mesa.numero_mesa if self.mesa else None,
+            "tipo_pedido": self.tipo_pedido or "mesa",
             "id_usuario": self.id_usuario,
             "usuario_nombre": (
                 f"{self.usuario.nombre} {self.usuario.apellido_paterno or ''}".strip()
@@ -51,6 +69,13 @@ class Pedido(Base):
             "total": float(self.total) if self.total is not None else None,
             "metodo_pago": self.metodo_pago,
             "observaciones": self.observaciones,
+            "cuenta_solicitada": bool(self.cuenta_solicitada),
+            "fecha_cuenta_solicitada": (
+                self.fecha_cuenta_solicitada.isoformat() if self.fecha_cuenta_solicitada else None
+            ),
+            # El cobro vive en el ticket, no en el estado del pedido: asi no hay dos
+            # fuentes de verdad que se puedan contradecir.
+            "pagado": any(t.estado == "pagado" for t in self.tickets),
         }
         if with_detalles:
             data["detalles"] = [d.to_dict() for d in self.detalles]
