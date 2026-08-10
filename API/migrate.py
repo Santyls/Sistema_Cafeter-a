@@ -67,6 +67,19 @@ def migrar():
         if renombrados:
             pasos.append(f"{renombrados} pedidos 'entregado_pagado' pasados a 'entregado'")
 
+        # --- detalle_pedido: cancelacion de un producto suelto ---
+        if not _columna_existe(conn, "detalle_pedido", "cancelado"):
+            conn.execute(
+                text(
+                    "ALTER TABLE detalle_pedido "
+                    "ADD COLUMN cancelado BOOLEAN NOT NULL DEFAULT FALSE, "
+                    "ADD COLUMN motivo_cancelacion VARCHAR(255), "
+                    "ADD COLUMN fecha_cancelacion TIMESTAMPTZ, "
+                    "ADD COLUMN id_usuario_cancela INTEGER REFERENCES usuarios(id_usuario)"
+                )
+            )
+            pasos.append("detalle_pedido: columnas de cancelacion por producto agregadas")
+
         # --- reservaciones: fecha y hora de texto a un instante real ---
         if not _columna_existe(conn, "reservaciones", "fecha_hora"):
             conn.execute(text("ALTER TABLE reservaciones ADD COLUMN fecha_hora TIMESTAMPTZ"))

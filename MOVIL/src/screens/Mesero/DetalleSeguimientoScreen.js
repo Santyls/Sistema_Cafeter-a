@@ -111,7 +111,13 @@ export default function DetalleSeguimientoScreen({ route, navigation }) {
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[typography.body, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        typography.body,
+                        { color: d.cancelado ? colors.textSecondary : colors.text },
+                        d.cancelado && styles.tachado,
+                      ]}
+                    >
                       {d.cantidad}x {d.producto_nombre}
                     </Text>
                     {d.observaciones ? (
@@ -119,8 +125,19 @@ export default function DetalleSeguimientoScreen({ route, navigation }) {
                         {d.observaciones}
                       </Text>
                     ) : null}
+                    {d.cancelado ? (
+                      <Text style={[typography.small, { color: colors.danger, marginTop: 2 }]}>
+                        Cocina no pudo prepararlo: {d.motivo_cancelacion}
+                      </Text>
+                    ) : null}
                   </View>
-                  <Text style={[typography.body, { color: colors.textSecondary }]}>
+                  <Text
+                    style={[
+                      typography.body,
+                      { color: colors.textSecondary },
+                      d.cancelado && styles.tachado,
+                    ]}
+                  >
                     {moneda(d.subtotal)}
                   </Text>
                 </View>
@@ -203,4 +220,5 @@ const styles = StyleSheet.create({
   volver: { flexDirection: 'row', alignItems: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  tachado: { textDecorationLine: 'line-through' },
 });

@@ -13,6 +13,7 @@ import ScreenContainer from '../../components/common/ScreenContainer';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import SelectorCantidad from '../../components/common/SelectorCantidad';
 import TextField from '../../components/common/TextField';
 import FloatingModal from '../../components/common/FloatingModal';
 import EmptyState from '../../components/common/EmptyState';
@@ -261,21 +262,11 @@ export default function NuevoPedidoScreen({ route, navigation }) {
                     </Text>
                   </View>
 
-                  <View style={[styles.cantidadFila, { marginTop: spacing.sm }]}>
-                    <Button
-                      title="-"
-                      variant="outline"
-                      onPress={() => cambiarCantidad(claveCarrito, indice, item.cantidad - 1)}
-                      style={{ width: 48 }}
-                    />
-                    <Text style={[typography.h3, { color: colors.text, marginHorizontal: spacing.md }]}>
-                      {item.cantidad}
-                    </Text>
-                    <Button
-                      title="+"
-                      variant="outline"
-                      onPress={() => cambiarCantidad(claveCarrito, indice, item.cantidad + 1)}
-                      style={{ width: 48 }}
+                  <View style={{ marginTop: spacing.sm }}>
+                    <SelectorCantidad
+                      cantidad={item.cantidad}
+                      minimo={0}
+                      onCambiar={(n) => cambiarCantidad(claveCarrito, indice, n)}
                     />
                   </View>
                 </Card>

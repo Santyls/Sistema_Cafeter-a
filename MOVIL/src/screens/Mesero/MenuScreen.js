@@ -10,6 +10,7 @@ import { confirmar as confirmarAccion, mostrarMensaje } from '../../utils/alerts
 import PantallaLista from '../../components/common/PantallaLista';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import SelectorCantidad from '../../components/common/SelectorCantidad';
 import TextField from '../../components/common/TextField';
 import FilterTabs from '../../components/common/FilterTabs';
 import FloatingModal from '../../components/common/FloatingModal';
@@ -172,21 +173,7 @@ export default function MenuScreen({ route, navigation }) {
               Cantidad
             </Text>
             <View style={[styles.cantidadRow, { marginBottom: spacing.md }]}>
-              <Button
-                title="-"
-                variant="outline"
-                onPress={() => setCantidad((c) => Math.max(1, c - 1))}
-                style={{ width: 56 }}
-              />
-              <Text style={[typography.h2, { color: colors.text, marginHorizontal: spacing.lg }]}>
-                {cantidad}
-              </Text>
-              <Button
-                title="+"
-                variant="outline"
-                onPress={() => setCantidad((c) => c + 1)}
-                style={{ width: 56 }}
-              />
+              <SelectorCantidad cantidad={cantidad} onCambiar={setCantidad} />
             </View>
 
             <TextField

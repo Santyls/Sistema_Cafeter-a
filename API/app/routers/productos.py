@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..core.security import get_claims, roles_required
 from ..database import get_db
+from ..models.pedido import DetallePedido, Pedido
 from ..models.producto import Categoria, Producto
 from ..schemas.common import MessageOut
 from ..schemas.producto import (
@@ -17,6 +18,9 @@ from ..schemas.producto import (
 router = APIRouter(prefix="/api", tags=["Productos y Categorias"])
 
 solo_admin = roles_required("admin")
+
+# Un pedido en estos estados todavia esta vivo: cocina lo prepara o caja lo cobra.
+ESTADOS_EN_CURSO = ("pendiente", "en_cocina", "en_preparacion", "listo")
 
 
 # --- Categorias ---
@@ -142,6 +146,42 @@ def eliminar_producto(
     producto = db.get(Producto, id_producto)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # Un producto que esta en un pedido sin terminar no se puede quitar: se estaria
+    # borrando algo que la cocina todavia tiene que preparar o la caja tiene que cobrar.
+    en_pedidos_abiertos = (
+        db.query(DetallePedido)
+        .join(Pedido, Pedido.id_pedido == DetallePedido.id_pedido)
+        .filter(
+            DetallePedido.id_producto == id_producto,
+            Pedido.estado.in_(ESTADOS_EN_CURSO),
+        )
+        .count()
+    )
+    if en_pedidos_abiertos:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"'{producto.nombre}' esta en {en_pedidos_abiertos} pedido(s) en curso. "
+                "Espera a que se entreguen o se cancelen."
+            ),
+        )
+
+    # Aunque ya no haya pedidos en curso, el producto sigue apareciendo en el historial
+    # de ventas. Borrarlo dejaria tickets viejos sin poder decir que se vendio, asi que
+    # se marca como no disponible: desaparece del menu y el historial queda intacto.
+    historico = (
+        db.query(DetallePedido).filter(DetallePedido.id_producto == id_producto).count()
+    )
+    if historico:
+        producto.disponible = False
+        db.commit()
+        return {
+            "message": (
+                f"'{producto.nombre}' se marco como no disponible y ya no aparece en el menu. "
+                f"No se elimino porque forma parte de {historico} venta(s) del historial."
+            )
+        }
 
     db.delete(producto)
     db.commit()

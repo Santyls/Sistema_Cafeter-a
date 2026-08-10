@@ -94,6 +94,13 @@ class DetallePedido(Base):
     precio_unitario = Column(Numeric(10, 2), nullable=False)
     subtotal = Column(Numeric(10, 2), nullable=False)
     observaciones = Column(String(255))
+    # Cocina puede cancelar un producto suelto sin tumbar el pedido completo: si no
+    # puede preparar el pan, ese renglon se cancela con su motivo y no se cobra, pero
+    # el cafe del mismo pedido sigue su curso.
+    cancelado = Column(Boolean, default=False, nullable=False)
+    motivo_cancelacion = Column(String(255))
+    fecha_cancelacion = Column(DateTime(timezone=True))
+    id_usuario_cancela = Column(Integer, ForeignKey("usuarios.id_usuario"))
 
     producto = relationship("Producto")
 
@@ -107,6 +114,11 @@ class DetallePedido(Base):
             "precio_unitario": float(self.precio_unitario),
             "subtotal": float(self.subtotal),
             "observaciones": self.observaciones,
+            "cancelado": bool(self.cancelado),
+            "motivo_cancelacion": self.motivo_cancelacion,
+            "fecha_cancelacion": (
+                self.fecha_cancelacion.isoformat() if self.fecha_cancelacion else None
+            ),
         }
 
 

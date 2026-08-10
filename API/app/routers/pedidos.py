@@ -24,6 +24,7 @@ from ..models.reservacion import Reservacion
 from ..models.usuario import Usuario
 from ..schemas.common import MessageOut
 from ..schemas.pedido import (
+    CancelarDetalleIn,
     DisponibilidadIn,
     DisponibilidadOut,
     EstadoPedidoIn,
@@ -151,9 +152,21 @@ def _texto_faltantes(faltantes: list[dict]) -> str:
     return "; ".join(partes)
 
 
+def _detalles_vigentes(pedido: Pedido):
+    """Renglones que si se preparan y se cobran (los cancelados por cocina quedan fuera)."""
+    return [d for d in pedido.detalles if not d.cancelado]
+
+
+def _recalcular_total(pedido: Pedido) -> float:
+    """El total del pedido es la suma de lo que queda vigente."""
+    total = sum(float(d.subtotal) for d in _detalles_vigentes(pedido))
+    pedido.total = total
+    return total
+
+
 def _descontar_inventario(db: Session, pedido: Pedido, id_usuario: int):
     """Descuenta ingredientes segun receta de cada producto del pedido y genera alertas de stock bajo."""
-    for detalle in pedido.detalles:
+    for detalle in _detalles_vigentes(pedido):
         for receta in detalle.producto.recetas:
             ingrediente = receta.ingrediente
             stock_anterior = ingrediente.stock_actual
@@ -185,7 +198,7 @@ def _descontar_inventario(db: Session, pedido: Pedido, id_usuario: int):
 
 def _reponer_inventario(db: Session, pedido: Pedido, id_usuario: int):
     """Devuelve al inventario los ingredientes descontados de un pedido que se cancela ya estando listo."""
-    for detalle in pedido.detalles:
+    for detalle in _detalles_vigentes(pedido):
         for receta in detalle.producto.recetas:
             ingrediente = receta.ingrediente
             stock_anterior = ingrediente.stock_actual
@@ -204,6 +217,28 @@ def _reponer_inventario(db: Session, pedido: Pedido, id_usuario: int):
                     observaciones=f"Reposicion por cancelacion del pedido {pedido.numero_pedido}",
                 )
             )
+
+
+def _reponer_detalle(db: Session, detalle, pedido: Pedido, id_usuario: int):
+    """Devuelve al inventario lo que consumia un solo renglon del pedido."""
+    for receta in detalle.producto.recetas:
+        ingrediente = receta.ingrediente
+        stock_anterior = ingrediente.stock_actual
+        cantidad = float(receta.cantidad_requerida) * detalle.cantidad
+        ingrediente.stock_actual = float(stock_anterior) + cantidad
+
+        db.add(
+            InventarioMovimiento(
+                id_ingrediente=ingrediente.id_ingrediente,
+                tipo_movimiento="entrada",
+                cantidad=cantidad,
+                stock_anterior=stock_anterior,
+                stock_nuevo=ingrediente.stock_actual,
+                id_usuario=id_usuario,
+                referencia=f"pedido:{pedido.id_pedido}",
+                observaciones=f"Reposicion por cancelacion de {detalle.producto.nombre}",
+            )
+        )
 
 
 def _notificar_rol(db: Session, rol: str, tipo: str, mensaje: str, id_pedido: int | None = None):
@@ -469,6 +504,86 @@ def revisar_disponibilidad(
 
     faltantes = _faltantes_de_inventario(detalles)
     return {"disponible": not faltantes, "faltantes": faltantes}
+
+
+@router.post("/{id_pedido}/detalles/{id_detalle}/cancelar", response_model=PedidoConDetallesOut)
+def cancelar_detalle(
+    id_pedido: int,
+    id_detalle: int,
+    data: CancelarDetalleIn,
+    claims: dict = Depends(roles_required("admin", "cocinero", "cajero")),
+    db: Session = Depends(get_db),
+):
+    """
+    Cancela un solo producto del pedido, con motivo obligatorio.
+
+    Sirve para cuando cocina puede preparar una parte del pedido pero no toda: se
+    cancela ese renglon, deja de cobrarse y el resto del pedido sigue su curso. Si se
+    cancelan todos los renglones, el pedido entero queda cancelado.
+    """
+    pedido = db.get(Pedido, id_pedido)
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    if pedido.estado == "cancelado":
+        raise HTTPException(status_code=409, detail="El pedido ya esta cancelado")
+
+    if any(t.estado == "pagado" for t in pedido.tickets):
+        raise HTTPException(
+            status_code=409, detail="El pedido ya fue cobrado: no se puede modificar"
+        )
+
+    detalle = next((d for d in pedido.detalles if d.id_detalle == id_detalle), None)
+    if not detalle:
+        raise HTTPException(status_code=404, detail="Ese producto no pertenece al pedido")
+
+    if detalle.cancelado:
+        raise HTTPException(status_code=409, detail="Ese producto ya estaba cancelado")
+
+    id_usuario = claims["id"]
+    detalle.cancelado = True
+    detalle.motivo_cancelacion = data.motivo.strip()
+    detalle.fecha_cancelacion = datetime.now(timezone.utc)
+    detalle.id_usuario_cancela = id_usuario
+
+    # Si el pedido ya se habia marcado listo, su inventario ya se desconto: hay que
+    # devolver lo que llevaba este renglon, porque ya no se va a servir.
+    if pedido.estado == "listo":
+        _reponer_detalle(db, detalle, pedido, id_usuario)
+
+    vigentes = _detalles_vigentes(pedido)
+    _recalcular_total(pedido)
+    pedido.fecha_actualizacion = datetime.now(timezone.utc)
+
+    if not vigentes:
+        # No queda nada que preparar ni cobrar: el pedido completo se cancela.
+        estado_anterior = pedido.estado
+        pedido.estado = "cancelado"
+        db.add(
+            PedidoEstadoHistorial(
+                id_pedido=pedido.id_pedido,
+                estado_anterior=estado_anterior,
+                estado_nuevo="cancelado",
+                id_usuario=id_usuario,
+                comentario="Se cancelaron todos los productos del pedido",
+            )
+        )
+        liberar_mesa_si_corresponde(db, pedido)
+
+    db.add(
+        Notificacion(
+            id_pedido=pedido.id_pedido,
+            tipo="producto_cancelado",
+            mensaje=(
+                f"Se cancelo {detalle.cantidad}x {detalle.producto.nombre} del pedido "
+                f"{pedido.numero_pedido}: {detalle.motivo_cancelacion}"
+            ),
+            id_receptor=pedido.id_usuario,
+        )
+    )
+
+    db.commit()
+    return pedido.to_dict(with_detalles=True)
 
 
 @router.post("/{id_pedido}/solicitar-cuenta", response_model=PedidoConDetallesOut)

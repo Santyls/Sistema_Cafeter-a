@@ -13,6 +13,8 @@ import AsyncContent from '../../components/common/AsyncContent';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import FloatingModal from '../../components/common/FloatingModal';
+import TextField from '../../components/common/TextField';
 
 // Cocina solo puede avanzar el pedido en un sentido; la API valida lo mismo del lado
 // del servidor (maquina de estados), esto es para no ofrecer botones que van a fallar.
@@ -25,11 +27,43 @@ export default function DetallePedidoScreen({ route, navigation }) {
   const { id } = route.params;
   const { colors, spacing, typography } = useAppTheme();
   const [procesando, setProcesando] = useState(false);
+  const [porCancelar, setPorCancelar] = useState(null);
+  const [motivo, setMotivo] = useState('');
+  const [errorMotivo, setErrorMotivo] = useState('');
 
   const cargar = useCallback(() => pedidosApi.obtener(id), [id]);
   const { datos: pedido, cargando, error, recargar } = useCarga(cargar, null, [id]);
 
   const siguiente = pedido ? SIGUIENTE_ESTADO[pedido.estado] : null;
+
+  // Cocina solo puede rechazar un producto mientras el pedido siga en sus manos.
+  const puedeCancelarProductos = ['en_cocina', 'en_preparacion', 'listo'].includes(pedido?.estado);
+
+  const cancelarProducto = async () => {
+    if (motivo.trim().length < 3) {
+      setErrorMotivo('Escribe el motivo (minimo 3 letras).');
+      return;
+    }
+
+    setProcesando(true);
+    try {
+      await pedidosApi.cancelarDetalle(id, porCancelar.id_detalle, motivo.trim());
+      setPorCancelar(null);
+      setMotivo('');
+      await recargar();
+      mostrarMensaje(
+        'Producto cancelado',
+        `Se aviso al mesero y ${porCancelar.producto_nombre} ya no se va a cobrar.`
+      );
+    } catch (e) {
+      mostrarMensaje(
+        'No se pudo cancelar',
+        e instanceof ApiError ? e.message : 'Intenta de nuevo mas tarde.'
+      );
+    } finally {
+      setProcesando(false);
+    }
+  };
 
   const avanzar = async () => {
     setProcesando(true);
@@ -105,7 +139,13 @@ export default function DetallePedidoScreen({ route, navigation }) {
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[typography.body, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        typography.body,
+                        { color: d.cancelado ? colors.textSecondary : colors.text },
+                        d.cancelado && styles.tachado,
+                      ]}
+                    >
                       {d.cantidad}x {d.producto_nombre}
                     </Text>
                     {d.observaciones ? (
@@ -113,8 +153,25 @@ export default function DetallePedidoScreen({ route, navigation }) {
                         {d.observaciones}
                       </Text>
                     ) : null}
+                    {d.cancelado ? (
+                      <Text style={[typography.small, { color: colors.danger, marginTop: 2 }]}>
+                        Cancelado: {d.motivo_cancelacion}
+                      </Text>
+                    ) : puedeCancelarProductos ? (
+                      <Pressable onPress={() => setPorCancelar(d)} style={{ marginTop: 4 }}>
+                        <Text style={[typography.small, { color: colors.danger }]}>
+                          No puedo prepararlo
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
-                  <Text style={[typography.body, { color: colors.textSecondary }]}>
+                  <Text
+                    style={[
+                      typography.body,
+                      { color: colors.textSecondary },
+                      d.cancelado && styles.tachado,
+                    ]}
+                  >
                     {moneda(d.subtotal)}
                   </Text>
                 </View>
@@ -183,6 +240,47 @@ export default function DetallePedidoScreen({ route, navigation }) {
           </>
         ) : null}
       </AsyncContent>
+
+      <FloatingModal
+        visible={!!porCancelar}
+        onClose={() => {
+          setPorCancelar(null);
+          setMotivo('');
+          setErrorMotivo('');
+        }}
+        title="Cancelar producto"
+        scroll={false}
+      >
+        {porCancelar ? (
+          <>
+            <Text style={[typography.body, { color: colors.text, marginBottom: spacing.xs }]}>
+              {porCancelar.cantidad}x {porCancelar.producto_nombre}
+            </Text>
+            <Text style={[typography.small, { color: colors.textSecondary, marginBottom: spacing.md }]}>
+              El resto del pedido sigue su curso y este producto no se le cobra al cliente. El
+              mesero recibe el aviso con tu motivo.
+            </Text>
+            <TextField
+              label="Motivo"
+              placeholder="Se acabo el pan de la casa"
+              value={motivo}
+              onChangeText={(v) => {
+                setMotivo(v);
+                setErrorMotivo('');
+              }}
+              error={errorMotivo}
+              multiline
+            />
+            <Button
+              title="Cancelar producto"
+              variant="danger"
+              onPress={cancelarProducto}
+              loading={procesando}
+              disabled={procesando}
+            />
+          </>
+        ) : null}
+      </FloatingModal>
     </ScreenContainer>
   );
 }
@@ -191,4 +289,5 @@ const styles = StyleSheet.create({
   volver: { flexDirection: 'row', alignItems: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  tachado: { textDecorationLine: 'line-through' },
 });

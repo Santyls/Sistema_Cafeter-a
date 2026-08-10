@@ -168,10 +168,29 @@ export default function DetalleCobroScreen({ route, navigation }) {
                     i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
                   ]}
                 >
-                  <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
-                    {d.cantidad}x {d.producto_nombre}
-                  </Text>
-                  <Text style={[typography.body, { color: colors.textSecondary }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        typography.body,
+                        { color: d.cancelado ? colors.textSecondary : colors.text },
+                        d.cancelado && styles.tachado,
+                      ]}
+                    >
+                      {d.cantidad}x {d.producto_nombre}
+                    </Text>
+                    {d.cancelado ? (
+                      <Text style={[typography.small, { color: colors.danger, marginTop: 2 }]}>
+                        Cocina lo cancelo: {d.motivo_cancelacion} · no se cobra
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text
+                    style={[
+                      typography.body,
+                      { color: colors.textSecondary },
+                      d.cancelado && styles.tachado,
+                    ]}
+                  >
                     {moneda(d.subtotal)}
                   </Text>
                 </View>
@@ -273,6 +292,7 @@ const styles = StyleSheet.create({
   volver: { flexDirection: 'row', alignItems: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  tachado: { textDecorationLine: 'line-through' },
   metodos: { flexDirection: 'row', gap: 8 },
   metodo: {
     flex: 1,

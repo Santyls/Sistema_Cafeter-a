@@ -26,13 +26,14 @@ export default function ResumenMesero() {
       return new Date(p.fecha_creacion).toLocaleDateString('sv-SE') === hoy;
     });
 
-    const activos = mios.filter((p) => !['entregado_pagado', 'cancelado'].includes(p.estado));
+    // Sigue activo mientras no se haya cobrado ni cancelado.
+    const activos = mios.filter((p) => p.estado !== 'cancelado' && !p.pagado);
 
     return {
       atendidos: delDia.filter((p) => p.estado !== 'cancelado').length,
       mesasActivas: new Set(activos.map((p) => p.id_mesa)).size,
       vendido: delDia
-        .filter((p) => ['entregado', 'entregado_pagado'].includes(p.estado))
+        .filter((p) => p.estado === 'entregado')
         .reduce((acc, p) => acc + (Number(p.total) || 0), 0),
     };
   }, [pedidos, user]);

@@ -18,7 +18,7 @@ export default function ResumenCocina() {
     const delDia = (pedidos || []).filter((p) => {
       if (!p.fecha_creacion) return false;
       const fecha = new Date(p.fecha_creacion).toLocaleDateString('sv-SE');
-      return fecha === hoy && ['listo', 'entregado', 'entregado_pagado'].includes(p.estado);
+      return fecha === hoy && ['listo', 'entregado'].includes(p.estado);
     });
 
     const total = delDia.reduce((acc, p) => acc + (Number(p.total) || 0), 0);

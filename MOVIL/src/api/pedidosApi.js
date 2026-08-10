@@ -26,6 +26,10 @@ export const pedidosApi = {
   cambiarEstado: (id, estado, comentario) =>
     httpClient.patch(`/pedidos/${id}/estado`, { estado, comentario }),
 
+  /** Cancela un solo producto del pedido; el resto sigue su curso y no se cobra ese. */
+  cancelarDetalle: (idPedido, idDetalle, motivo) =>
+    httpClient.post(`/pedidos/${idPedido}/detalles/${idDetalle}/cancelar`, { motivo }),
+
   cancelar: (id, motivo) =>
     httpClient.delete(`/pedidos/${id}${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`),
 

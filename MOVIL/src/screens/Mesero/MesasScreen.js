@@ -38,11 +38,12 @@ export default function MesasScreen({ navigation }) {
 
   const { datos, cargando, error, recargar } = useCarga(cargarTodo, null, []);
 
-  // Cuenta acumulada por mesa: solo los pedidos que siguen vivos.
+  // Cuenta acumulada por mesa: lo que todavia se le debe cobrar al cliente. Un pedido
+  // ya cobrado no suma aunque siga en el historial de la mesa.
   const cuentaPorMesa = useMemo(() => {
     const acumulado = {};
     (datos?.pedidos || [])
-      .filter((p) => !['entregado_pagado', 'cancelado'].includes(p.estado))
+      .filter((p) => p.estado !== 'cancelado' && !p.pagado)
       .forEach((p) => {
         acumulado[p.id_mesa] = (acumulado[p.id_mesa] || 0) + (Number(p.total) || 0);
       });

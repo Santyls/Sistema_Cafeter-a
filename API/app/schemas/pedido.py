@@ -50,6 +50,11 @@ class EstadoPedidoIn(BaseModel):
     comentario: str | None = None
 
 
+class CancelarDetalleIn(BaseModel):
+    # El motivo es obligatorio: cocina debe decir por que no va a preparar ese producto.
+    motivo: str = Field(min_length=3)
+
+
 class InyeccionIn(BaseModel):
     comentario: str | None = None
 
@@ -63,6 +68,9 @@ class DetalleOut(BaseModel):
     precio_unitario: float
     subtotal: float
     observaciones: str | None
+    cancelado: bool
+    motivo_cancelacion: str | None
+    fecha_cancelacion: str | None
 
 
 class HistorialOut(BaseModel):
